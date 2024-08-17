@@ -1,5 +1,5 @@
 /*
- *  Copyright © 2008-2012 Eduardo Vindas Cordoba. All rights reserved.
+ *  Copyright © 2008-2012 Eduardo Vindas. All rights reserved.
  *  
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -17,7 +17,7 @@ import javax.swing.JTextArea;
 
 /**
  *
- * @author  Eduardo Vindas<cartman@aeongames.com>
+ * @author  Eduardo Vindas<cartman AeonGames.com>
  */
 public class TranslucentTextArea extends JTextArea {
 

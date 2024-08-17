@@ -13,12 +13,11 @@ import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
 import java.awt.image.PixelGrabber;
 import java.util.Optional;
-import java.util.function.Consumer;
 import javax.swing.ImageIcon;
 
 /**
  *
- * @author Eduardo Vindas<cartman@aeongames.com>
+ * @author Eduardo Vindas<cartman aeongames.com>
  */
 public class ImageUtils {
 
@@ -75,8 +74,8 @@ public class ImageUtils {
      * BufferedImage with the same content as the parameter
      */
     public static BufferedImage toBufferedImage(Image image) {
-        if (image instanceof BufferedImage) {
-            return (BufferedImage) image;
+        if (image instanceof BufferedImage buffIma) {
+            return buffIma;
         } else {
             // This code ensures that all the pixels in the image are loaded
             image = new ImageIcon(image).getImage();

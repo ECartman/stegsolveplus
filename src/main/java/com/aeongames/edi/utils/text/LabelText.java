@@ -1,6 +1,6 @@
 /*
  * 
- * Copyright © 2010-2024 Eduardo Vindas Cordoba. All rights reserved.
+ * Copyright © 2010-2024 Eduardo Vindas. All rights reserved.
  * 
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,

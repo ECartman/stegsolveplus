@@ -1,5 +1,5 @@
 /* 
- *  Copyright © 2024 Eduardo Vindas Cordoba. All rights reserved.
+ *  Copyright © 2024 Eduardo Vindas. All rights reserved.
  *  
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -14,6 +14,7 @@
 package com.aeongames.stegsolveplus.StegnoTools;
 
 import java.awt.Color;
+import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,8 +23,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import javax.imageio.ImageIO;
 
@@ -70,15 +71,16 @@ public class ImageContainer {
      */
     private final BufferedImage originalImage;
     /**
-     * a map that will contain the RGB data for the image when loaded. note that
-     * we store the color data as binary not as decimal thus 2's compliment is
-     * part of the value not a sign (aka this is a unsigned value on a singed
-     * store this is done this way for storage efficiency.
+     * a map that will contain the RGB data for the image when loaded.
+     * initially this was made so colors could be handled separately and no 
+     * calculation were needed to separate or extract a channel. 
+     * 
+     * TODO: however it seems that most of the calculations are OK using 
+     * all channels. and thus this might not be as good on performance. 
+     * need to profile it. 
+     * 
      */
-    private List<Byte[]> RGBA_Data;
-
-    //TODO: User of remove
-    private Map<Integer, BufferedImage> TransformedImages;
+    private List<Short[]> RGBA_Data;
 
     /**
      * Package Private constructor. creates a new instance of ImageContainer
@@ -90,6 +92,10 @@ public class ImageContainer {
     ImageContainer(Path Source) throws IOException {
         Objects.requireNonNull(Source, "the path is null");
         originalImage = ImageIO.read(Source.toFile());
+    }
+    
+    public boolean ImageIsValid(){
+        return !Objects.isNull(originalImage);
     }
 
     /**
@@ -118,50 +124,29 @@ public class ImageContainer {
      * load the ARGB data from the image per pixels and stores into the cache
      * (RGBA_Data)
      */
-    private void LoadRGBData() {
+    public void LoadRGBData() {
         if (Objects.isNull(originalImage)) {
             return;
         }
         var totalpixels = getTotalPixels();
         RGBA_Data = new ArrayList<>(4);
-        Byte A[] = new Byte[totalpixels],
-                R[] = new Byte[totalpixels],
-                G[] = new Byte[totalpixels],
-                B[] = new Byte[totalpixels];
-        for (int Line = 0; Line < originalImage.getWidth(); Line++) {
-            for (int Column = 0; Column < originalImage.getHeight(); Column++) {
-                var bytes = getEachColorValueFrom(originalImage.getRGB(Line, Column));
-                A[Column * originalImage.getWidth() + Line] = bytes[ALPHA];
-                R[Column * originalImage.getWidth() + Line] = bytes[RED];
-                G[Column * originalImage.getWidth() + Line] = bytes[GREEN];
-                B[Column * originalImage.getWidth() + Line] = bytes[BLUE];
+        Short A[] = new Short[totalpixels],
+                R[] = new Short[totalpixels],
+                G[] = new Short[totalpixels],
+                B[] = new Short[totalpixels];
+        for (int x = 0,arrayindex=0; x < originalImage.getWidth(); x++) {
+            for (int y = 0; y < originalImage.getHeight(); y++,arrayindex++) {
+                var color = originalImage.getRGB(x, y);
+                A[arrayindex] = (short)((color & ALPHA_MASK)>>> 24);
+                R[arrayindex] = (short)((color & RED_MASK)  >>> 16);
+                G[arrayindex] = (short)((color & GREEN_MASK)>>> 8);
+                B[arrayindex] = (short)((color) & BLUE_MASK);
             }
         }
         RGBA_Data.add(ALPHA, A);
         RGBA_Data.add(RED, R);
         RGBA_Data.add(GREEN, G);
         RGBA_Data.add(BLUE, B);
-    }
-
-    /**
-     * Transform the Integer value that represent a ARBG pixel or color data and
-     * convert it into an Byte array that contains this information in the
-     * following order:
-     * <br>index 0 alpha channel data
-     * <br>index 1 red channel data
-     * <br>index 2 green channel data
-     * <br>index 3 blue channel data
-     *
-     * @param ARGB
-     * @return a byte array with the BINARY value that represent the color
-     * (please note this is not a Numeric value. is a unsigned value or binary)
-     */
-    private byte[] getEachColorValueFrom(int ARGB) {
-        byte b = (byte) ((ARGB) & MAXSINGLEVALUE);
-        byte g = (byte) ((ARGB >>> 8) & MAXSINGLEVALUE);
-        byte r = (byte) ((ARGB >>> 16) & MAXSINGLEVALUE);
-        byte a = (byte) ((ARGB >>> 24) & MAXSINGLEVALUE);
-        return new byte[]{a, r, g, b};
     }
 
     /**
@@ -180,11 +165,20 @@ public class ImageContainer {
 
     /**
      * creates a new BufferedImage that support ARGB (rgb+alpha)
-     *
+     *wit the same dimensions as the original image. 
      * @return a new instance of BufferedImage that support ARGB (rgb+alpha)
      */
     public BufferedImage createBIemptyCopy() {
         return createBIemptyCopy(BufferedImage.TYPE_INT_ARGB);
+    }
+    
+    /**
+     * creates a new BufferedImage that support RGB (rgb NOT ALPHA)
+     *wit the same dimensions as the original image. 
+     * @return a new instance of BufferedImage that support ARGB (rgb+alpha)
+     */
+    public BufferedImage createBINoAlphaemptyCopy() {
+        return createBIemptyCopy(BufferedImage.TYPE_INT_RGB);
     }
 
     /**
@@ -230,84 +224,93 @@ public class ImageContainer {
         return originalImage.getHeight();
     }
 
-    public int getTotalPixels() {
+     public int getTotalPixels() {
         return originalImage.getWidth() * originalImage.getHeight();
     }
 
-    public boolean[] getSymetricPixels(BufferedImage image, Color Fill) {
-        boolean[] pixelmap = new boolean[getTotalPixels()];
-        for (int i = 0; i < pixelmap.length; i++) {
-            pixelmap[i] = Objects.equals(RGBA_Data.get(RED)[i], RGBA_Data.get(GREEN)[i])
+    public void getSymetricPixels(BufferedImage image, Color Fill) {
+        //boolean[] pixelmap = new boolean[];
+        var totalpixels=getTotalPixels();
+        for (int i = 0; i < totalpixels; i++) {
+            var symetric = Objects.equals(RGBA_Data.get(RED)[i], RGBA_Data.get(GREEN)[i])
                     && Objects.equals(RGBA_Data.get(BLUE)[i], RGBA_Data.get(GREEN)[i]);
-            var x = i / originalImage.getWidth();
-            var y = i % originalImage.getWidth();
+            var x = i / image.getHeight();
+            var y = i % image.getHeight();
             image.setRGB(x, y,
-                    pixelmap[i] ? Fill.getRGB()
+                    symetric ? Fill.getRGB()
                             : Color.WHITE.getRGB());
         }
-        return pixelmap;
     }
 
-    public void MathOnPixels(BufferedImage image, Function<Byte[], Integer> MathFunction) {
+    public void MathOnPixels(BufferedImage image, Function<Short[], Integer> MathFunction) {
         for (int i = 0; i < getTotalPixels(); i++) {
             var CalculatedPixel = MathFunction.apply(ToWrapperArray(getRGB(i)));
-            var x = i / originalImage.getWidth();
-            var y = i % originalImage.getWidth();
+            var x = i / image.getHeight();
+            var y = i % image.getHeight();
             image.setRGB(x, y, CalculatedPixel);
+        }
+    }
+    
+    public void MathOnPixels(BiConsumer<Short[],Point>MathConsumer){
+        for (int i = 0; i < getTotalPixels(); i++) {
+            var x = i / originalImage.getHeight();
+            var y = i % originalImage.getHeight();
+            MathConsumer.accept(ToWrapperArray(getRGB(i)),new Point(x, y));
         }
     }
 
     public void MathOnPixelInt(BufferedImage Destination, Function<Integer, Integer> MathFunction) {
-        for (int Line = 0; Line < originalImage.getWidth(); Line++) {
-            for (int Column = 0; Column < originalImage.getHeight(); Column++) {
-                var CalculatedPixel = MathFunction.apply(originalImage.getRGB(Line, Column));
-                Destination.setRGB(Column, Line, CalculatedPixel);
+        for (int x = 0; x < originalImage.getWidth(); x++) {
+            for (int y = 0; y < originalImage.getHeight(); y++) {
+                var CalculatedPixel = MathFunction.apply(originalImage.getRGB(x, y));
+                Destination.setRGB(x,y, CalculatedPixel);
             }
         }
     }
 
-    public byte[] getRGB(int x, int y) {
-        byte b = RGBA_Data.get(BLUE)[x * originalImage.getWidth() + y];
-        byte g = RGBA_Data.get(GREEN)[x * originalImage.getWidth() + y];
-        byte r = RGBA_Data.get(RED)[x * originalImage.getWidth() + y];
-        byte a = RGBA_Data.get(ALPHA)[x * originalImage.getWidth() + y];
-        return new byte[]{a, r, g, b};
+    public short[] getRGB(int x, int y) {
+        short b = RGBA_Data.get(BLUE)[x * originalImage.getWidth() + y];
+        short g = RGBA_Data.get(GREEN)[x * originalImage.getWidth() + y];
+        short r = RGBA_Data.get(RED)[x * originalImage.getWidth() + y];
+        short a = RGBA_Data.get(ALPHA)[x * originalImage.getWidth() + y];
+        return new short[]{a, r, g, b};
     }
 
-    public byte[] getRGB(int LinearPosition) {
+    public short[] getRGB(int LinearPosition) {
         if (LinearPosition < 0 && LinearPosition > getTotalPixels()) {
             throw new ArrayIndexOutOfBoundsException("the index Specified is not present on the image");
         }
-        byte b = RGBA_Data.get(BLUE)[LinearPosition];
-        byte g = RGBA_Data.get(GREEN)[LinearPosition];
-        byte r = RGBA_Data.get(RED)[LinearPosition];
-        byte a = RGBA_Data.get(ALPHA)[LinearPosition];
-        return new byte[]{a, r, g, b};
+        short b = RGBA_Data.get(BLUE)[LinearPosition];
+        short g = RGBA_Data.get(GREEN)[LinearPosition];
+        short r = RGBA_Data.get(RED)[LinearPosition];
+        short a = RGBA_Data.get(ALPHA)[LinearPosition];
+        return new short[]{a, r, g, b};
     }
 
-    private Byte[] ToWrapperArray(byte[] b) {
-        var result = new Byte[b.length];
+    private Short[] ToWrapperArray(short[] b) {
+        var result = new Short[b.length];
         Arrays.parallelSetAll(result, i -> b[i]);
         return result;
     }
 
-    public byte getAlpha(int x, int y) {
+    public short getAlpha(int x, int y) {
         return RGBA_Data.get(ALPHA)[x * originalImage.getWidth() + y];
     }
 
-    public byte getRed(int x, int y) {
+    public short getRed(int x, int y) {
         return RGBA_Data.get(RED)[x * originalImage.getWidth() + y];
     }
 
-    public byte getGreen(int x, int y) {
+    public short getGreen(int x, int y) {
         return RGBA_Data.get(GREEN)[x * originalImage.getWidth() + y];
     }
 
-    public byte getBlue(int x, int y) {
+    public short getBlue(int x, int y) {
         return RGBA_Data.get(BLUE)[x * originalImage.getWidth() + y];
     }
 
     BufferedImage getOriginal() {
+        //TODO: we might want to return a Clone not the actual OG.
         return originalImage;
     }
 
@@ -334,11 +337,11 @@ public class ImageContainer {
         if (Index < 0 || Index >= 8) {
             throw new ArrayIndexOutOfBoundsException("the index Specified is not present on the image");
         }
-        var image = createBIemptyCopy();//note We could just return a binary image
+        var image = createBINoAlphaemptyCopy();//note We could just return a binary image
         for (int i = 0; i < getTotalPixels(); i++) {
             var CalculatedPixel = ((RGBA_Data.get(Channel)[i] >>> Index) & 1) == 0 ? RGBMASK : FillColor.getRGB();
-            var x = i / originalImage.getWidth();
-            var y = i % originalImage.getWidth();
+            var x = i / image.getHeight();
+            var y = i % image.getHeight();
             image.setRGB(x, y, CalculatedPixel);
         }
         return image;
@@ -361,7 +364,7 @@ public class ImageContainer {
     }
 
     BufferedImage getImageForChannel(int Channel) {
-        var image = createBIemptyCopy();//note We could just return a binary image
+        var image = createBINoAlphaemptyCopy();//note We could just return a binary image
         int position;
         switch (Channel) {
             case RED:
@@ -379,8 +382,8 @@ public class ImageContainer {
         //if we need to recrete the data. we will neeed a diferent function. 
         for (int i = 0; i < getTotalPixels(); i++) {
             int CalculatedPixel = RGBA_Data.get(Channel)[i]<< position;
-            var x = i / originalImage.getWidth();
-            var y = i % originalImage.getWidth();
+            var x = i / image.getHeight();
+            var y = i % image.getHeight();
             image.setRGB(x, y, CalculatedPixel);
         }
         return image;

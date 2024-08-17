@@ -1,6 +1,6 @@
 /*
  * 
- * Copyright © 2024 Eduardo Vindas Cordoba. All rights reserved.
+ * Copyright © 2024 Eduardo Vindas. All rights reserved.
  * 
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -16,9 +16,12 @@ import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalist;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -27,6 +30,7 @@ import java.util.Objects;
 public class InvestigationTab extends Tab {
 
     class ChangePropertys {
+
         public static final String BUSY = "BUSY";
         public static final String STATEINFO = "STATE_STRING";
     }
@@ -63,8 +67,20 @@ public class InvestigationTab extends Tab {
             return;
         }
         fireTabSpecificPropertyChange(ChangePropertys.STATEINFO, null, "Starting analysis");
-        //TODO: move this to be done in Parallel. 
-//        Analist.RunTrasFormations();
+        try {
+            //TODO: move this to be done in Parallel.
+            var list = Analist.RunTrasFormations(true);
+            //jImageTabPane1.addTab("Unedited", new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/color.png")),new ImagePanel(Analist.getUnedited()));
+            PanenPlanes.add(new ImagePreviewPanel("Original", Analist.getUnedited()));
+            if (list != null) {
+                for (var pair : list) {
+                    var preview = new ImagePreviewPanel(pair.getLeft(), pair.getRight());
+                    PanenPlanes.add(preview);
+                }
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(InvestigationTab.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     public void addListener(PropertyChangeListener listener) {
@@ -120,22 +136,23 @@ public class InvestigationTab extends Tab {
         jImageTabPane1.setTabPlacement(javax.swing.JTabbedPane.BOTTOM);
 
         jScrollPane1.setOpaque(false);
+        jScrollPane1.getVerticalScrollBar().setUnitIncrement(25);
 
-        PanenPlanes.setLayout(new javax.swing.BoxLayout(PanenPlanes, javax.swing.BoxLayout.PAGE_AXIS));
+        PanenPlanes.setLayout(new java.awt.GridLayout(0, 3));
         jScrollPane1.setViewportView(PanenPlanes);
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 529, Short.MAX_VALUE)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 658, Short.MAX_VALUE)
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 410, Short.MAX_VALUE)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 455, Short.MAX_VALUE)
         );
 
-        jImageTabPane1.addTab("Transformation", new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/color.png")), jPanel1); // NOI18N
+        jImageTabPane1.addTab("Transformations", new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/color.png")), jPanel1); // NOI18N
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
@@ -147,7 +164,7 @@ public class InvestigationTab extends Tab {
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(jImageTabPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 448, Short.MAX_VALUE)
+                .addComponent(jImageTabPane1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGap(0, 0, 0)
                 .addComponent(pFooter, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );

@@ -56,7 +56,7 @@ public class ImagePanel extends javax.swing.JPanel {
      * the default image location we use on our Image panel when none is
      * provided.
      */
-    private static final String logo = "/com/aeongames/stegsolveplus/ui/Background.png";
+    private static final String logo = "/com/aeongames/stegsolveplus/ui/pexels-photo-7319068.jpeg";
     /**
      * the image to be show or process.
      */

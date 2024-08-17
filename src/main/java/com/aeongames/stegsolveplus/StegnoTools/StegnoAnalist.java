@@ -12,6 +12,7 @@
  */
 package com.aeongames.stegsolveplus.StegnoTools;
 
+import com.aeongames.edi.utils.data.Pair;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
@@ -19,6 +20,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import javax.imageio.ImageIO;
 
@@ -53,14 +56,31 @@ public class StegnoAnalist {
         this.ImageAddress = Address;
     }
 
-    public void RunTrasFormations(boolean forced) throws IOException {
+    public List<Pair<String, BufferedImage>> RunTrasFormations(boolean forced) throws IOException {
         LoadImage(forced);
-        if (ImageCache == null) {
+        if (ImageCache == null &&ImageCache.ImageIsValid()) {
+            //notify error.
             //fail to load the image we might throw a error instead? 
-            return;
+            return null;
         }
-        //TODO: update the original image is loaded 
-        //image at this point is loaded. now lets create the transformations. 
+        var list = new ArrayList<Pair<String, BufferedImage>>(40);
+        //TODO:notify image is on memory
+        ImageCache.LoadRGBData();
+        //TODO: we loaded the RGB data 
+        list.add(new Pair<>("Grey Map", TranformSymetricPixels(Color.BLACK)));
+        list.add(new Pair<>("Grey Scale", TransformGreyScale()));
+        getHSVInversions(list);
+        //list.add(new Pair<>("inverted Hue", HueInversionHSV()));
+        list.add(new Pair<>("inverted Xor", inversionRGB()));
+        list.add(new Pair<>("only Blue Pixels", getBlueImage()));
+        getImagePerBitOnBlueChannel(list);
+        list.add(new Pair<>("only Green Pixels", getImageGreenimage()));
+        getImagePerBitOnGreenChannel(list);
+        list.add(new Pair<>("only Red Pixels", getImageRedimage()));
+        getImagePerBitOnRedChannel(list);
+        list.add(new Pair<>("only ALPHA Pixels", getImageAlphaimage()));
+        getImagePerBitOnAlphaChannel(list);
+        return list;
     }
 
     /**
@@ -68,6 +88,10 @@ public class StegnoAnalist {
      * specific pixel data r=g=b. for example. if a pixel color is all 0 (black)
      * or White (all 1) or any color that for all color the data is the same for
      * example. "1f1f1f" and so on. Highlights just the pixels for which r=g=b
+     * (this is also known as "gray bits" because all R G B are the same value)
+     *
+     * @see
+     * {@link https://web.stanford.edu/class/cs101/image-6-grayscale-adva.html}
      *
      */
     private BufferedImage TranformSymetricPixels(Color FillColor) {
@@ -87,9 +111,9 @@ public class StegnoAnalist {
     private BufferedImage TranformGreyScaleSlow() {
         var transform = ImageCache.createBIemptyCopy(BufferedImage.TYPE_BYTE_GRAY);
         ImageCache.MathOnPixels(transform, RGB -> {
-            var rr = Math.pow(ImageContainer.convertToNumeric(RGB[ImageContainer.RED]) / 255.0f, 2.2f);
-            var gg = Math.pow(ImageContainer.convertToNumeric(RGB[ImageContainer.GREEN]) / 255.0f, 2.2f);
-            var bb = Math.pow(ImageContainer.convertToNumeric(RGB[ImageContainer.BLUE]) / 255.0f, 2.2f);
+            var rr = Math.pow(RGB[ImageContainer.RED] / 255.0f, 2.2f);
+            var gg = Math.pow(RGB[ImageContainer.GREEN] / 255.0f, 2.2f);
+            var bb = Math.pow(RGB[ImageContainer.BLUE] / 255.0f, 2.2f);
             // Calculate luminance:
             var lum = 0.2126f * rr + 0.7152f * gg + 0.0722f * bb;
 
@@ -99,27 +123,74 @@ public class StegnoAnalist {
         });
         return transform;
     }
+    
+    /**
+     * Inverts the color of the image using HSV Rotation. <br>
+     * <a href="https://www.niwa.nu/2013/05/math-behind-colorspace-conversions-rgb-hsl/">Source 1</a>
+     * <a href="https://geraldbakker.nl/psnumbers/hsb-explained.html">Source 2</a>
+     *
+     * @return a instance of BufferImage with the inverted HUE colors.
+     */
+    private void getHSVInversions(List<Pair<String, BufferedImage>> storage){
+        //inverted hue 
+        var transform = ImageCache.createBIemptyCopy();
+        //iverted hue and Brightness 
+        var transform2 = ImageCache.createBIemptyCopy();
+        //inverted saturation
+        var transform3 = ImageCache.createBIemptyCopy();
+        //inverted brightness only.
+         var transform4 = ImageCache.createBIemptyCopy();
+         
+        ImageCache.MathOnPixels((RGB, PixelPoint) -> {
+            float[] HSV = new float[3];
+            Color.RGBtoHSB(
+                    RGB[ImageContainer.RED],
+                    RGB[ImageContainer.GREEN],
+                    RGB[ImageContainer.BLUE],
+                    HSV);
+            var invertedHue=(HSV[0] + 0.5f) % 1f;
+            var invertedbright=1f-HSV[2];
+            var InvertedColor = Color.HSBtoRGB(invertedHue,HSV[1],HSV[2]);
+            transform.setRGB(PixelPoint.x, PixelPoint.y, InvertedColor);
+            InvertedColor = Color.HSBtoRGB(invertedHue,HSV[1],invertedbright);
+            transform2.setRGB(PixelPoint.x, PixelPoint.y, InvertedColor);
+            InvertedColor = Color.HSBtoRGB(HSV[1],1f-HSV[1],HSV[2]);
+            transform3.setRGB(PixelPoint.x, PixelPoint.y, InvertedColor);            
+            InvertedColor = Color.HSBtoRGB(HSV[1],HSV[1],invertedbright);
+            transform4.setRGB(PixelPoint.x, PixelPoint.y, InvertedColor);     
+        });
+        storage.add(new Pair<>("Inverted Hue",transform));
+        storage.add(new Pair<>("Inverted Hue and Brightness",transform2));
+        storage.add(new Pair<>("Inverted Saturation",transform3));
+        storage.add(new Pair<>("Inverted Brightness",transform4));    
+    }
 
     /**
-     * Inverts the color of the image using HSV Rotation.
+     * Inverts the color of the image using HSV Rotation. <br>
+     * <a href="https://www.niwa.nu/2013/05/math-behind-colorspace-conversions-rgb-hsl/">Source 1</a>
+     * <a href="https://geraldbakker.nl/psnumbers/hsb-explained.html">Source 2</a>
      *
-     * @return a instance of BufferImage with the inverted color data
+     * @return a instance of BufferImage with the inverted HUE colors.
      */
-    private BufferedImage inversionHSV() {
+    private BufferedImage HueInversionHSV() {
+        //inverted hue 
         var transform = ImageCache.createBIemptyCopy();
+        
         ImageCache.MathOnPixels(transform, RGB -> {
             float[] HSV = new float[3];
             Color.RGBtoHSB(
-                    ImageContainer.convertToNumeric(RGB[ImageContainer.RED]),
-                    ImageContainer.convertToNumeric(RGB[ImageContainer.GREEN]),
-                    ImageContainer.convertToNumeric(RGB[ImageContainer.BLUE]),
+                    RGB[ImageContainer.RED],
+                    RGB[ImageContainer.GREEN],
+                    RGB[ImageContainer.BLUE],
                     HSV);
-            //once with HSV 
-            var InvertedColor = Color.HSBtoRGB((HSV[0] + 180) % 360, HSV[1], HSV[2]);
+            /**
+             */
+            var InvertedColor = Color.HSBtoRGB((HSV[0] + 0.5f) % 1f, HSV[1], HSV[2]);
             return InvertedColor;
         });
         return transform;
     }
+
 
     /**
      * Inverts the RGB color of the image.
@@ -164,52 +235,56 @@ public class StegnoAnalist {
         }
         return ImageCache.getAlphaForIndex(Index & 8, FillColor);
     }
-    
-    private BufferedImage[] getImagePerBitOnBlueChannel(){
-        var BitsImages=new BufferedImage[8];
-        for(int index=0;index<BitsImages.length;index++){
-            BitsImages[index]=ImageCache.getBlueForIndex(index, Color.BLUE);
+
+    private BufferedImage[] getImagePerBitOnBlueChannel(List<Pair<String, BufferedImage>> storage) {
+        var BitsImages = new BufferedImage[8];
+        for (int index = 0; index < BitsImages.length; index++) {
+            BitsImages[index] = ImageCache.getBlueForIndex(index, Color.BLUE);
+            storage.add(new Pair<>(String.format("Blue bit Index %d", index), BitsImages[index]));
         }
         return BitsImages;
     }
-    
-    private BufferedImage getBlueImage(){
+
+    private BufferedImage getBlueImage() {
         return ImageCache.getBlueImage();
     }
-    
-    private BufferedImage[] getImagePerBitOnGreenChannel(){
-        var BitsImages=new BufferedImage[8];
-        for(int index=0;index<BitsImages.length;index++){
-            BitsImages[index]=ImageCache.getGreenForIndex(index, Color.GREEN);
+
+    private BufferedImage[] getImagePerBitOnGreenChannel(List<Pair<String, BufferedImage>> storage) {
+        var BitsImages = new BufferedImage[8];
+        for (int index = 0; index < BitsImages.length; index++) {
+            BitsImages[index] = ImageCache.getGreenForIndex(index, Color.GREEN);
+            storage.add(new Pair<>(String.format("Green bit Index %d", index), BitsImages[index]));
         }
         return BitsImages;
     }
-    
-    private BufferedImage getImageGreenimage(){
+
+    private BufferedImage getImageGreenimage() {
         return ImageCache.getGreenImage();
     }
-    
-    private BufferedImage[] getImagePerBitOnRedChannel(){
-        var BitsImages=new BufferedImage[8];
-        for(int index=0;index<BitsImages.length;index++){
-            BitsImages[index]=ImageCache.getRedForIndex(index, Color.RED);
+
+    private BufferedImage[] getImagePerBitOnRedChannel(List<Pair<String, BufferedImage>> storage) {
+        var BitsImages = new BufferedImage[8];
+        for (int index = 0; index < BitsImages.length; index++) {
+            BitsImages[index] = ImageCache.getRedForIndex(index, Color.RED);
+            storage.add(new Pair<>(String.format("Red bit Index %d", index), BitsImages[index]));
         }
         return BitsImages;
     }
-    
-    private BufferedImage getImageRedimage(){
+
+    private BufferedImage getImageRedimage() {
         return ImageCache.getRedImage();
     }
-    
-    private BufferedImage[] getImagePerBitOnAlphaChannel(){
-        var BitsImages=new BufferedImage[8];
-        for(int index=0;index<BitsImages.length;index++){
-            BitsImages[index]=ImageCache.getAlphaForIndex(index, Color.BLACK);
+
+    private BufferedImage[] getImagePerBitOnAlphaChannel(List<Pair<String, BufferedImage>> storage) {
+        var BitsImages = new BufferedImage[8];
+        for (int index = 0; index < BitsImages.length; index++) {
+            BitsImages[index] = ImageCache.getAlphaForIndex(index, Color.BLACK);
+            storage.add(new Pair<>(String.format("Alpha bit Index %d", index), BitsImages[index]));
         }
         return BitsImages;
     }
-    
-    private BufferedImage getImageAlphaimage(){
+
+    private BufferedImage getImageAlphaimage() {
         return ImageCache.getAlphaImage();
     }
 
@@ -225,6 +300,10 @@ public class StegnoAnalist {
         } else {
             ImageCache = new ImageContainer(ImageAddress);
         }
+    }
+
+    public BufferedImage getUnedited() {
+        return ImageCache.getOriginal();
     }
 
 }

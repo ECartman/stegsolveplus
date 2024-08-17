@@ -1,5 +1,5 @@
 /* 
- * Copyright © 2024 Eduardo Vindas Cordoba. All rights reserved.
+ * Copyright © 2024 Eduardo Vindas. All rights reserved.
  * 
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -32,7 +32,7 @@ import org.pushingpixels.radiance.theming.api.skin.RadianceNightShadeLookAndFeel
  * @author Eduardo
  */
 public class MainFrame extends javax.swing.JFrame {
-    
+
     private int BusyTabs;
 
     /**
@@ -56,6 +56,7 @@ public class MainFrame extends javax.swing.JFrame {
         FileMenu = new javax.swing.JMenu();
         MOpen = new javax.swing.JMenuItem();
         jMenu2 = new javax.swing.JMenu();
+        jMenuItem1 = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setMinimumSize(new java.awt.Dimension(370, 510));
@@ -78,6 +79,15 @@ public class MainFrame extends javax.swing.JFrame {
         MainMenu.add(FileMenu);
 
         jMenu2.setText("Actions");
+
+        jMenuItem1.setText("Run Image Study");
+        jMenuItem1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem1ActionPerformed(evt);
+            }
+        });
+        jMenu2.add(jMenuItem1);
+
         MainMenu.add(jMenu2);
 
         setJMenuBar(MainMenu);
@@ -107,9 +117,9 @@ public class MainFrame extends javax.swing.JFrame {
         JFileChooser fileChooser = new JFileChooser(System.getProperty("user.dir"));
         StringBuilder descriptor = new StringBuilder("Images (");
         var list2 = StegnoAnalist.ValidImagesFiles;
-        for (int index = 0; index < list2.length;index++) {
+        for (int index = 0; index < list2.length; index++) {
             descriptor.append(list2[index]);
-            if (index+1 < list2.length) {
+            if (index + 1 < list2.length) {
                 descriptor.append(',').append(' ');
             }
         }
@@ -124,11 +134,18 @@ public class MainFrame extends javax.swing.JFrame {
                 MOpen.setEnabled(true);
             }
             //TODO remove this reenabled. and only reenable once the task to load is done. 
-            //MOpen.setEnabled(true);
+            MOpen.setEnabled(true);
         } else {
             MOpen.setEnabled(true);
         }
     }//GEN-LAST:event_MOpenActionPerformed
+
+    private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
+        var currentTab = MainTabPane.getSelectedComponent();
+        if (currentTab instanceof InvestigationTab ITab) {
+                ITab.RunAnalist(true);
+        }
+    }//GEN-LAST:event_jMenuItem1ActionPerformed
 
     /**
      * check if the file exist and can be read. if so lets create a new tab per
@@ -205,6 +222,7 @@ public class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenuBar MainMenu;
     private com.aeongames.stegsolveplus.ui.JStegnoTabbedPane MainTabPane;
     private javax.swing.JMenu jMenu2;
+    private javax.swing.JMenuItem jMenuItem1;
     // End of variables declaration//GEN-END:variables
     // </editor-fold>  
 
