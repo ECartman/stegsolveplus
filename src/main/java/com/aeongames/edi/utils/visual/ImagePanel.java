@@ -1,6 +1,5 @@
 /*
- *
- * Copyright © 2008-2012 Eduardo Vindas. All rights reserved.
+ * Copyright © 2008-2012,2024 Eduardo Vindas. All rights reserved.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -15,64 +14,70 @@ package com.aeongames.edi.utils.visual;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.Objects;
 import javax.imageio.ImageIO;
 
 /**
- * a panel that will display a image within.
+ * a JPanel that support to display a background image on the panel itself.
  *
  * @author Eduardo Vindas
  */
 public class ImagePanel extends javax.swing.JPanel {
 
-    /**
-     * variable to determine a policy where allow the image from a ImagePanel to
-     * scale the image to a smaller size only used for when you want to show a
-     * image up to its original size
-     */
-    public static final int SCALE_SMALL_ONLY = 0;
-    /**
-     * variable to determine a policy where allow the image from a ImagePanel to
-     * scale the image to the size required to show on the panel but with
-     * respecting the aspect ratio of the image, also will be center
-     */
-    public static final int SCALE_ALWAYS = 1;
-    /**
-     * will scale the image to use ALL the space of the panel will not try to
-     * keep the ratio will not keep the aspect will fill the hold panel space.
-     * this thought is not a good idea.
-     */
-    public static final int SCALE_USE_ALL_SPACE = 2;
-    /**
-     * will Not Scale the image, but will instead use the image as A texture to
-     * be used to Paint the background of the Panel.
-     */
-    public static final int NO_SCALABLE_TEXTURE = 3;
+    public static enum ImgScales {
+        /**
+         * variable to determine a policy where allow the image from a
+         * ImagePanel to scale the image to a smaller size only used for when
+         * you want to show a image up to its original size
+         */
+        SCALE_SMALL_ONLY,
+        /**
+         * variable to determine a policy where allow the image from a
+         * ImagePanel to scale the image to the size required to show on the
+         * panel but keep the aspect ratio of the image, also will be center
+         */
+        SCALE_ALWAYS,
+        /**
+         * will scale the image to use ALL the space of the panel will not try
+         * to keep the ratio will not keep the aspect will fill the hold panel
+         * space. this thought is not a good idea.
+         */
+        SCALE_USE_ALL_SPACE,
+        /**
+         * will Not Scale the image, but will instead use the image as A texture
+         * to be used to Paint the background of the Panel. (repeated as much as
+         * needed)
+         */
+        NO_SCALABLE_TEXTURE
+    };
+
     /**
      * the policy to use to resize and or print the image the default is Scale
      * Small Only
      */
-    private int scale_policy = SCALE_SMALL_ONLY;
+    private ImgScales ScalePolicy = ImgScales.SCALE_SMALL_ONLY;
     /**
      * the default image location we use on our Image panel when none is
      * provided.
      */
-    private static final String logo = "/com/aeongames/stegsolveplus/ui/pexels-photo-7319068.jpeg";
+    private static final String DEF_LOGO = "/com/aeongames/stegsolveplus/ui/pexels-photo-7319068.jpeg";
     /**
      * the image to be show or process.
      */
-    private Image ORGimg = null;
+    private Image OriginalImage = null;
     /**
      * the image to be show or process.
      */
-    private Image img;
+    private Image RenderImage;
     /**
      * the image transparency level.
      */
     private float translucent = 1.0f;
     /**
-     * if the Texture paint enabled. this 2 settings allow us to know if the texture should be repeated on X and or on Y axis
+     * if the Texture paint enabled. this 2 settings allow us to know if the
+     * texture should be repeated on X and or on Y axis
      */
-    private boolean repeat_X=true,repeat_Y=true;
+    private boolean repeat_X = true, repeat_Y = true;
     /**
      * minimal transparency
      */
@@ -92,11 +97,12 @@ public class ImagePanel extends javax.swing.JPanel {
      * the Image Panel is a normal Swing panel that just change the way it draws
      * the background instead of the silly and boring color will draw a image
      * whenever is required or wanted to be implemented.
+     *
      * @param todisplay
      */
     public ImagePanel(Image todisplay) {
         if (todisplay != null) {
-            img = todisplay;
+            RenderImage = todisplay;
         } else {
             readDefault();
         }
@@ -107,12 +113,13 @@ public class ImagePanel extends javax.swing.JPanel {
      * the Image Panel is a normal Swing panel that just change the way it draws
      * the background instead of the silly and boring color will draw a image
      * whenever is required or wanted to be implemented.
+     *
      * @param todisplay
      * @param alpha
      */
     public ImagePanel(Image todisplay, float alpha) {
         if (todisplay != null) {
-            img = todisplay;
+            RenderImage = todisplay;
         } else {
             readDefault();
         }
@@ -127,9 +134,8 @@ public class ImagePanel extends javax.swing.JPanel {
      * sets the dimensions for this panel according to the image.
      */
     private void set() {
-        java.awt.Dimension size = new java.awt.Dimension(img.getWidth(this), img.getHeight(this));
+        java.awt.Dimension size = new java.awt.Dimension(RenderImage.getWidth(this), RenderImage.getHeight(this));
         setSize(size);
-        //        setLayout(null);
     }
 
     /**
@@ -137,19 +143,28 @@ public class ImagePanel extends javax.swing.JPanel {
      * required, otherwise just set the image.
      */
     private void config() {
-        if (translucent >= MINTRASPT && translucent < 1.0f) {
-            if (ORGimg == null || !(ORGimg instanceof BufferedImage)) {
-                ORGimg = ImageUtils.toBufferedImage(img);
-            }
-            BufferedImage aimg = new BufferedImage(((BufferedImage) ORGimg).getWidth(), ((BufferedImage) ORGimg).getHeight(), BufferedImage.TRANSLUCENT);
-            Graphics2D g2 = aimg.createGraphics();
+        if (Objects.isNull(RenderImage)) {
+            return;//nothing to config
+        }
+        if (translucent < MINTRASPT || translucent >= 1.0f) {
+            return;
+        }
+        BufferedImage BuffOrigin;
+        if (RenderImage instanceof BufferedImage providedBuffIma) {
+            BuffOrigin = providedBuffIma;
+        } else {
+            BuffOrigin = ImageUtils.toBufferedImage(RenderImage);
+        }
+        /*done with checks BuffOrigin COULD be null here but if so the code SHOULD puke that is OK here. */
+        if (BuffOrigin.getType() != BufferedImage.TRANSLUCENT) {
+            var TransparentAppliedBuffer = new BufferedImage(BuffOrigin.getWidth(), BuffOrigin.getHeight(), BufferedImage.TRANSLUCENT);
+            Graphics2D g2 = TransparentAppliedBuffer.createGraphics();
             g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, translucent));
-            g2.drawImage(((BufferedImage) ORGimg), null, 0, 0);
+            g2.drawImage(BuffOrigin, null, 0, 0);
             // let go of all system resources in this Graphics  
             g2.dispose();
-            img = aimg;
-        } else if (ORGimg != null) {
-            img = ORGimg;
+            OriginalImage = RenderImage;
+            RenderImage = TransparentAppliedBuffer;
         }
     }
 
@@ -158,9 +173,13 @@ public class ImagePanel extends javax.swing.JPanel {
      */
     private void readDefault() {
         try {
-            this.img = ImageIO.read(this.getClass().getResource(logo));
+            this.RenderImage = ImageIO.read(this.getClass().getResource(DEF_LOGO));
         } catch (IOException ex) {
-            this.img = java.awt.Toolkit.getDefaultToolkit().getImage(this.getClass().getResource(logo));
+            try {
+                this.RenderImage = java.awt.Toolkit.getDefaultToolkit().getImage(this.getClass().getResource(DEF_LOGO));
+            } catch (Exception sub) {
+                //we should print error if debug build. here. 
+            }
         }
     }
 
@@ -168,39 +187,35 @@ public class ImagePanel extends javax.swing.JPanel {
      * sets the policy for resize the background image acceptable parameters
      * SCALE_ALWAYS SCALE_USE_ALL_SPACE SCALE_SMALL_ONLY
      *
+     * @param policy the policy to use.
      * @throws IllegalArgumentException if a invalid parameter is sent
      */
-    public void setbackground_policy(int policy) {
-        //check if the param is valid
-        if (policy == SCALE_ALWAYS
-                || policy == SCALE_SMALL_ONLY
-                || policy == SCALE_USE_ALL_SPACE
-                || policy == NO_SCALABLE_TEXTURE) {
-            scale_policy = policy;
-        } else {
-            throw new java.lang.IllegalArgumentException("the value " + policy + " is invalid");
-        }
+    public void setbackground_policy(ImgScales policy) {
+        Objects.requireNonNull(policy, "Invalid Policy");
+        ScalePolicy = policy;
     }
 
     /**
      * this method changes the image of the panel.
      *
      * @param todisplay the image to display
-     * @return boolean determine whenever or not the change were successful or
-     * not if the image is the same as before this will return false.
+     * @return either true or false determine whenever or not the change were
+     * successful or not if the image is the same as before this will return
+     * false.
      */
     public final boolean changeImage(Image todisplay) {
         boolean result = false;
-        if (todisplay != null) {
-            if (img != todisplay) {
-                img = todisplay;
-                ORGimg = null;
+        if (todisplay == null) {
+            OriginalImage = null;
+            readDefault();
+        } else {
+            if ((OriginalImage != null && OriginalImage != todisplay) 
+                    || RenderImage != todisplay) {
+                RenderImage = todisplay;
+                OriginalImage = null;
                 config();
             }
             result = true;
-        } else {
-            ORGimg = null;
-            readDefault();
         }
         repaint();
         return result;
@@ -228,24 +243,26 @@ public class ImagePanel extends javax.swing.JPanel {
      */
     protected final void returntodefault() {
         readDefault();
-        ORGimg = null;
+        OriginalImage = null;
         translucent = 1.0f;
         repaint();
     }
 
     /**
      * returns the current policy
+     *
+     * @return current policy
      */
-    public final int getBacgroundScalePolicy() {
-        return scale_policy;
+    public final ImgScales getBackgroundScalePolicy() {
+        return ScalePolicy;
     }
-    
-    public final void setRepeatX(boolean repeat){
-        repeat_X=repeat;
+
+    public final void setRepeatX(boolean repeat) {
+        repeat_X = repeat;
     }
-    
-    public final void setRepeatY(boolean repeat){
-        repeat_Y=repeat;
+
+    public final void setRepeatY(boolean repeat) {
+        repeat_Y = repeat;
     }
 
     @Override
@@ -258,20 +275,18 @@ public class ImagePanel extends javax.swing.JPanel {
                 RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 //       ((Graphics2D) g).setRenderingHint(RenderingHints.KEY_RENDERING,
 //                RenderingHints.VALUE_RENDER_QUALITY);
-        switch (scale_policy) {
-            case (SCALE_SMALL_ONLY):
-                paint_to_size(g);
-                break;
-            case (SCALE_ALWAYS):
+        switch (ScalePolicy) {
+            case ImgScales.SCALE_ALWAYS:
                 paint_respect_ratio(g);
                 break;
-            case (SCALE_USE_ALL_SPACE):
+            case ImgScales.SCALE_USE_ALL_SPACE:
                 paint_default(g);
                 break;
-            case NO_SCALABLE_TEXTURE:
+            case ImgScales.NO_SCALABLE_TEXTURE:
                 paintsTexture(g);
                 break;
-            default:
+            default:/*do the same as SCALE_SMALL_ONLY by default*/
+            case ImgScales.SCALE_SMALL_ONLY:
                 //meh lets set paint to size as default if somthing is wrong...
                 paint_to_size(g);
                 break;
@@ -284,10 +299,10 @@ public class ImagePanel extends javax.swing.JPanel {
      * not forced size also will center the image
      */
     private void paint_to_size(Graphics g) {
-        if (img.getWidth(null) > -1 && img.getWidth(null) < this.getWidth() && img.getHeight(null) < this.getHeight()) {
-            int Width = (this.getWidth() / 2) - img.getWidth(null) / 2;
-            int Height = (this.getHeight() / 2) - img.getHeight(null) / 2;
-            g.drawImage(img, Width, Height, img.getWidth(null), img.getHeight(null), this);
+        if (RenderImage.getWidth(null) > -1 && RenderImage.getWidth(null) < this.getWidth() && RenderImage.getHeight(null) < this.getHeight()) {
+            int Width = (this.getWidth() / 2) - RenderImage.getWidth(null) / 2;
+            int Height = (this.getHeight() / 2) - RenderImage.getHeight(null) / 2;
+            g.drawImage(RenderImage, Width, Height, RenderImage.getWidth(null), RenderImage.getHeight(null), this);
         } else {
             paint_respect_ratio(g);
         }
@@ -300,8 +315,8 @@ public class ImagePanel extends javax.swing.JPanel {
      */
     private void paint_respect_ratio(Graphics g) {
         //ok now we want to keep the image ratio so lets try the new aproach
-        int[] size = ImageUtils.keep_ratio_for_size(this.getWidth(), this.getHeight(), img);
-        g.drawImage(img, size[2], size[3], size[0], size[1], this);
+        int[] size = ImageUtils.keep_ratio_for_size(this.getWidth(), this.getHeight(), RenderImage);
+        g.drawImage(RenderImage, size[2], size[3], size[0], size[1], this);
     }
 
     /**
@@ -309,7 +324,7 @@ public class ImagePanel extends javax.swing.JPanel {
      * not respect the ratio will fill the hold panel.
      */
     private void paint_default(Graphics g) {
-        g.drawImage(img, 0, 0, this.getWidth(), this.getHeight(), this);
+        g.drawImage(RenderImage, 0, 0, this.getWidth(), this.getHeight(), this);
     }
 
     /**
@@ -318,20 +333,20 @@ public class ImagePanel extends javax.swing.JPanel {
      * @param g
      */
     private void paintsTexture(Graphics g) {
-        if (!(img instanceof BufferedImage)) {
-            ORGimg = ImageUtils.toBufferedImage(img);
-            img = ORGimg;
+        if (!(RenderImage instanceof BufferedImage)) {
+            OriginalImage = ImageUtils.toBufferedImage(RenderImage);
+            RenderImage = OriginalImage;
         }
         Paint tempaint = ((Graphics2D) g).getPaint();
-        TexturePaint textpaint = new TexturePaint((BufferedImage) img, new Rectangle(0, 0, ((BufferedImage) img).getWidth(), ((BufferedImage) img).getHeight()));
+        TexturePaint textpaint = new TexturePaint((BufferedImage) RenderImage, new Rectangle(0, 0, ((BufferedImage) RenderImage).getWidth(), ((BufferedImage) RenderImage).getHeight()));
         ((Graphics2D) g).setPaint(textpaint);
-        int Xupto=getWidth();
-        if(!repeat_X){
-          Xupto=((BufferedImage) img).getWidth();
+        int Xupto = getWidth();
+        if (!repeat_X) {
+            Xupto = ((BufferedImage) RenderImage).getWidth();
         }
-        int yupto=getHeight();
-        if(!repeat_Y){
-          yupto=((BufferedImage) img).getHeight();
+        int yupto = getHeight();
+        if (!repeat_Y) {
+            yupto = ((BufferedImage) RenderImage).getHeight();
         }
         ((Graphics2D) g).fillRect(0, 0, Xupto, yupto);
         ((Graphics2D) g).setPaint(tempaint);
@@ -342,10 +357,9 @@ public class ImagePanel extends javax.swing.JPanel {
      * method is called.
      */
     public Dimension getImageSize() {
-        if (img != null) {
-            return new Dimension(img.getWidth(null) == -1 ? 0 : img.getWidth(null),
-                    img.getHeight(null) == -1 ? 0 : img.getHeight(null));
-
+        if (RenderImage != null) {
+            return new Dimension(RenderImage.getWidth(null) == -1 ? 0 : RenderImage.getWidth(null),
+                    RenderImage.getHeight(null) == -1 ? 0 : RenderImage.getHeight(null));
         } else {
             return new Dimension();
         }
