@@ -118,8 +118,8 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
             .addComponent(translucentpanel1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
     }// </editor-fold>//GEN-END:initComponents
-
-
+    
+    
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private com.aeongames.edi.utils.visual.ImagePanel ImagePreviewPanel;
     private javax.swing.JPanel jPanel1;

@@ -59,7 +59,7 @@ public class JImageTabPane extends javax.swing.JTabbedPane {
      * creates a new instance of the JImageTabPane tab pane using the selected
      * image parsed by parameter.
      *
-     * @param todisplay <code> java.awt.Image </code> to display, the image to display on
+     * @param todisplay the {@link java.awt.Image} to display, the image to display on
      * the pane
      */
     public JImageTabPane(Image todisplay) {

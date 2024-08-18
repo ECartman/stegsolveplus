@@ -43,6 +43,7 @@ import javax.swing.SwingUtilities;
  */
 public class JAeonTabPane extends JImageTabPane {
 
+    // <editor-fold defaultstate="collapsed" desc="variables">
     /**
      * a transparent panel that is use to paint transparent components and
      * images.
@@ -105,7 +106,9 @@ public class JAeonTabPane extends JImageTabPane {
      * the implementation color can be changed where required.
      */
     private Color lineColor = new Color(0, 100, 255);
+    // </editor-fold>
 
+    // <editor-fold defaultstate="collapsed" desc="Constructors">
     /**
      * creates a new instance of the Aeon tab pane using the Default Logo
      */
@@ -125,7 +128,81 @@ public class JAeonTabPane extends JImageTabPane {
         super(todisplay);
         initdnd();
     }
+    // </editor-fold>
 
+    // <editor-fold defaultstate="collapsed" desc="small setters and getters">
+    /**
+     * set the variable for paint the ghost image shown when we drag a tab.
+     *
+     * @param flag
+     */
+    public void setPaintGhost(boolean flag) {
+        hasGhost = flag;
+    }
+
+    /**
+     * set whenever we want to paint the sides of the tab pane when dragging
+     *
+     * @param flag the new value if to paint the sides of the tab pane when
+     * dragging
+     */
+    public void setPaintScrollArea(boolean flag) {
+        isPaintScrollArea = flag;
+    }
+
+    /**
+     * returns whenever we are painting the ghost image of the tab or not,
+     *
+     * @return whenever we are painting the ghost image of the tab or not
+     */
+    public boolean hasGhost() {
+        return hasGhost;
+    }
+
+    /**
+     * get whenever we want to paint the sides of the tab pane when dragging
+     *
+     * @return
+     */
+    public boolean isPaintScrollArea() {
+        return isPaintScrollArea;
+    }
+    // </editor-fold>
+
+    /**
+     * causes the Tab pane to scroll if the
+     * {@link javax.swing.JTabbedPane#SCROLL_TAB_LAYOUT} policy is enabled on
+     * this Pane. is required to determine whenever is require to scroll forward
+     * of backwards. (via the parameter.)
+     *
+     * @param forward {@code boolean} to determine whenever is require to scroll
+     * forward or backwards.
+     */
+    protected final void scrolldirection(boolean forward) {
+        if (getTabLayoutPolicy() == SCROLL_TAB_LAYOUT) {
+            if (forward) {
+                TriggerAction("scrollTabsForwardAction");
+            } else {
+                TriggerAction("scrollTabsBackwardAction");
+            }
+        }
+    }
+
+    /**
+     * triggers an action from the action map with the name that is provided on
+     * the parameter.
+     * WE ASSUME the provided value is NOT null.
+     */
+    private void TriggerAction(String actionKey) {
+        ActionMap map = getActionMap();
+        if (map != null) {
+            Action action = map.get(actionKey);
+            if (action != null && action.isEnabled()) {
+                action.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, null, 0, 0));
+            }
+        }
+    }
+    
     /**
      * initializes the Drag And Drop Component.
      *
@@ -235,39 +312,25 @@ public class JAeonTabPane extends JImageTabPane {
         new DragSource().createDefaultDragGestureRecognizer(this, DnDConstants.ACTION_COPY_OR_MOVE, dgl);
     }
 
-    /**
-     * causes the Tab pane to scroll if the
-     * {@link javax.swing.JTabbedPane#SCROLL_TAB_LAYOUT} policy is enabled on
-     * this Pane. is required to determine whenever is require to scroll forward
-     * of backwards. (via the parameter.)
-     *
-     * @param forward {@code boolean} to determine whenever is require to scroll
-     * forward or backwards.
-     */
-    protected final void scrolldirection(boolean forward) {
-        if (getTabLayoutPolicy() == SCROLL_TAB_LAYOUT) {
-            if (forward) {
-                TriggerAction("scrollTabsForwardAction");
-            } else {
-                TriggerAction("scrollTabsBackwardAction");
+    private void initGlassPane(Component c, Point tabPt) {
+        if (getRootPane().getGlassPane() != glassPane) {
+            getRootPane().setGlassPane(glassPane);
+        }
+        if (hasGhost()) {
+            Rectangle rect = getBoundsAt(dragIndex);
+            BufferedImage image = new BufferedImage(c.getWidth(), c.getHeight(), BufferedImage.TYPE_INT_ARGB);
+            Graphics g = image.getGraphics();
+            c.paint(g);
+            if (rect != null) {
+                rect.x = rect.x < 0 ? 0 : rect.x;
+                rect.y = rect.y < 0 ? 0 : rect.y;
+                image = image.getSubimage(rect.x, rect.y, rect.width, rect.height);
+                glassPane.setImage(image);
             }
         }
-    }
-
-    /**
-     * triggers an action from the action map with the name that is provided on
-     * the parameter.
-     */
-    private void TriggerAction(String actionKey) {
-        if (actionKey != null) {
-            ActionMap map = getActionMap();
-            if (map != null) {
-                Action action = map.get(actionKey);
-                if (action != null && action.isEnabled()) {
-                    action.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, null, 0, 0));
-                }
-            }
-        }
+        Point glassPt = SwingUtilities.convertPoint(c, tabPt, glassPane);
+        glassPane.setPoint(glassPt);
+        glassPane.setVisible(true);
     }
 
     /**
@@ -448,43 +511,6 @@ public class JAeonTabPane extends JImageTabPane {
     }
 
     /**
-     * set the variable for paint the ghost image shown when we drag a tab.
-     *
-     * @param flag
-     */
-    public void setPaintGhost(boolean flag) {
-        hasGhost = flag;
-    }
-
-    /**
-     * returns whenever we are painting the ghost image of the tab or not,
-     *
-     * @return whenever we are painting the ghost image of the tab or not
-     */
-    public boolean hasGhost() {
-        return hasGhost;
-    }
-
-    /**
-     * set whenever we want to paint the sides of the tab pane when dragging
-     *
-     * @param flag the new value if to paint the sides of the tab pane when
-     * dragging
-     */
-    public void setPaintScrollArea(boolean flag) {
-        isPaintScrollArea = flag;
-    }
-
-    /**
-     * get whenever we want to paint the sides of the tab pane when dragging
-     *
-     * @return
-     */
-    public boolean isPaintScrollArea() {
-        return isPaintScrollArea;
-    }
-
-    /**
      * gets the TARGET index for the Position selected. this method is intended
      * to highlight the area where the TAB WOULD land (the in between tabs) thus
      * for example. if we want a tab to land as first tab the "in between" when
@@ -588,27 +614,6 @@ public class JAeonTabPane extends JImageTabPane {
             Rectangle r = SwingUtilities.convertRectangle(this, getBoundsAt(next - 1), glassPane);
             lineRect.setRect(r.x, r.y + r.height - LINEWIDTH / 2, r.width, LINEWIDTH);
         }
-    }
-
-    private void initGlassPane(Component c, Point tabPt) {
-        if (getRootPane().getGlassPane() != glassPane) {
-            getRootPane().setGlassPane(glassPane);
-        }
-        if (hasGhost()) {
-            Rectangle rect = getBoundsAt(dragIndex);
-            BufferedImage image = new BufferedImage(c.getWidth(), c.getHeight(), BufferedImage.TYPE_INT_ARGB);
-            Graphics g = image.getGraphics();
-            c.paint(g);
-            if (rect != null) {
-                rect.x = rect.x < 0 ? 0 : rect.x;
-                rect.y = rect.y < 0 ? 0 : rect.y;
-                image = image.getSubimage(rect.x, rect.y, rect.width, rect.height);
-                glassPane.setImage(image);
-            }
-        }
-        Point glassPt = SwingUtilities.convertPoint(c, tabPt, glassPane);
-        glassPane.setPoint(glassPt);
-        glassPane.setVisible(true);
     }
 
     /**
