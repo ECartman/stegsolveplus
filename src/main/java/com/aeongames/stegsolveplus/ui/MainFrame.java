@@ -11,7 +11,7 @@
  */
 package com.aeongames.stegsolveplus.ui;
 
-import com.aeongames.edi.utils.visual.JAeonTabPane;
+import com.aeongames.edi.utils.visual.ImageScaleComponents;
 import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalist;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -61,7 +61,7 @@ public class MainFrame extends javax.swing.JFrame {
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setMinimumSize(new java.awt.Dimension(370, 510));
 
-        MainTabPane.setbackground_policy(JAeonTabPane.SCALE_ALWAYS);
+        MainTabPane.setbackground_policy(ImageScaleComponents.SCALE_ALWAYS);
 
         FileMenu.setText("File");
         FileMenu.setToolTipText("File Menu");
@@ -152,6 +152,7 @@ public class MainFrame extends javax.swing.JFrame {
      * file
      */
     private boolean loadImages(File[] selecteddata) {
+        var loadedTabs=false;
         for (var file : selecteddata) {
             if (file.exists() && file.isFile() && file.canRead()) {
                 InvestigationTab tab = null;
@@ -164,11 +165,11 @@ public class MainFrame extends javax.swing.JFrame {
                 }
                 if (tab != null) {
                     MainTabPane.add(tab);
-                    return true;
+                    loadedTabs=true;// we m,ight want to do something extra here. but this will do for now. 
                 }
             }
         }
-        return false;
+        return loadedTabs;
     }
 
     // <editor-fold defaultstate="collapsed" desc="Start Up Functions">

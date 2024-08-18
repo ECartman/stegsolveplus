@@ -12,63 +12,46 @@
  */
 package com.aeongames.edi.utils.visual;
 
+import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.RenderingHints;
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.Objects;
+import javax.imageio.ImageIO;
 
 /**
- * a class that renders a Image on the background of the TabPane. instead of 
- * just a flat color. 
- * this is only applicable when there are no tabs on display. 
+ * a class that renders a Image on the background of the TabPane. instead of
+ * just a flat color. this is only applicable when there are no tabs on display.
  *
- * @author Eduardo Vindas C
+ * @author Eduardo Vindas
  */
 public class JImageTabPane extends javax.swing.JTabbedPane {
 
     /**
-     * variable to determine a policy where allow the image from a ImagePanel to
-     * scale the image to a smaller size only used for when you want to show a
-     * image up to its original size
-     */
-    public static final int SCALE_SMALL_ONLY = 0;
-    /**
-     * variable to determine a policy where allow the image from a ImagePanel to
-     * scale the image to the size required to show on the panel but with
-     * respecting the aspect ratio of the image, also will be center
-     */
-    public static final int SCALE_ALWAYS = 1;
-    /**
-     * will scale the image to use ALL the space of the panel will not try to
-     * keep the ratio will not keep the aspect will fill the hold panel space.
-     * this thought is not a good idea.
-     */
-    public static final int SCALE_USE_ALL_SPACE = 2;
-    /**
      * the policy to use to resize and or print the image the default is Scale
      * Small Only
      */
-    private int scale_policy = SCALE_SMALL_ONLY;
+    private ImageScaleComponents ScalePolicy = ImageScaleComponents.SCALE_SMALL_ONLY;
     /**
      * the default image location we use on our Image panel when none is
      * provided.
      */
-    private static final String logo = "/com/aeongames/stegsolveplus/ui/pexels-photo-7319068.jpeg";
+    private static final String DEF_LOGO = ImagePanel.DEF_LOGO;
     /**
      * the image to be show or process.
      */
     private Image img;
 
     /**
-     * creates a new instance of the JImageTabPane tab pane using the Aeongames
-     * Logo
+     * creates a new instance of the JImageTabPane tab pane using the Logo
      */
     public JImageTabPane() {
         super();
-        this.img = java.awt.Toolkit.getDefaultToolkit().getImage(this.getClass().getResource(logo));
-        java.awt.Dimension size = new java.awt.Dimension(img.getWidth(this), img.getHeight(this));
-        setSize(size);
+        img = loadDefault();
+        setSize(new Dimension(img.getWidth(null), img.getHeight(null)));
         this.setTabLayoutPolicy(javax.swing.JTabbedPane.SCROLL_TAB_LAYOUT);
     }
 
@@ -76,20 +59,33 @@ public class JImageTabPane extends javax.swing.JTabbedPane {
      * creates a new instance of the JImageTabPane tab pane using the selected
      * image parsed by parameter.
      *
-     * @param <code>java.awt.Image</code> to display, the image to display on
+     * @param todisplay <code> java.awt.Image </code> to display, the image to display on
      * the pane
-     * @param todisplay
      */
     public JImageTabPane(Image todisplay) {
         super();
         if (todisplay != null) {
-            this.img = todisplay;
+            img = todisplay;
         } else {
-            this.img = java.awt.Toolkit.getDefaultToolkit().getImage(this.getClass().getResource(logo));
+            img = loadDefault();
         }
-        java.awt.Dimension size = new java.awt.Dimension(img.getWidth(this), img.getHeight(this));
+        java.awt.Dimension size = new java.awt.Dimension(img.getWidth(null), img.getHeight(null));
         setSize(size);
         this.setTabLayoutPolicy(javax.swing.JTabbedPane.SCROLL_TAB_LAYOUT);
+    }
+    
+        private Image loadDefault() {
+        Image loaded = null;
+        try {
+            loaded = ImageIO.read(this.getClass().getResource(DEF_LOGO));
+        } catch (IOException ex) {
+            try {
+                loaded = java.awt.Toolkit.getDefaultToolkit().getImage(this.getClass().getResource(DEF_LOGO));
+            } catch (Exception sub) {
+                //we should print error if debug build. here. 
+            }
+        }
+        return loaded;
     }
 
     @Override
@@ -105,18 +101,15 @@ public class JImageTabPane extends javax.swing.JTabbedPane {
         RenderingHints rh = new RenderingHints(tmp);
         g2.setRenderingHints(rh);
         if (this.getTabCount() == 0) {
-            switch (scale_policy) {
-                case (SCALE_SMALL_ONLY):
-                    paint_to_size(g);
-                    break;
-                case (SCALE_ALWAYS):
+            switch (ScalePolicy) {
+                case ImageScaleComponents.SCALE_ALWAYS:
                     paint_respect_ratio(g);
                     break;
-                case (SCALE_USE_ALL_SPACE):
+                case ImageScaleComponents.SCALE_USE_ALL_SPACE:
                     paint_default(g);
                     break;
                 default:
-                    //meh lets set paint to size as default if somthing is wrongle set...
+                case ImageScaleComponents.SCALE_SMALL_ONLY:
                     paint_to_size(g);
                     break;
             }
@@ -129,24 +122,21 @@ public class JImageTabPane extends javax.swing.JTabbedPane {
      * sets the policy for resize the background image acceptable parameters
      * SCALE_ALWAYS SCALE_USE_ALL_SPACE SCALE_SMALL_ONLY
      *
+     * @param policy the policy to use.
      * @throws IllegalArgumentException if a invalid parameter is sent
      */
-    public void setbackground_policy(int policy) {
-        //check if the param is valid
-        if (policy == SCALE_ALWAYS
-                || policy == SCALE_SMALL_ONLY
-                || policy == SCALE_USE_ALL_SPACE) {
-            scale_policy = policy;
-        } else {
-            throw new java.lang.IllegalArgumentException("the value " + policy + " is invalid");
-        }
+    public void setbackground_policy(ImageScaleComponents policy) {
+        Objects.requireNonNull(policy, "Invalid Policy");
+        ScalePolicy = policy;
     }
 
     /**
      * returns the current policy
+     *
+     * @return the scale policy
      */
-    public int getBacgroundScalePolicy() {
-        return scale_policy;
+    public ImageScaleComponents getBacgroundScalePolicy() {
+        return ScalePolicy;
     }
 
     /**

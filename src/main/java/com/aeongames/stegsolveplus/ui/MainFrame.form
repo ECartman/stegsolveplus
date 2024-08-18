@@ -84,7 +84,7 @@
   <SubComponents>
     <Container class="com.aeongames.stegsolveplus.ui.JStegnoTabbedPane" name="MainTabPane">
       <AuxValues>
-        <AuxValue name="JavaCodeGenerator_InitCodePre" type="java.lang.String" value="MainTabPane.setbackground_policy(JAeonTabPane.SCALE_ALWAYS);"/>
+        <AuxValue name="JavaCodeGenerator_InitCodePre" type="java.lang.String" value="MainTabPane.setbackground_policy(ImageScaleComponents.SCALE_ALWAYS);"/>
       </AuxValues>
 
       <Layout class="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout"/>

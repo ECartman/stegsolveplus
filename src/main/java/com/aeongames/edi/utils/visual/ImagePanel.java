@@ -24,43 +24,17 @@ import javax.imageio.ImageIO;
  */
 public class ImagePanel extends javax.swing.JPanel {
 
-    public static enum ImgScales {
-        /**
-         * variable to determine a policy where allow the image from a
-         * ImagePanel to scale the image to a smaller size only used for when
-         * you want to show a image up to its original size
-         */
-        SCALE_SMALL_ONLY,
-        /**
-         * variable to determine a policy where allow the image from a
-         * ImagePanel to scale the image to the size required to show on the
-         * panel but keep the aspect ratio of the image, also will be center
-         */
-        SCALE_ALWAYS,
-        /**
-         * will scale the image to use ALL the space of the panel will not try
-         * to keep the ratio will not keep the aspect will fill the hold panel
-         * space. this thought is not a good idea.
-         */
-        SCALE_USE_ALL_SPACE,
-        /**
-         * will Not Scale the image, but will instead use the image as A texture
-         * to be used to Paint the background of the Panel. (repeated as much as
-         * needed)
-         */
-        NO_SCALABLE_TEXTURE
-    };
 
     /**
      * the policy to use to resize and or print the image the default is Scale
      * Small Only
      */
-    private ImgScales ScalePolicy = ImgScales.SCALE_SMALL_ONLY;
+    private ImageScaleComponents ScalePolicy = ImageScaleComponents.SCALE_SMALL_ONLY;
     /**
      * the default image location we use on our Image panel when none is
      * provided.
      */
-    private static final String DEF_LOGO = "/com/aeongames/stegsolveplus/ui/pexels-photo-7319068.jpeg";
+    static final String DEF_LOGO = "/com/aeongames/stegsolveplus/ui/pexels-photo-7319068.jpeg";
     /**
      * the image to be show or process.
      */
@@ -190,7 +164,7 @@ public class ImagePanel extends javax.swing.JPanel {
      * @param policy the policy to use.
      * @throws IllegalArgumentException if a invalid parameter is sent
      */
-    public void setbackground_policy(ImgScales policy) {
+    public void setbackground_policy(ImageScaleComponents policy) {
         Objects.requireNonNull(policy, "Invalid Policy");
         ScalePolicy = policy;
     }
@@ -253,7 +227,7 @@ public class ImagePanel extends javax.swing.JPanel {
      *
      * @return current policy
      */
-    public final ImgScales getBackgroundScalePolicy() {
+    public final ImageScaleComponents getBackgroundScalePolicy() {
         return ScalePolicy;
     }
 
@@ -276,17 +250,17 @@ public class ImagePanel extends javax.swing.JPanel {
 //       ((Graphics2D) g).setRenderingHint(RenderingHints.KEY_RENDERING,
 //                RenderingHints.VALUE_RENDER_QUALITY);
         switch (ScalePolicy) {
-            case ImgScales.SCALE_ALWAYS:
+            case ImageScaleComponents.SCALE_ALWAYS:
                 paint_respect_ratio(g);
                 break;
-            case ImgScales.SCALE_USE_ALL_SPACE:
+            case ImageScaleComponents.SCALE_USE_ALL_SPACE:
                 paint_default(g);
                 break;
-            case ImgScales.NO_SCALABLE_TEXTURE:
+            case ImageScaleComponents.NO_SCALABLE_TEXTURE:
                 paintsTexture(g);
                 break;
             default:/*do the same as SCALE_SMALL_ONLY by default*/
-            case ImgScales.SCALE_SMALL_ONLY:
+            case ImageScaleComponents.SCALE_SMALL_ONLY:
                 //meh lets set paint to size as default if somthing is wrong...
                 paint_to_size(g);
                 break;
@@ -299,9 +273,9 @@ public class ImagePanel extends javax.swing.JPanel {
      * not forced size also will center the image
      */
     private void paint_to_size(Graphics g) {
-        if (RenderImage.getWidth(null) > -1 && RenderImage.getWidth(null) < this.getWidth() && RenderImage.getHeight(null) < this.getHeight()) {
-            int Width = (this.getWidth() / 2) - RenderImage.getWidth(null) / 2;
-            int Height = (this.getHeight() / 2) - RenderImage.getHeight(null) / 2;
+        if (RenderImage.getWidth(null) > -1 && RenderImage.getWidth(null) < getWidth() && RenderImage.getHeight(null) < getHeight()) {
+            int Width = (getWidth() / 2) - RenderImage.getWidth(null) / 2;
+            int Height = (getHeight() / 2) - RenderImage.getHeight(null) / 2;
             g.drawImage(RenderImage, Width, Height, RenderImage.getWidth(null), RenderImage.getHeight(null), this);
         } else {
             paint_respect_ratio(g);
@@ -315,7 +289,7 @@ public class ImagePanel extends javax.swing.JPanel {
      */
     private void paint_respect_ratio(Graphics g) {
         //ok now we want to keep the image ratio so lets try the new aproach
-        int[] size = ImageUtils.keep_ratio_for_size(this.getWidth(), this.getHeight(), RenderImage);
+        int[] size = ImageUtils.keep_ratio_for_size(getWidth(),getHeight(), RenderImage);
         g.drawImage(RenderImage, size[2], size[3], size[0], size[1], this);
     }
 
@@ -324,7 +298,7 @@ public class ImagePanel extends javax.swing.JPanel {
      * not respect the ratio will fill the hold panel.
      */
     private void paint_default(Graphics g) {
-        g.drawImage(RenderImage, 0, 0, this.getWidth(), this.getHeight(), this);
+        g.drawImage(RenderImage, 0, 0, getWidth(),getHeight(), this);
     }
 
     /**
