@@ -135,6 +135,8 @@ public class InvestigationTab extends Tab {
 
         jImageTabPane1.setTabPlacement(javax.swing.JTabbedPane.BOTTOM);
 
+        jPanel1.setOpaque(false);
+
         jScrollPane1.setOpaque(false);
         jScrollPane1.getVerticalScrollBar().setUnitIncrement(25);
 
