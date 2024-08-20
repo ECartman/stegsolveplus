@@ -29,7 +29,7 @@ import java.util.logging.Logger;
  */
 public class InvestigationTab extends Tab {
 
-    class ChangePropertys {
+    final class ChangePropertys {
 
         public static final String BUSY = "BUSY";
         public static final String STATEINFO = "STATE_STRING";

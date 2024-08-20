@@ -45,32 +45,156 @@ public class JAeonTabPane extends JImageTabPane {
 
     // <editor-fold defaultstate="collapsed" desc="Constants">
     /**
-     * a transparent panel that is use to paint transparent components and
-     * images.
-     */
-    private final GhostGlassPane glassPane = new GhostGlassPane();
-    /**
-     * the flavor of the data on DND
-     */
-    private final DataFlavor FLAVOR = new DataFlavor(DataFlavor.javaJVMLocalObjectMimeType, DATA_FLAVOR_NAME);
-    /**
      * name of this type of data from this class
      */
     private static final String DATA_FLAVOR_NAME = "JAeonTabPane";
     /**
      * the images to show when we want to drag in order to inform...
      */
-    private static final Image arrows[] = new Image[]{
-        java.awt.Toolkit.getDefaultToolkit().getImage(JAeonTabPane.class.getResource("/com/aeongames/stegsolveplus/ui/downarrow.png")),
-        java.awt.Toolkit.getDefaultToolkit().getImage(JAeonTabPane.class.getResource("/com/aeongames/stegsolveplus/ui/leftarrow.png")),
-        java.awt.Toolkit.getDefaultToolkit().getImage(JAeonTabPane.class.getResource("/com/aeongames/stegsolveplus/ui/rightarrow.png")),
-        java.awt.Toolkit.getDefaultToolkit().getImage(JAeonTabPane.class.getResource("/com/aeongames/stegsolveplus/ui/uparrow.png"))
-    };
+    private static final Image DOWNIMG = java.awt.Toolkit.getDefaultToolkit().getImage(JAeonTabPane.class.getResource("/com/aeongames/stegsolveplus/ui/downarrow.png")),
+            LEFTIMG = java.awt.Toolkit.getDefaultToolkit().getImage(JAeonTabPane.class.getResource("/com/aeongames/stegsolveplus/ui/leftarrow.png")),
+            RIGHTIMG = java.awt.Toolkit.getDefaultToolkit().getImage(JAeonTabPane.class.getResource("/com/aeongames/stegsolveplus/ui/rightarrow.png")),
+            UPIMG = java.awt.Toolkit.getDefaultToolkit().getImage(JAeonTabPane.class.getResource("/com/aeongames/stegsolveplus/ui/uparrow.png"));
     /**
      * the width we will draw the line for the user to know where to place the
      * tab.
      */
     private static final int LINEWIDTH = 3;
+    /**
+     * the flavor of the data on DND
+     *
+     * @see JAeonTabPane#DATA_FLAVOR_NAME
+     */
+    private static final DataFlavor FLAVOR = new DataFlavor(DataFlavor.javaJVMLocalObjectMimeType, DATA_FLAVOR_NAME);
+    // </editor-fold>
+
+    // <editor-fold defaultstate="collapsed" desc="ReadOnly">
+    /**
+     * a transparent panel that is use to paint transparent components and
+     * images.
+     */
+    private final GhostGlassPane glassPane = new GhostGlassPane();
+
+    /* Drag and Drop operations to track the state of the user's gesture */
+    private final DragSourceListener dsl = new DragSourceListener() {
+
+        /**
+         * for this particular Listener we just update the Cursor. when it enter
+         * a Drop-able point
+         *
+         * @see DragSourceListener#dragEnter(java.awt.dnd.DragSourceDragEvent)
+         */
+        @Override
+        public void dragEnter(DragSourceDragEvent e) {
+            e.getDragSourceContext().setCursor(DragSource.DefaultMoveDrop);
+        }
+
+        /**
+         * if Drag is finish or Exit the Zone of interest hide the highlight
+         * Rectangle. and of course repaint the glass pane
+         *
+         * @see DragSourceListener#dragExit(java.awt.dnd.DragSourceEvent)
+         */
+        @Override
+        public void dragExit(DragSourceEvent e) {
+            e.getDragSourceContext().setCursor(DragSource.DefaultMoveNoDrop);
+            lineRect.setRect(0, 0, 0, 0);
+            glassPane.setPoint(new Point(-1000, -1000));
+            glassPane.repaint();
+        }
+
+        /**
+         * for this particular Listener we just update the Cursor. when it drags
+         * Over valid Positions it set the cursor where it allow the drop and
+         * "No Drop" otherwise (outside of the section)
+         *
+         * @see DragSourceListener#dragOver(java.awt.dnd.DragSourceDragEvent)
+         */
+        @Override
+        public void dragOver(DragSourceDragEvent e) {
+            var DragLocation = e.getLocation();
+            SwingUtilities.convertPointFromScreen(DragLocation, glassPane);
+            int targetIdx = getTargetTabIndex(DragLocation);
+            if (getTabAreaRectangle().contains(DragLocation) && targetIdx >= 0
+                    && targetIdx != dragIndex && targetIdx != dragIndex + 1) {
+                e.getDragSourceContext().setCursor(DragSource.DefaultMoveDrop);
+                glassPane.setCursor(DragSource.DefaultMoveDrop);
+            } else {
+                e.getDragSourceContext().setCursor(DragSource.DefaultMoveNoDrop);
+                glassPane.setCursor(DragSource.DefaultMoveNoDrop);
+            }
+        }
+
+        /**
+         * if Drag has ended hide the highlight Rectangle. and of course repaint
+         * the glass pane
+         *
+         * @see DragSourceListener#dragDropEnd(java.awt.dnd.DragSourceDropEvent)
+         */
+        @Override
+        public void dragDropEnd(DragSourceDropEvent e) {
+            lineRect.setRect(0, 0, 0, 0);
+            dragIndex = -1;
+            glassPane.setVisible(false);
+            if (DrawsGhost()) {
+                glassPane.setVisible(false);
+                glassPane.setImage(null);
+            }
+        }
+
+        /**
+         * this particular implementation does nothing.
+         * @see DragSourceListener#dropActionChanged(java.awt.dnd.DragSourceDragEvent)
+         */
+        @Override
+        public void dropActionChanged(DragSourceDragEvent e) {
+        }
+    };
+    /* drag and Drop Transferible details */
+    private final Transferable t = new Transferable() {
+
+        @Override
+        public Object getTransferData(DataFlavor flavor) {
+            return JAeonTabPane.this;
+        }
+
+        /**
+         * Returns an array of DataFlavor objects indicating the flavors the
+         * data can be provided in {@link #SupportFlavors}. currently supports:
+         * <ul>
+         * <li>{@link JAeonTabPane#FLAVOR}</li>
+         * </ul>
+         *
+         * @return an array of data flavors in which this data can be
+         * transferred
+         */
+        @Override
+        public DataFlavor[] getTransferDataFlavors() {
+            return SupportFlavors;
+        }
+
+        /**
+         * Returns whether or not the specified data flavor is supported for
+         * this object, the supported list is at {@link #SupportFlavors}.
+         *
+         *
+         * @param flavor the requested flavor for the data
+         * @return boolean indicating whether or not the data flavor is in
+         * {@link #SupportFlavors}.
+         */
+        @Override
+        public boolean isDataFlavorSupported(DataFlavor flavor) {
+            for (DataFlavor SupportFlavor : SupportFlavors) {
+                if (SupportFlavor.equals(flavor)) {
+                    return true;
+                }
+                if (flavor.getHumanPresentableName().equals(SupportFlavor.getHumanPresentableName())) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    };
     // </editor-fold>
 
     // <editor-fold defaultstate="collapsed" desc="variables">
@@ -109,6 +233,11 @@ public class JAeonTabPane extends JImageTabPane {
      * the implementation color can be changed where required.
      */
     private Color lineColor = new Color(0, 100, 255);
+
+    /**
+     * the supported flavors of data to accept on D&D for this TabPane.
+     */
+    private DataFlavor[] SupportFlavors = {FLAVOR};
     // </editor-fold>
 
     // <editor-fold defaultstate="collapsed" desc="Constructors">
@@ -192,7 +321,6 @@ public class JAeonTabPane extends JImageTabPane {
     }
 
     // </editor-fold>
-
     // <editor-fold defaultstate="collapsed" desc="TabScrolling">
     /**
      * creates and or updates the rBackward and rForward boxes. then if the Drag
@@ -250,7 +378,7 @@ public class JAeonTabPane extends JImageTabPane {
         }
     }
     //</editor-fold>
-    
+
     /**
      * Sets up (if not done already) the GlassPane for this Instance. and
      * Updates the GlassPane if it needs to Draw a Ghost. DrawsGhost returns
@@ -278,7 +406,7 @@ public class JAeonTabPane extends JImageTabPane {
         }
         glassPane.setVisible(true);
     }
-      
+
     /**
      * gets a Rectangle that defines the Area where the tabs are drawn and they
      * can be moved and such. ("tabs space")
@@ -338,7 +466,7 @@ public class JAeonTabPane extends JImageTabPane {
         tabbedRect.grow(2, 2);
         return tabbedRect;
     }
-        
+
     /**
      * calculates the "Drop tab" highlight rectangle. in the position in between
      * tabs where the drop will put the tab that is being drag
@@ -366,7 +494,7 @@ public class JAeonTabPane extends JImageTabPane {
         r.setRect(rx, ry, rWidth, rHeight);
         return r;
     }
-    
+
     /**
      * gets the TARGET index for the Position selected. this method is intended
      * to highlight the area where the TAB WOULD land (the in between tabs) thus
@@ -450,114 +578,38 @@ public class JAeonTabPane extends JImageTabPane {
     }
 
     /**
-     * initializes the Drag And Drop Component.
+     * Initialize the Drag Source (to allow to Drag From **THIS** component, the tabs.
+     * into This same component or Other from this class. 
+     * then Initialize the GlassPane as Drop Target so Drops can be done into this pane.
+     * (this last part requires work to support other things to be dropped into.)
      */
     private void initdnd() {
-        final DragSourceListener dsl = new DragSourceListener() {
-
-            /**
-             * {@inheritDoc}
-             *
-             * for THIS particular Listener we just update the Cursor. when it
-             * enter a Drop-able point
-             */
-            @Override
-            public void dragEnter(DragSourceDragEvent e) {
-                e.getDragSourceContext().setCursor(DragSource.DefaultMoveDrop);
-            }
-
-            /**
-             * {@inheritDoc}
-             *
-             * if Drag is finish or Exit the Zone of interest hide the highlight
-             * Rectangle. and of course repaint the glass pane
-             */
-            @Override
-            public void dragExit(DragSourceEvent e) {
-                e.getDragSourceContext().setCursor(DragSource.DefaultMoveNoDrop);
-                lineRect.setRect(0, 0, 0, 0);
-                glassPane.setPoint(new Point(-1000, -1000));
-                glassPane.repaint();
-            }
-
-            /**
-             * {@inheritDoc}
-             *
-             */
-            @Override
-            public void dragOver(DragSourceDragEvent e) {
-                var DragLocation = e.getLocation();
-                //relativisize the point from the screen to the GlassPane
-                SwingUtilities.convertPointFromScreen(DragLocation, glassPane);
-                int targetIdx = getTargetTabIndex(DragLocation);
-                //if(getTabAreaBounds().contains(tabPt) && targetIdx>=0 &&
-                if (getTabAreaRectangle().contains(DragLocation) && targetIdx >= 0
-                        && targetIdx != dragIndex && targetIdx != dragIndex + 1) {
-                    e.getDragSourceContext().setCursor(DragSource.DefaultMoveDrop);
-                    glassPane.setCursor(DragSource.DefaultMoveDrop);
-                } else {
-                    e.getDragSourceContext().setCursor(DragSource.DefaultMoveNoDrop);
-                    glassPane.setCursor(DragSource.DefaultMoveNoDrop);
-                }
-            }
-
-            @Override
-            public void dragDropEnd(DragSourceDropEvent e) {
-                lineRect.setRect(0, 0, 0, 0);
-                dragIndex = -1;
-                glassPane.setVisible(false);
-                if (DrawsGhost()) {
-                    glassPane.setVisible(false);
-                    glassPane.setImage(null);
-                }
-            }
-
-            @Override
-            public void dropActionChanged(DragSourceDragEvent e) {
-            }
-        };
-        final Transferable t = new Transferable() {
-
-            @Override
-            public Object getTransferData(DataFlavor flavor) {
-                return JAeonTabPane.this;
-            }
-
-            @Override
-            public DataFlavor[] getTransferDataFlavors() {
-                DataFlavor[] f = new DataFlavor[1];
-                f[0] = FLAVOR;
-                return f;
-            }
-
-            @Override
-            public boolean isDataFlavorSupported(DataFlavor flavor) {
-                return flavor.getHumanPresentableName().equals(DATA_FLAVOR_NAME);
-            }
-        };
-        final DragGestureListener dgl = (DragGestureEvent e) -> {
+        //listen to "drag acitivty start"
+        final DragGestureListener dgl = (var DragGestureEvt) -> {
+            //if there are only 1 tab or none. dont allow drag
             if (getTabCount() <= 1) {
                 return;
             }
-            Point tabPt = e.getDragOrigin();
+            Point tabPt = DragGestureEvt.getDragOrigin();
             dragIndex = indexAtLocation(tabPt.x, tabPt.y);
-            //"disabled tab problem".
+            //dont allow drag if the index is invalid or the tab is disabled
             if (dragIndex < 0 || !isEnabledAt(dragIndex)) {
                 return;
             }
-            updateGlassPane(e.getComponent(), e.getDragOrigin());
+            //update the glass pane and show the ghost if needed
+            updateGlassPane(DragGestureEvt.getComponent(), DragGestureEvt.getDragOrigin());
             try {
-                e.startDrag(DragSource.DefaultMoveDrop, t, dsl);
+                //start the D&D action.
+                DragGestureEvt.startDrag(DragSource.DefaultMoveDrop, t, dsl);
             } catch (InvalidDnDOperationException idoe) {
-
             }
         };
-
-        new DropTarget(glassPane, DnDConstants.ACTION_COPY_OR_MOVE, new CDropTargetListener(), true);
         new DragSource().createDefaultDragGestureRecognizer(this, DnDConstants.ACTION_COPY_OR_MOVE, dgl);
+        //setup the D&D Source and Target. given we D&D tabs within the Same Pane we set both here. 
+        var dptarget = new DropTarget(glassPane, DnDConstants.ACTION_COPY_OR_MOVE, new CDropTargetListener(), true);
     }
 
-    //depth analizis require here.
+    //Documentation Pending after this point
     /**
      * this inner class listens for drop actions and some drag events. listens
      * the changes and events trigger when a drop is done or a drop target is
@@ -574,12 +626,18 @@ public class JAeonTabPane extends JImageTabPane {
             }
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
-        public void dragExit(DropTargetEvent e) {
+        public void dragExit(DropTargetEvent dte) {
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
-        public void dropActionChanged(DropTargetDragEvent e) {
+        public void dropActionChanged(DropTargetDragEvent dtde) {
         }
 
         @Override
@@ -680,7 +738,7 @@ public class JAeonTabPane extends JImageTabPane {
          * paint *This* component. this Panel Is unique. and we don't paint the
          * background or content this is a transparent Pane. and thus we don't
          * call Parent method.
-         *
+         * 
          * @param g a instance of Graphics to paint into
          */
         @Override
@@ -696,17 +754,18 @@ public class JAeonTabPane extends JImageTabPane {
 //               g2.fill(rBackward);
 //               g2.fill(rForward);
             }
+            //if(g==null) return;// this check should not be required as Swing should ensure that does not happen. 
             if (JAeonTabPane.this.isPaintScrollArea()
                     && JAeonTabPane.this.getTabLayoutPolicy() == SCROLL_TAB_LAYOUT) {
                 if (tabPlacement == BOTTOM || tabPlacement == TOP) {
-                    var centerpoint = getCenterPosition(rBackward, arrows[1].getWidth(null), arrows[1].getHeight(null));
-                    g.drawImage(arrows[1], centerpoint.x, centerpoint.y, null);
-                    centerpoint = getCenterPosition(rForward, arrows[2].getWidth(null), arrows[2].getHeight(null));
-                    g.drawImage(arrows[2], centerpoint.x, centerpoint.y, null);
+                    var centerpoint = getCenterPosition(rBackward, LEFTIMG.getWidth(null), LEFTIMG.getHeight(null));
+                    g.drawImage(LEFTIMG, centerpoint.x, centerpoint.y, null);
+                    centerpoint = getCenterPosition(rForward, RIGHTIMG.getWidth(null), RIGHTIMG.getHeight(null));
+                    g.drawImage(RIGHTIMG, centerpoint.x, centerpoint.y, null);
                 } else {
-                    g.drawImage(arrows[3], rBackward.x, rBackward.y, null);
-                    double initpos = (rForward.getY() + rForward.getHeight()) - arrows[0].getHeight(null);
-                    g.drawImage(arrows[0], rForward.x, (int) initpos, null);
+                    g.drawImage(UPIMG, rBackward.x, rBackward.y, null);
+                    double initpos = (rForward.getY() + rForward.getHeight()) - DOWNIMG.getHeight(null);
+                    g.drawImage(DOWNIMG, rForward.x, (int) initpos, null);
                 }
             }
             if (TabGhost != null) {
