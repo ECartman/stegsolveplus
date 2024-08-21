@@ -180,6 +180,7 @@ public class LabelText {
      *
      * @param data the string data that will be computer if is possible to fit.
      * @param UIComponent the label that will display the data.
+     * @param DefaultSize if the component is yet to be draw or for any other reason uses this value as default
      * @return String that will contain a trimmed string with the possible data
      * displayable if the string is too long will also calculate space to add
      * &quot;...&quot;

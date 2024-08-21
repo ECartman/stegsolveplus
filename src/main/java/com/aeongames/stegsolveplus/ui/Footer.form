@@ -39,6 +39,9 @@
           <Connection code="FullLabelText" type="code"/>
         </Property>
       </Properties>
+      <Events>
+        <EventHandler event="componentResized" listener="java.awt.event.ComponentListener" parameters="java.awt.event.ComponentEvent" handler="txtFooterComponentResized"/>
+      </Events>
     </Component>
   </SubComponents>
 </Form>

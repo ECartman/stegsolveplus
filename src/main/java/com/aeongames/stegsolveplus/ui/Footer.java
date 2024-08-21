@@ -11,7 +11,7 @@
  */
 package com.aeongames.stegsolveplus.ui;
 
-import static com.aeongames.edi.utils.text.LabelText.SyncwrapLabelText;
+import com.aeongames.edi.utils.text.LabelText;
 
 /**
  *
@@ -64,7 +64,7 @@ public class Footer extends javax.swing.JPanel {
     public void setFooterText(String newText) {
         FullLabelText=newText;
         txtFooter.setToolTipText(FullLabelText);
-        SyncwrapLabelText(txtFooter, FullLabelText,654);
+        txtFooter.setText(LabelText.getTrimmedtoComponentsize(FullLabelText, txtFooter,654));
     }
 
     /**
@@ -101,6 +101,11 @@ public class Footer extends javax.swing.JPanel {
         txtFooter = new javax.swing.JLabel();
 
         txtFooter.setText(FullLabelText);
+        txtFooter.addComponentListener(new java.awt.event.ComponentAdapter() {
+            public void componentResized(java.awt.event.ComponentEvent evt) {
+                txtFooterComponentResized(evt);
+            }
+        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
@@ -117,6 +122,10 @@ public class Footer extends javax.swing.JPanel {
             .addComponent(txtFooter, javax.swing.GroupLayout.DEFAULT_SIZE, 25, Short.MAX_VALUE)
         );
     }// </editor-fold>//GEN-END:initComponents
+
+    private void txtFooterComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_txtFooterComponentResized
+      txtFooter.setText(LabelText.getTrimmedtoComponentsize(FullLabelText, txtFooter,654));
+    }//GEN-LAST:event_txtFooterComponentResized
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

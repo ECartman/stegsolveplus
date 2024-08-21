@@ -65,7 +65,7 @@ public class JAeonTabPane extends JImageTabPane {
      *
      * @see JAeonTabPane#DATA_FLAVOR_NAME
      */
-    private static final DataFlavor FLAVOR = new DataFlavor(DataFlavor.javaJVMLocalObjectMimeType, DATA_FLAVOR_NAME);
+    private static final DataFlavor J_AEON_TAB_FLAVOR = new DataFlavor(DataFlavor.javaJVMLocalObjectMimeType, DATA_FLAVOR_NAME);
     // </editor-fold>
 
     // <editor-fold defaultstate="collapsed" desc="ReadOnly">
@@ -144,14 +144,16 @@ public class JAeonTabPane extends JImageTabPane {
 
         /**
          * this particular implementation does nothing.
-         * @see DragSourceListener#dropActionChanged(java.awt.dnd.DragSourceDragEvent)
+         *
+         * @see
+         * DragSourceListener#dropActionChanged(java.awt.dnd.DragSourceDragEvent)
          */
         @Override
         public void dropActionChanged(DragSourceDragEvent e) {
         }
     };
     /* drag and Drop Transferible details */
-    private final Transferable t = new Transferable() {
+    private final Transferable dndTransferable = new Transferable() {
 
         @Override
         public Object getTransferData(DataFlavor flavor) {
@@ -162,7 +164,7 @@ public class JAeonTabPane extends JImageTabPane {
          * Returns an array of DataFlavor objects indicating the flavors the
          * data can be provided in {@link #SupportFlavors}. currently supports:
          * <ul>
-         * <li>{@link JAeonTabPane#FLAVOR}</li>
+         * <li>{@link JAeonTabPane#J_AEON_TAB_FLAVOR}</li>
          * </ul>
          *
          * @return an array of data flavors in which this data can be
@@ -207,6 +209,11 @@ public class JAeonTabPane extends JImageTabPane {
      */
     private boolean isPaintScrollArea = true;
     /**
+     * when Drag and Dropping we should move the Tab Component too. defaults to
+     * false.
+     */
+    private boolean moveTabComponent = false;
+    /**
      * determines if we should paint the ghost of the component we are dragging
      */
     private boolean ShouldDrawGhost = true;
@@ -237,7 +244,7 @@ public class JAeonTabPane extends JImageTabPane {
     /**
      * the supported flavors of data to accept on D&D for this TabPane.
      */
-    private DataFlavor[] SupportFlavors = {FLAVOR};
+    private DataFlavor[] SupportFlavors = {J_AEON_TAB_FLAVOR};
     // </editor-fold>
 
     // <editor-fold defaultstate="collapsed" desc="Constructors">
@@ -270,6 +277,17 @@ public class JAeonTabPane extends JImageTabPane {
      */
     public void setPaintGhost(boolean flag) {
         ShouldDrawGhost = Objects.requireNonNullElse(flag, ShouldDrawGhost);
+    }
+
+    /**
+     * sets whenever or not when Dropping a tab it should also move the
+     * TabComponent
+     *
+     * @see JTabbedPane#getTabComponentAt(int)
+     * @param newSetting
+     */
+    protected void setMoveTabComponent(boolean newSetting) {
+        moveTabComponent = newSetting;
     }
 
     /**
@@ -556,32 +574,43 @@ public class JAeonTabPane extends JImageTabPane {
      * @param prevIndex the previous index of the tab.
      * @param newIndex the new index of the tab.
      */
-    protected void TransferTab(int prevIndex, int newIndex) {
+    protected final void TransferTab(int prevIndex, int newIndex) {
         if (newIndex < 0 || prevIndex == newIndex) {
             return;
         }
+        int tgtindex = prevIndex > newIndex ? newIndex : newIndex - 1;
         Component cmp = getComponentAt(prevIndex);
-        Component tab = getTabComponentAt(prevIndex);
+        Component tabComp = getTabComponentAt(prevIndex);
         String str = getTitleAt(prevIndex);
         Icon icon = getIconAt(prevIndex);
         String tip = getToolTipTextAt(prevIndex);
         boolean flg = isEnabledAt(prevIndex);
-        int tgtindex = prevIndex > newIndex ? newIndex : newIndex - 1;
-        remove(prevIndex);
+        removeTabAt(prevIndex);
         insertTab(str, icon, cmp, tip, tgtindex);
         setEnabledAt(tgtindex, flg);
         //When you drag'n'drop a disabled tab, it finishes enabled and selected.
         if (flg) {
             setSelectedIndex(tgtindex);
         }
-        setTabComponentAt(tgtindex, tab);
+        if (moveTabComponent) {
+            setTabComponentAt(tgtindex, tabComp);
+        }
+        PostDropActivity(tgtindex);
     }
 
     /**
-     * Initialize the Drag Source (to allow to Drag From **THIS** component, the tabs.
-     * into This same component or Other from this class. 
-     * then Initialize the GlassPane as Drop Target so Drops can be done into this pane.
-     * (this last part requires work to support other things to be dropped into.)
+     * this function does nothing for this instance. Child Classes might want to 
+     * run post Move Activity to update tab information, or any other activity 
+     * might be desired. 
+     * @param IndexOfDroppedTab the index where the tab was moved into.
+     */
+    protected void PostDropActivity(int IndexOfDroppedTab) {}
+
+    /**
+     * Initialize the Drag Source (to allow to Drag From **THIS** component, the
+     * tabs. into This same component or Other from this class. then Initialize
+     * the GlassPane as Drop Target so Drops can be done into this pane. (this
+     * last part requires work to support other things to be dropped into.)
      */
     private void initdnd() {
         //listen to "drag acitivty start"
@@ -600,7 +629,7 @@ public class JAeonTabPane extends JImageTabPane {
             updateGlassPane(DragGestureEvt.getComponent(), DragGestureEvt.getDragOrigin());
             try {
                 //start the D&D action.
-                DragGestureEvt.startDrag(DragSource.DefaultMoveDrop, t, dsl);
+                DragGestureEvt.startDrag(DragSource.DefaultMoveDrop, dndTransferable, dsl);
             } catch (InvalidDnDOperationException idoe) {
             }
         };
@@ -738,7 +767,7 @@ public class JAeonTabPane extends JImageTabPane {
          * paint *This* component. this Panel Is unique. and we don't paint the
          * background or content this is a transparent Pane. and thus we don't
          * call Parent method.
-         * 
+         *
          * @param g a instance of Graphics to paint into
          */
         @Override

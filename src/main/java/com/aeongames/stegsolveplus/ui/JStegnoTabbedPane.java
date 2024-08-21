@@ -37,6 +37,7 @@ public class JStegnoTabbedPane extends JAeonTabPane {
         setTabComponentAt(index, closeComponent);
         //update the information on the component.
         closeComponent.Update(index);
+        updateTabTitles(index);
     }
 
     /**
@@ -44,6 +45,10 @@ public class JStegnoTabbedPane extends JAeonTabPane {
      */
     @Override
     public void removeTabAt(int index) {
+        var component = getComponentAt(index);
+        if (component instanceof Tab tab) {
+            tab.setTabID(-1);
+        }
         super.removeTabAt(index);
         updateTabTitles(index);
     }
@@ -61,8 +66,10 @@ public class JStegnoTabbedPane extends JAeonTabPane {
             var component = getComponentAt(x);
             if (component instanceof Tab tab) {
                 tab.setTabID(x);
-                setTitleAt(x, tab.getTitle());
-            } else {
+                var newtitle =tab.getTitle();
+                setTitleAt(x,newtitle );
+                setToolTipTextAt(x,newtitle);
+            } else if (component != null) {
                 var oldtitle = component.getName();
                 oldtitle = Objects.requireNonNullElse(oldtitle, getTitleAt(x));
                 int index = oldtitle.indexOf(".");
@@ -71,13 +78,11 @@ public class JStegnoTabbedPane extends JAeonTabPane {
                 }
                 oldtitle = String.format("%d.%s", (x + 1), oldtitle);
                 setTitleAt(x, oldtitle);
+                setToolTipTextAt(x,oldtitle);
             }
             if (getTabComponentAt(x) instanceof TabClose tabClose) {
                 tabClose.Update();
             }
         }
     }
-
-    
-
 }

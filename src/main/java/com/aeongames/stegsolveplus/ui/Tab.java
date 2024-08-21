@@ -11,7 +11,6 @@
  */
 package com.aeongames.stegsolveplus.ui;
 
-import javax.swing.JTabbedPane;
 import static org.pushingpixels.radiance.theming.api.RadianceThemingCortex.GlobalScope;
 
 /**
@@ -26,7 +25,7 @@ public abstract class Tab extends javax.swing.JPanel {
 
     /**
      * The index of this tab that is reported back into this class. or setup
-     * manually.
+     * manually. this value is only used for Identification on the title
      */
     private int TabIndex;
 
@@ -106,7 +105,7 @@ public abstract class Tab extends javax.swing.JPanel {
         if (tmptitle == null) {
             tmptitle = super.getName();
         }
-        if (ConcatIdOnTitle) {
+        if (ConcatIdOnTitle && TabIndex>=0) {
             tmptitle = String.format("%d.%s", (TabIndex + 1), TabTitle);
         }
         return tmptitle;
