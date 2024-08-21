@@ -17,8 +17,10 @@ import java.util.Objects;
 import javax.swing.Icon;
 
 /**
- *
+ * a TabPane that supports the TabClose component, besides image background 
+ * and Drag and drop. 
  * @author Eduardo Vindas
+ * @see JAeonTabPane
  */
 public class JStegnoTabbedPane extends JAeonTabPane {
 

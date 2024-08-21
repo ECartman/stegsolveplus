@@ -34,12 +34,19 @@ import javax.swing.JTabbedPane;
 import javax.swing.SwingUtilities;
 
 /**
- * this class is designed to show a image instead of the ye old boring
- * background whenever there is not tabs begin display do note this class is
- * design to draw a image whenever there is no other thing on the tab pane as
- * per such a Tab also will support Drag and Drop of tabs.
- *
- * @author Eduardo Vindas
+ * 
+ * A component that lets the user switch between a group of components by
+ * clicking on a tab with a given title and/or icon. this version extends on
+ * <a href="https://docs.oracle.com/javase/tutorial/uiswing/components/tabbedpane.html">How
+ * to Use Tabbed Panes</a>
+ * <br>
+ * this version extends from a normal {@link JTabbedPane} and from {@link JImageTabPane}
+ * as this version also support Dragging and Dropping Tabs from this Pane into a 
+ * different positions.
+ * 
+ * @author Eduardo V
+ * @see JImageTabPane
+ * @see JTabbedPane
  */
 public class JAeonTabPane extends JImageTabPane {
 
@@ -67,7 +74,7 @@ public class JAeonTabPane extends JImageTabPane {
      */
     private static final DataFlavor J_AEON_TAB_FLAVOR = new DataFlavor(DataFlavor.javaJVMLocalObjectMimeType, DATA_FLAVOR_NAME);
     // </editor-fold>
-
+ 
     // <editor-fold defaultstate="collapsed" desc="ReadOnly">
     /**
      * a transparent panel that is use to paint transparent components and
@@ -599,12 +606,14 @@ public class JAeonTabPane extends JImageTabPane {
     }
 
     /**
-     * this function does nothing for this instance. Child Classes might want to 
-     * run post Move Activity to update tab information, or any other activity 
-     * might be desired. 
+     * this function does nothing for this instance. Child Classes might want to
+     * run post Move Activity to update tab information, or any other activity
+     * might be desired.
+     *
      * @param IndexOfDroppedTab the index where the tab was moved into.
      */
-    protected void PostDropActivity(int IndexOfDroppedTab) {}
+    protected void PostDropActivity(int IndexOfDroppedTab) {
+    }
 
     /**
      * Initialize the Drag Source (to allow to Drag From **THIS** component, the

@@ -61,7 +61,7 @@ public class MainFrame extends javax.swing.JFrame {
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setMinimumSize(new java.awt.Dimension(370, 510));
 
-        MainTabPane.setbackground_policy(ImageScaleComponents.SCALE_ALWAYS);
+        MainTabPane.setBackgroundPolicy(ImageScaleComponents.SCALE_ALWAYS);
 
         FileMenu.setText("File");
         FileMenu.setToolTipText("File Menu");
