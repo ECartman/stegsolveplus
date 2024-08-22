@@ -9,8 +9,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.aeongames.edi.utils.visual;
+package com.aeongames.edi.utils.visual.Panels;
 
+import com.aeongames.edi.utils.visual.ImageScaleComponents;
+import com.aeongames.edi.utils.visual.ImageUtils;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;

@@ -66,11 +66,11 @@ public class ErrorGlassPane extends javax.swing.JPanel {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        translucentpanel1 = new com.aeongames.edi.utils.visual.translucentpanel();
+        translucentpanel1 = new com.aeongames.edi.utils.visual.Panels.TranslucentPanel();
         filler1 = new javax.swing.Box.Filler(new java.awt.Dimension(30, 0), new java.awt.Dimension(30, 0), new java.awt.Dimension(32767, 0));
         jPanel1 = new javax.swing.JPanel();
         filler3 = new javax.swing.Box.Filler(new java.awt.Dimension(0, 60), new java.awt.Dimension(0, 60), new java.awt.Dimension(0, 32767));
-        translucentpanel2 = new com.aeongames.edi.utils.visual.translucentpanel();
+        translucentpanel2 = new com.aeongames.edi.utils.visual.Panels.TranslucentPanel();
         jPanel2 = new javax.swing.JPanel();
         LbErrorTittle = new javax.swing.JLabel();
         closebt = new SimpleCloseButton();
@@ -306,8 +306,8 @@ public class ErrorGlassPane extends javax.swing.JPanel {
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JPanel pstack;
-    private com.aeongames.edi.utils.visual.translucentpanel translucentpanel1;
-    private com.aeongames.edi.utils.visual.translucentpanel translucentpanel2;
+    private com.aeongames.edi.utils.visual.Panels.TranslucentPanel translucentpanel1;
+    private com.aeongames.edi.utils.visual.Panels.TranslucentPanel translucentpanel2;
     private com.aeongames.edi.utils.visual.TranslucentTextPane txtmessage;
     private javax.swing.JTextArea txtstack;
     // End of variables declaration//GEN-END:variables

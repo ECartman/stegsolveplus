@@ -9,7 +9,7 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-package com.aeongames.edi.utils.visual;
+package com.aeongames.edi.utils.visual.Panels;
 
 import java.awt.Color;
 import java.awt.Graphics;
@@ -22,7 +22,7 @@ import java.awt.Image;
  * this panel also support rendering the panel as a "Round Rectangle"
  * @author Eduardo Vindas
  */
-public class TraslucentImagedPanel extends ImagePanel {
+public class TranslucentImagedPanel extends ImagePanel {
 
     public static final int DEFAULTARC = 0;
     public static final short DEFTRANSPARENCY = 190;
@@ -33,17 +33,17 @@ public class TraslucentImagedPanel extends ImagePanel {
     private int alphaIntensity = DEFTRANSPARENCY;
     private Color ColorOverride = DEFAULT_COLOR;
 
-    public TraslucentImagedPanel() {
+    public TranslucentImagedPanel() {
         super();
         super.setOpaque(false);
     }
 
-    public TraslucentImagedPanel(Image todisplay) {
+    public TranslucentImagedPanel(Image todisplay) {
         super(todisplay);
         super.setOpaque(false);
     }
 
-    private TraslucentImagedPanel(Image todisplay, float Imagealpha) {
+    private TranslucentImagedPanel(Image todisplay, float Imagealpha) {
         super(todisplay, Imagealpha);
         super.setOpaque(false);
     }

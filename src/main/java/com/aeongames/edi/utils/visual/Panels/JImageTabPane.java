@@ -10,8 +10,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.aeongames.edi.utils.visual;
+package com.aeongames.edi.utils.visual.Panels;
 
+import com.aeongames.edi.utils.visual.ImageScaleComponents;
+import com.aeongames.edi.utils.visual.ImageUtils;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;

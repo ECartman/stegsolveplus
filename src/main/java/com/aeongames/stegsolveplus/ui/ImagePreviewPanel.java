@@ -13,7 +13,7 @@
  */
 package com.aeongames.stegsolveplus.ui;
 
-import com.aeongames.edi.utils.visual.ImagePanel;
+import com.aeongames.edi.utils.visual.Panels.ImagePanel;
 import java.awt.image.BufferedImage;
 import java.util.Objects;
 
@@ -49,7 +49,7 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        translucentpanel1 = new com.aeongames.edi.utils.visual.translucentpanel();
+        translucentpanel1 = new com.aeongames.edi.utils.visual.Panels.TranslucentPanel();
         jPanel1 = new javax.swing.JPanel();
         txtTitle = new javax.swing.JLabel();
         ImagePreviewPanel = ImageToPreview == null
@@ -121,9 +121,9 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
     
     
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private com.aeongames.edi.utils.visual.ImagePanel ImagePreviewPanel;
+    private com.aeongames.edi.utils.visual.Panels.ImagePanel ImagePreviewPanel;
     private javax.swing.JPanel jPanel1;
-    private com.aeongames.edi.utils.visual.translucentpanel translucentpanel1;
+    private com.aeongames.edi.utils.visual.Panels.TranslucentPanel translucentpanel1;
     private javax.swing.JLabel txtTitle;
     // End of variables declaration//GEN-END:variables
 }

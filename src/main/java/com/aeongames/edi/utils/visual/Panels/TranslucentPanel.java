@@ -9,7 +9,7 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-package com.aeongames.edi.utils.visual;
+package com.aeongames.edi.utils.visual.Panels;
 
 import java.awt.Color;
 import java.awt.Graphics;
@@ -19,7 +19,7 @@ import javax.swing.JPanel;
  *
  * @author Eduardo Vindas
  */
-public class translucentpanel extends JPanel {
+public class TranslucentPanel extends JPanel {
 
     public static final int DEFAULTARC = 0;
     public static final short DEFTRANSPARENCY = 200;
@@ -30,7 +30,7 @@ public class translucentpanel extends JPanel {
     private int alphaIntensity = DEFTRANSPARENCY;
     private Color ColorOverride = DEFAULT_COLOR;
 
-    public translucentpanel() {
+    public TranslucentPanel() {
         super();
         super.setOpaque(false);
         setColor(getBackground());

@@ -33,7 +33,7 @@
     </DimensionLayout>
   </Layout>
   <SubComponents>
-    <Container class="com.aeongames.edi.utils.visual.translucentpanel" name="translucentpanel1">
+    <Container class="com.aeongames.edi.utils.visual.Panels.TranslucentPanel" name="translucentpanel1">
       <Properties>
         <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
           <Color blue="0" green="0" red="0" type="rgb"/>
@@ -86,7 +86,7 @@
                 <AuxValue name="classDetails" type="java.lang.String" value="Box.Filler.VerticalGlue"/>
               </AuxValues>
             </Component>
-            <Container class="com.aeongames.edi.utils.visual.translucentpanel" name="translucentpanel2">
+            <Container class="com.aeongames.edi.utils.visual.Panels.TranslucentPanel" name="translucentpanel2">
               <Properties>
                 <Property name="arcHeight" type="int" value="17"/>
                 <Property name="arcWidth" type="int" value="17"/>

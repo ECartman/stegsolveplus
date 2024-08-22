@@ -10,7 +10,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.aeongames.edi.utils.visual;
+package com.aeongames.edi.utils.visual.Panels;
 
 import java.awt.AlphaComposite;
 import java.awt.Color;

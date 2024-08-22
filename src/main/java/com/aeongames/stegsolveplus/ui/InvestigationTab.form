@@ -31,7 +31,7 @@
     </DimensionLayout>
   </Layout>
   <SubComponents>
-    <Container class="com.aeongames.edi.utils.visual.JImageTabPane" name="jImageTabPane1">
+    <Container class="com.aeongames.edi.utils.visual.Panels.JImageTabPane" name="jImageTabPane1">
       <Properties>
         <Property name="tabPlacement" type="int" value="3"/>
       </Properties>

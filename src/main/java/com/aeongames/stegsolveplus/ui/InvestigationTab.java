@@ -127,7 +127,7 @@ public class InvestigationTab extends Tab {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jImageTabPane1 = new com.aeongames.edi.utils.visual.JImageTabPane();
+        jImageTabPane1 = new com.aeongames.edi.utils.visual.Panels.JImageTabPane();
         jPanel1 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
         PanenPlanes = new javax.swing.JPanel();
@@ -178,7 +178,7 @@ public class InvestigationTab extends Tab {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel PanenPlanes;
-    private com.aeongames.edi.utils.visual.JImageTabPane jImageTabPane1;
+    private com.aeongames.edi.utils.visual.Panels.JImageTabPane jImageTabPane1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private com.aeongames.stegsolveplus.ui.Footer pFooter;

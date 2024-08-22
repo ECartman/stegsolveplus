@@ -11,7 +11,7 @@
  */
 package com.aeongames.stegsolveplus.ui;
 
-import com.aeongames.edi.utils.visual.JAeonTabPane;
+import com.aeongames.edi.utils.visual.Panels.JAeonTabPane;
 import java.awt.Component;
 import java.util.Objects;
 import javax.swing.Icon;
