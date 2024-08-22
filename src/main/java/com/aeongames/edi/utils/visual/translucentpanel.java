@@ -17,29 +17,32 @@ import javax.swing.JPanel;
 
 /**
  *
- * @author  Eduardo Vindas
+ * @author Eduardo Vindas
  */
 public class translucentpanel extends JPanel {
 
     public static final int DEFAULTARC = 0;
-    public static final int DEFTRANSPARENCY = 200;
-    public static final Color DEFCOL = new Color(219, 229, 241, DEFTRANSPARENCY); //r,g,b,alpha
-    private int arcWidth = DEFAULTARC, arcHeight = DEFAULTARC;
-    private Color ppColor = DEFCOL;
-    private int trasparency = DEFTRANSPARENCY;
+    public static final short DEFTRANSPARENCY = 200;
+    public static final short MIN_ALPHA = 0, MAX_ALPHA = 0xFF;
+    public static final Color DEFAULT_COLOR = new Color(219, 229, 241, DEFTRANSPARENCY); //r,g,b,alpha
+    private int arcWidth = DEFAULTARC,
+            arcHeight = DEFAULTARC;
+    private int alphaIntensity = DEFTRANSPARENCY;
+    private Color ColorOverride = DEFAULT_COLOR;
 
     public translucentpanel() {
         super();
         super.setOpaque(false);
-        setcolor(getBackground());
+        setColor(getBackground());
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        g.setColor(ppColor);
+        Color temp = g.getColor();
+        g.setColor(ColorOverride);
         g.fillRoundRect(0, 0, this.getWidth(), this.getHeight(), arcWidth, arcHeight);
-//        g.dispose();
+        g.setColor(temp);
     }
 
     public void setuniformarc(int arc) {
@@ -50,14 +53,14 @@ public class translucentpanel extends JPanel {
 
     public void setPanelTrasparency(int Trasparency) {
         if (Trasparency >= 0 && Trasparency <= 255) {
-            trasparency = Trasparency;
-            setcolor(ppColor);
+            alphaIntensity = Trasparency;
+            setColor(ColorOverride);
         }
         repaint();
     }
 
     public int getpanelAlpha() {
-        return trasparency;
+        return alphaIntensity;
     }
 
     /**
@@ -79,17 +82,19 @@ public class translucentpanel extends JPanel {
     }
 
     /**
-     * unlike the original implementation on this case if you set opaque or not will result in either begin completely opaque or 
-     * complete transparent on the internal alpha level. so it will not call the parent implementation. however the result 
-     * will appear to be the same
-     * @param isOpaque 
+     * unlike the original implementation on this case if you set opaque or not
+     * will result in either begin completely opaque or complete transparent on
+     * the internal alpha level. so it will not call the parent implementation.
+     * however the result will appear to be the same
+     *
+     * @param isOpaque
      */
     @Override
     public void setOpaque(boolean isOpaque) {
         if (isOpaque) {
-            setPanelTrasparency(255);
-        }else{
-            setPanelTrasparency(0);
+            setPanelTrasparency(MAX_ALPHA);
+        } else {
+            setPanelTrasparency(MIN_ALPHA);
         }
     }
 
@@ -97,19 +102,30 @@ public class translucentpanel extends JPanel {
     public void setBackground(Color bg) {
         super.setBackground(bg);
         if (bg != null) {
-            setcolor(bg);
+            setColor(bg);
         } else {
-            setcolor(DEFCOL);
+            setColor(DEFAULT_COLOR);
         }
     }
 
-    public final void setcolor(Color col) {
+    public final void setColor(Color col) {
+        setColor(col, false);
+    }
+
+    public final void setColor(Color col, boolean UseColorAlpha) {
         if (col != null) {
-            int r = col.getRed();
-            int g = col.getGreen();
-            int b = col.getBlue();
-            ppColor = new Color(r, g, b, trasparency);
+            if (alphaIntensity == 0xFF && col.getAlpha() == 0xFF) {
+                ColorOverride = col;
+            }
+            if (col.getAlpha() == 0xFF || !UseColorAlpha) {
+                var colorvalue = 0x00FFFFFF & col.getRGB();//strip alpha if any
+                colorvalue = ((alphaIntensity & 0xFF) << 24) | colorvalue;
+                ColorOverride = new Color(colorvalue, true);
+            } else if (UseColorAlpha) {
+                ColorOverride = col;
+                alphaIntensity = ColorOverride.getAlpha();
+            }
+            this.repaint();
         }
-        this.repaint();
     }
 }

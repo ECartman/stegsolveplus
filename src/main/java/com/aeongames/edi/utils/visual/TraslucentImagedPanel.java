@@ -1,5 +1,5 @@
 /*
- *  Copyright © 2008-2012 Eduardo Vindas. All rights reserved.
+ *  Copyright © 2012,2024 Eduardo Vindas. All rights reserved.
  *  
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -16,70 +16,83 @@ import java.awt.Graphics;
 import java.awt.Image;
 
 /**
- *
- * @author  Eduardo Vindas
+ * a Panel that Renders a Image with a Background that support levels of Transparency
+ * thus this panel can render a Image and being totally opaque or Totally transparent
+ * or a level in between. 
+ * this panel also support rendering the panel as a "Round Rectangle"
+ * @author Eduardo Vindas
  */
 public class TraslucentImagedPanel extends ImagePanel {
 
     public static final int DEFAULTARC = 0;
-    public static final int DEFTRANSPARENCY = 190;
-    public static final int MIN_TRANSPARENCY=0,MAX_TRANSPARENCY=255;
-    public static final Color DEFCOL = new Color(219, 229, 241, DEFTRANSPARENCY); //r,g,b,alpha
-    private int arcWidth = DEFAULTARC, arcHeight = DEFAULTARC;
-    private int trasparency = DEFTRANSPARENCY;
-    private Color ppColor = DEFCOL;
+    public static final short DEFTRANSPARENCY = 190;
+    public static final short MIN_ALPHA = 0, MAX_ALPHA = 0xFF;
+    public static final Color DEFAULT_COLOR = new Color(219, 229, 241, DEFTRANSPARENCY); //r,g,b,alpha
+    private int arcWidth = DEFAULTARC,
+            arcHeight = DEFAULTARC;
+    private int alphaIntensity = DEFTRANSPARENCY;
+    private Color ColorOverride = DEFAULT_COLOR;
 
     public TraslucentImagedPanel() {
         super();
         super.setOpaque(false);
-        setcolor(getBackground());
     }
 
     public TraslucentImagedPanel(Image todisplay) {
         super(todisplay);
         super.setOpaque(false);
-        setcolor(getBackground());
     }
-    
+
     private TraslucentImagedPanel(Image todisplay, float Imagealpha) {
-        super(todisplay,Imagealpha);
+        super(todisplay, Imagealpha);
         super.setOpaque(false);
-        setcolor(getBackground());
     }
 
     /**
-     * unlike the original implementation on this case if you set opaque or not will result in either begin completely opaque or 
-     * complete transparent on the internal alpha level. so it will not call the parent implementation. however the result 
-     * will appear to be the same
-     * NOTE: on this case it does not affect the image! 
-     * @param isOpaque 
+     * unlike the original implementation on this case if you set opaque or not
+     * will result in either begin completely opaque or complete transparent on
+     * the internal alpha level. so it will not call the parent implementation.
+     * however the result will appear to be the same NOTE: on this case it does
+     * not affect the image!
+     *
+     * @param isOpaque
      */
     @Override
     public void setOpaque(boolean isOpaque) {
         if (isOpaque) {
-            setPanelTrasparency(MAX_TRANSPARENCY);
-        }else{
-            setPanelTrasparency(MIN_TRANSPARENCY);
+            setPanelTrasparency(MAX_ALPHA);
+        } else {
+            setPanelTrasparency(MIN_ALPHA);
         }
     }
-    
-    public void setPanelTrasparency(int Trasparency) {
-        if (Trasparency >= MIN_TRANSPARENCY && Trasparency <= MAX_TRANSPARENCY) {
-            trasparency = Trasparency;
-            setcolor(ppColor);
+
+    public void setPanelTrasparency(short newAlphaLevel) {
+        if (newAlphaLevel == alphaIntensity) {
+            return;
+        }
+        if (newAlphaLevel >= MIN_ALPHA && newAlphaLevel <= MAX_ALPHA) {
+            alphaIntensity = newAlphaLevel;
+            updatecolor();
         }
         repaint();
     }
 
+    private void updatecolor() {
+        var backColor = ColorOverride == null ? getBackground() : ColorOverride;
+        var colorvalue = 0x00FFFFFF & backColor.getRGB();//strip alpha if any
+        colorvalue = ((alphaIntensity & 0xFF) << 24) | colorvalue;
+        ColorOverride = new Color(colorvalue, true);
+    }
+
     public int getpanelAlpha() {
-        return trasparency;
+        return alphaIntensity;
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Color temp = g.getColor();
-        g.setColor(ppColor);
+        g.setColor(ColorOverride);
         g.fillRoundRect(0, 0, this.getWidth(), this.getHeight(), arcWidth, arcHeight);
         g.setColor(temp);
     }
@@ -110,21 +123,32 @@ public class TraslucentImagedPanel extends ImagePanel {
 
     @Override
     public void setBackground(Color bg) {
-        super.setBackground(bg);
         if (bg != null) {
-            setcolor(bg);
+            setColor(bg);
         } else {
-            setcolor(DEFCOL);
+            setColor(DEFAULT_COLOR);
         }
+        super.setBackground(ColorOverride);
     }
 
-    public final void setcolor(Color col) {
+    public final void setColor(Color col) {
+        setColor(col, false);
+    }
+
+    public final void setColor(Color col, boolean UseColorAlpha) {
         if (col != null) {
-            int r = col.getRed();
-            int g = col.getGreen();
-            int b = col.getBlue();
-            ppColor = new Color(r, g, b, trasparency);
+            if (alphaIntensity == 0xFF && col.getAlpha() == 0xFF) {
+                ColorOverride = col;
+            }
+            if (col.getAlpha() == 0xFF || !UseColorAlpha) {
+                var colorvalue = 0x00FFFFFF & col.getRGB();//strip alpha if any
+                colorvalue = ((alphaIntensity & 0xFF) << 24) | colorvalue;
+                ColorOverride = new Color(colorvalue, true);
+            } else if (UseColorAlpha) {
+                ColorOverride = col;
+                alphaIntensity = ColorOverride.getAlpha();
+            }
+            this.repaint();
         }
-        this.repaint();
     }
 }

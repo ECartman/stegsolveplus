@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2008-2011,2024 Eduardo Vindas. All rights reserved.
+ * Copyright © 2024 Eduardo Vindas. All rights reserved.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -15,6 +15,7 @@ package com.aeongames.edi.utils.visual;
 import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -29,22 +30,23 @@ import java.util.Objects;
 import javax.swing.Action;
 import javax.swing.ActionMap;
 import javax.swing.Icon;
-import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
+import static javax.swing.JTabbedPane.SCROLL_TAB_LAYOUT;
 import javax.swing.SwingUtilities;
 
 /**
- * 
+ *
  * A component that lets the user switch between a group of components by
  * clicking on a tab with a given title and/or icon. this version extends on
  * <a href="https://docs.oracle.com/javase/tutorial/uiswing/components/tabbedpane.html">How
  * to Use Tabbed Panes</a>
  * <br>
- * this version extends from a normal {@link JTabbedPane} and from {@link JImageTabPane}
- * as this version also support Dragging and Dropping Tabs from this Pane into a 
- * different positions.
- * 
+ * this version extends from a normal {@link JTabbedPane} and from
+ * {@link JImageTabPane} as this version also support Dragging and Dropping Tabs
+ * from this Pane into a different positions.
+ *
  * @author Eduardo V
+ * @version 1.7
  * @see JImageTabPane
  * @see JTabbedPane
  */
@@ -74,13 +76,13 @@ public class JAeonTabPane extends JImageTabPane {
      */
     private static final DataFlavor J_AEON_TAB_FLAVOR = new DataFlavor(DataFlavor.javaJVMLocalObjectMimeType, DATA_FLAVOR_NAME);
     // </editor-fold>
- 
+
     // <editor-fold defaultstate="collapsed" desc="ReadOnly">
     /**
      * a transparent panel that is use to paint transparent components and
      * images.
      */
-    private final GhostGlassPane glassPane = new GhostGlassPane();
+    private final Ghostpainter Ghostdavici = new Ghostpainter();
 
     /* Drag and Drop operations to track the state of the user's gesture */
     private final DragSourceListener dsl = new DragSourceListener() {
@@ -106,8 +108,8 @@ public class JAeonTabPane extends JImageTabPane {
         public void dragExit(DragSourceEvent e) {
             e.getDragSourceContext().setCursor(DragSource.DefaultMoveNoDrop);
             lineRect.setRect(0, 0, 0, 0);
-            glassPane.setPoint(new Point(-1000, -1000));
-            glassPane.repaint();
+            Ghostdavici.setPoint(new Point(-1000, -1000));
+            JAeonTabPane.this.repaint();
         }
 
         /**
@@ -120,15 +122,15 @@ public class JAeonTabPane extends JImageTabPane {
         @Override
         public void dragOver(DragSourceDragEvent e) {
             var DragLocation = e.getLocation();
-            SwingUtilities.convertPointFromScreen(DragLocation, glassPane);
+            SwingUtilities.convertPointFromScreen(DragLocation, JAeonTabPane.this);
             int targetIdx = getTargetTabIndex(DragLocation);
             if (getTabAreaRectangle().contains(DragLocation) && targetIdx >= 0
                     && targetIdx != dragIndex && targetIdx != dragIndex + 1) {
                 e.getDragSourceContext().setCursor(DragSource.DefaultMoveDrop);
-                glassPane.setCursor(DragSource.DefaultMoveDrop);
+                JAeonTabPane.this.setCursor(DragSource.DefaultMoveDrop);
             } else {
                 e.getDragSourceContext().setCursor(DragSource.DefaultMoveNoDrop);
-                glassPane.setCursor(DragSource.DefaultMoveNoDrop);
+                JAeonTabPane.this.setCursor(DragSource.DefaultMoveNoDrop);
             }
         }
 
@@ -142,11 +144,14 @@ public class JAeonTabPane extends JImageTabPane {
         public void dragDropEnd(DragSourceDropEvent e) {
             lineRect.setRect(0, 0, 0, 0);
             dragIndex = -1;
-            glassPane.setVisible(false);
+            Ghostdavici.setVisible(false);
             if (DrawsGhost()) {
-                glassPane.setVisible(false);
-                glassPane.setImage(null);
+                Ghostdavici.setVisible(false);
+                Ghostdavici.setImage(null);
             }
+            e.getDragSourceContext().setCursor(Cursor.getDefaultCursor());
+            JAeonTabPane.this.setCursor(Cursor.getDefaultCursor());
+            JAeonTabPane.this.repaint();
         }
 
         /**
@@ -356,7 +361,7 @@ public class JAeonTabPane extends JImageTabPane {
         int buttonsize = 30; //xxx magic number of scroll button size
         int rwh = 20;
         Rectangle r = getTabAreaRectangle();
-        if (tabPlacement == TOP || tabPlacement == BOTTOM) {
+        if (tabPlacement == JTabbedPane.TOP || tabPlacement == JTabbedPane.BOTTOM) {
             rBackward.setBounds(r.x, r.y, rwh, r.height);
             rForward.setBounds(r.x + r.width - rwh - buttonsize, r.y, rwh, r.height);
         } else if (tabPlacement == LEFT || tabPlacement == RIGHT) {
@@ -411,10 +416,7 @@ public class JAeonTabPane extends JImageTabPane {
      * regardless
      *
      */
-    private void updateGlassPane(Component c, Point tabPt) {
-        if (getRootPane().getGlassPane() != glassPane) {
-            getRootPane().setGlassPane(glassPane);
-        }
+    private void UpdateGhostPainter(Component c, Point tabPt) {
         if (DrawsGhost()) {
             Rectangle rect = getBoundsAt(dragIndex);
             BufferedImage image = new BufferedImage(c.getWidth(), c.getHeight(), BufferedImage.TYPE_INT_ARGB);
@@ -424,12 +426,13 @@ public class JAeonTabPane extends JImageTabPane {
                 rect.x = rect.x < 0 ? 0 : rect.x;
                 rect.y = rect.y < 0 ? 0 : rect.y;
                 image = image.getSubimage(rect.x, rect.y, rect.width, rect.height);
-                glassPane.setImage(image);
+                Ghostdavici.setImage(image);
             }
-            Point glassPt = SwingUtilities.convertPoint(c, tabPt, glassPane);
-            glassPane.setPoint(glassPt);
+            Point glassPt = SwingUtilities.convertPoint(c, tabPt, this);
+            Ghostdavici.setPoint(glassPt);
         }
-        glassPane.setVisible(true);
+        Ghostdavici.setVisible(true);
+        repaint();
     }
 
     /**
@@ -463,7 +466,7 @@ public class JAeonTabPane extends JImageTabPane {
      * @return
      */
     protected final Rectangle getTabAreaRectangle() {
-        Rectangle tabbedRect = SwingUtilities.convertRectangle(this, getBounds(), glassPane);
+        Rectangle tabbedRect = getBounds();
         Component comp = getSelectedComponent();
         int idx = 0;
         while (comp == null && idx < getTabCount()) {
@@ -472,16 +475,16 @@ public class JAeonTabPane extends JImageTabPane {
         Rectangle compRect = (comp == null) ? new Rectangle() : comp.getBounds();
 
         switch (tabPlacement) {
-            case BOTTOM:
+            case JTabbedPane.BOTTOM:
                 tabbedRect.y = tabbedRect.y + compRect.y + compRect.height;
             //fallthought to top code as we also need this same calculation for bottom.
-            case TOP:
+            case JTabbedPane.TOP:
                 tabbedRect.height = tabbedRect.height - compRect.height;
                 break;
-            case RIGHT:
+            case JTabbedPane.RIGHT:
                 tabbedRect.x = tabbedRect.x + compRect.x + compRect.width;
             //fallthought to Left code as we also need this same calculation for Left.
-            case LEFT:
+            case JTabbedPane.LEFT:
                 tabbedRect.width = tabbedRect.width - compRect.width;
                 break;
             default:
@@ -504,7 +507,7 @@ public class JAeonTabPane extends JImageTabPane {
         }
         var DrawAt = DropIndex - 1;
         DrawAt = DrawAt < 0 ? 0 : DrawAt;
-        Rectangle r = SwingUtilities.convertRectangle(this, getBoundsAt(DrawAt), glassPane);
+        Rectangle r = getBoundsAt(DrawAt);
         boolean isTopOrBottom = tabPlacement == JTabbedPane.TOP || tabPlacement == JTabbedPane.BOTTOM;
         double rx, ry;
         if (DropIndex == 0) {
@@ -518,6 +521,10 @@ public class JAeonTabPane extends JImageTabPane {
         var rHeight = isTopOrBottom ? r.height : LINEWIDTH;
         r.setRect(rx, ry, rWidth, rHeight);
         return r;
+    }
+    
+    private int getTargetTabIndex(Point RelativePoint){
+        return getTargetTabIndex(RelativePoint,false);
     }
 
     /**
@@ -534,8 +541,8 @@ public class JAeonTabPane extends JImageTabPane {
      * mouse
      * @return the TARGET index where the drag would land.
      */
-    private int getTargetTabIndex(Point RelativePoint) {
-        Point tabPt = SwingUtilities.convertPoint(glassPane, RelativePoint, JAeonTabPane.this);
+    private int getTargetTabIndex(Point RelativePoint, boolean MostIntersect) {
+        Point tabPt = RelativePoint; //SwingUtilities.convertPoint(this, RelativePoint, JAeonTabPane.this);
         //after checking the couse code for what the next line does. it basically the same we do. 
         //but we need to do a calculation to the rectangle so we can drop "in the inbetween" 
         // and thus if we use tabForCoordinate we would loose performance. 
@@ -556,6 +563,11 @@ public class JAeonTabPane extends JImageTabPane {
                 //move the rectangle to be inbetween tabs
                 var moved = r.y - r.height / 2;
                 r.setRect(r.x, moved, r.width, r.height);
+            }
+            if(!MostIntersect && isTopOrBottom){
+                tabPt.move(tabPt.x, r.y+r.height/2);
+            }else if(!MostIntersect){
+                tabPt.move(r.x+r.width/2, tabPt.y);
             }
             if (r.contains(tabPt)) {
                 return i;
@@ -622,7 +634,7 @@ public class JAeonTabPane extends JImageTabPane {
      * last part requires work to support other things to be dropped into.)
      */
     private void initdnd() {
-        //listen to "drag acitivty start"
+        //listen to "drag acitivty start" from this component (when we start dragging a tab) 
         final DragGestureListener dgl = (var DragGestureEvt) -> {
             //if there are only 1 tab or none. dont allow drag
             if (getTabCount() <= 1) {
@@ -635,7 +647,7 @@ public class JAeonTabPane extends JImageTabPane {
                 return;
             }
             //update the glass pane and show the ghost if needed
-            updateGlassPane(DragGestureEvt.getComponent(), DragGestureEvt.getDragOrigin());
+            UpdateGhostPainter(DragGestureEvt.getComponent(), DragGestureEvt.getDragOrigin());
             try {
                 //start the D&D action.
                 DragGestureEvt.startDrag(DragSource.DefaultMoveDrop, dndTransferable, dsl);
@@ -644,7 +656,7 @@ public class JAeonTabPane extends JImageTabPane {
         };
         new DragSource().createDefaultDragGestureRecognizer(this, DnDConstants.ACTION_COPY_OR_MOVE, dgl);
         //setup the D&D Source and Target. given we D&D tabs within the Same Pane we set both here. 
-        var dptarget = new DropTarget(glassPane, DnDConstants.ACTION_COPY_OR_MOVE, new CDropTargetListener(), true);
+        var dptarget = new DropTarget(this,/*glassPane,*/ DnDConstants.ACTION_COPY_OR_MOVE, new CDropTargetListener(), true);
     }
 
     //Documentation Pending after this point
@@ -683,8 +695,8 @@ public class JAeonTabPane extends JImageTabPane {
             var DragLocation = e.getLocation();
             lineRect.setBounds(getTargetRectangle(getTargetTabIndex(DragLocation)));
             if (DrawsGhost()) {
-                glassPane.setPoint(DragLocation);
-                glassPane.repaint();
+                Ghostdavici.setPoint(DragLocation);
+                JAeonTabPane.this.repaint();
             }
             ScrollCheckAndMove(DragLocation);
         }
@@ -720,13 +732,19 @@ public class JAeonTabPane extends JImageTabPane {
         }
     }
 
+    @Override
+    public void paintComponent(Graphics g) {
+        super.paintComponent(g); //paint the parent. ONCE that this done we will drawn on top of that.
+        Ghostdavici.paintComponent(g);
+    }
+
     /**
      * this inner class is designed as a JPanel that will be show as a
      * transparent panel (as the "GlassPane") that will paint the "ghost" images
      * for the drag and drop and show a representation of the tab we are
      * dragging also can e used to paint some other transparent effects.
      */
-    protected class GhostGlassPane extends JPanel {
+    protected class Ghostpainter {
 
         /**
          * the default factor of transparency to draw graphics on this Pane
@@ -736,12 +754,15 @@ public class JAeonTabPane extends JImageTabPane {
         /**
          * Location where to Paint the TabGhost if not null.
          */
-        private Point location = new Point(0, 0);
-        private BufferedImage TabGhost = null;
+        private Point location;
+        private BufferedImage TabGhost;
+        private boolean isvisible;
 
-        public GhostGlassPane() {
-            super.setOpaque(false);
+        public Ghostpainter() {
             composite = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, ALPHA_FACTOR);
+            location = new Point(0, 0);
+            TabGhost = null;
+            isvisible = false;
         }
 
         /**
@@ -764,52 +785,71 @@ public class JAeonTabPane extends JImageTabPane {
         }
 
         /**
-         * this is a Glass Panel. this call is ignored.
-         *
-         * @param isOpaque the new value for Opaque, this value is ignored
-         */
-        @Override
-        public void setOpaque(boolean isOpaque) {
-        }
-
-        /**
          * paint *This* component. this Panel Is unique. and we don't paint the
          * background or content this is a transparent Pane. and thus we don't
          * call Parent method.
          *
          * @param g a instance of Graphics to paint into
          */
-        @Override
         public void paintComponent(Graphics g) {
+            if (!isvisible) {
+                return;
+            }
             if (g instanceof Graphics2D g2) {
                 g2.setComposite(composite);
-                if (dragIndex >= 0) {
-                    g2.setPaint(getLineColor());
-                    g2.fill(lineRect);
-                }
-                //debug
-//               g2.setPaint(Color.GREEN);
-//               g2.fill(rBackward);
-//               g2.fill(rForward);
             }
-            //if(g==null) return;// this check should not be required as Swing should ensure that does not happen. 
-            if (JAeonTabPane.this.isPaintScrollArea()
-                    && JAeonTabPane.this.getTabLayoutPolicy() == SCROLL_TAB_LAYOUT) {
-                if (tabPlacement == BOTTOM || tabPlacement == TOP) {
+            //var debug = true;
+            double xx = 0, yy = 0;
+            if (tabPlacement == BOTTOM || tabPlacement == TOP) {
+                if (JAeonTabPane.this.isPaintScrollArea() && JAeonTabPane.this.getTabLayoutPolicy() == SCROLL_TAB_LAYOUT) {
                     var centerpoint = getCenterPosition(rBackward, LEFTIMG.getWidth(null), LEFTIMG.getHeight(null));
                     g.drawImage(LEFTIMG, centerpoint.x, centerpoint.y, null);
                     centerpoint = getCenterPosition(rForward, RIGHTIMG.getWidth(null), RIGHTIMG.getHeight(null));
                     g.drawImage(RIGHTIMG, centerpoint.x, centerpoint.y, null);
-                } else {
+                }
+                if (TabGhost != null) {
+                    xx = location.getX() - (TabGhost.getWidth() / 2d);
+                    yy = getCenterY(rForward, TabGhost.getHeight());
+                }
+            } else {
+                if (JAeonTabPane.this.isPaintScrollArea() && JAeonTabPane.this.getTabLayoutPolicy() == SCROLL_TAB_LAYOUT) {
                     g.drawImage(UPIMG, rBackward.x, rBackward.y, null);
                     double initpos = (rForward.getY() + rForward.getHeight()) - DOWNIMG.getHeight(null);
                     g.drawImage(DOWNIMG, rForward.x, (int) initpos, null);
                 }
+                if (TabGhost != null) {
+                    xx = getCenterX(rForward, TabGhost.getWidth());
+                    yy = location.getY() - (TabGhost.getHeight() / 2d);
+                }
             }
             if (TabGhost != null) {
-                double xx = location.getX() - (TabGhost.getWidth() / 2d);
-                double yy = location.getY() - (TabGhost.getHeight() / 2d);
                 g.drawImage(TabGhost, (int) xx, (int) yy, null);
+               /*
+                //debug
+                if (debug && g instanceof Graphics2D g2) {
+                    Rectangle r = new Rectangle((int) xx, (int) yy, TabGhost.getWidth(), TabGhost.getHeight());
+                    g2.setPaint(Color.GREEN);
+                    g2.fill(r);
+                    xx = location.getX() - (TabGhost.getWidth() / 2d);
+                    yy = location.getY() - (TabGhost.getHeight() / 2d);
+                    r = new Rectangle((int) xx, (int) yy, TabGhost.getWidth(), TabGhost.getHeight());
+                    g2.fill(r);
+                }
+                */
+            }
+
+            if (g instanceof Graphics2D g2) {
+                /*
+                if (debug) {
+                    g2.setPaint(Color.GREEN);
+                    g2.fill(rBackward);
+                    g2.fill(rForward);
+                }
+                */
+                if (dragIndex >= 0) {
+                    g2.setPaint(getLineColor());
+                    g2.fill(lineRect);
+                }
             }
         }
 
@@ -833,6 +873,26 @@ public class JAeonTabPane extends JImageTabPane {
                 CenteredX = (int) (Outer.getCenterX() - Width / 2.0);
             }
             return new Point(CenteredX, CenteredY);
+        }
+
+        private int getCenterY(Rectangle Outer, int Height) {
+            var CenteredY = Outer.y;
+            if (Outer.getHeight() > Height) {
+                CenteredY = (int) (Outer.getCenterY() - Height / 2.0);
+            }
+            return CenteredY;
+        }
+
+        private int getCenterX(Rectangle Outer, int Width) {
+            var CenteredX = Outer.x;
+            if (Outer.getWidth() > Width) {
+                CenteredX = (int) (Outer.getCenterX() - Width / 2.0);
+            }
+            return CenteredX;
+        }
+
+        private void setVisible(boolean b) {
+            isvisible = b;
         }
     }
 }
