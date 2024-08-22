@@ -113,14 +113,14 @@ public class JImageTabPane extends javax.swing.JTabbedPane {
         g2.setRenderingHints(tmp);
         if (this.getTabCount() == 0) {
             switch (ScalePolicy) {
-                case ImageScaleComponents.SCALE_ALWAYS:
+                case SCALE_ALWAYS:
                     paintRespectRatio(g);
                     break;
-                case ImageScaleComponents.SCALE_USE_ALL_SPACE:
+                case SCALE_USE_ALL_SPACE:
                     paintDefault(g);
                     break;
                 default:
-                case ImageScaleComponents.SCALE_SMALL_ONLY:
+                case SCALE_SMALL_ONLY:
                     paintToSize(g);
                     break;
             }

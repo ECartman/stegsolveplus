@@ -250,17 +250,17 @@ public class ImagePanel extends javax.swing.JPanel {
 //       ((Graphics2D) g).setRenderingHint(RenderingHints.KEY_RENDERING,
 //                RenderingHints.VALUE_RENDER_QUALITY);
         switch (ScalePolicy) {
-            case ImageScaleComponents.SCALE_ALWAYS:
+            case SCALE_ALWAYS:
                 paint_respect_ratio(g);
                 break;
-            case ImageScaleComponents.SCALE_USE_ALL_SPACE:
+            case SCALE_USE_ALL_SPACE:
                 paint_default(g);
                 break;
-            case ImageScaleComponents.NO_SCALABLE_TEXTURE:
+            case NO_SCALABLE_TEXTURE:
                 paintsTexture(g);
                 break;
             default:/*do the same as SCALE_SMALL_ONLY by default*/
-            case ImageScaleComponents.SCALE_SMALL_ONLY:
+            case SCALE_SMALL_ONLY:
                 //meh lets set paint to size as default if somthing is wrong...
                 paint_to_size(g);
                 break;

@@ -251,7 +251,7 @@ public class JAeonTabPane extends JImageTabPane {
      * dragged let set it a default as a nice "blue??" we will allow change so
      * the implementation color can be changed where required.
      */
-    private Color lineColor = new Color(0, 100, 255);
+    private Color lineColor = new Color(0, 150, 255);
 
     /**
      * the supported flavors of data to accept on D&D for this TabPane.
@@ -749,7 +749,7 @@ public class JAeonTabPane extends JImageTabPane {
         /**
          * the default factor of transparency to draw graphics on this Pane
          */
-        private final static float ALPHA_FACTOR = 0.5f;
+        private final static float ALPHA_FACTOR = 0.7f;
         private final AlphaComposite composite;
         /**
          * Location where to Paint the TabGhost if not null.
