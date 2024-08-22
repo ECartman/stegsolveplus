@@ -17,6 +17,7 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -59,6 +60,29 @@ public class InvestigationTab extends Tab {
         _setTitle(FilePath);
         Analist = new StegnoAnalist(FilePath);
         pFooter.SetProgressIndeterminate();
+    }
+
+    public boolean IsAnalizing(Path OtherFile) {
+        if (OtherFile == null) {
+            return false;
+        }
+        var path = Analist.getFilePath();
+        if (path != null) {
+            path = path.toAbsolutePath();
+            OtherFile = OtherFile.toAbsolutePath();
+            boolean result = false;
+            try {
+                result = Files.isSameFile(path, OtherFile);
+            } catch (IOException ex) {
+            }
+            return result;
+        }else{
+          return OtherFile.toAbsolutePath().toString().equals(Analist.getAnalisisSource());
+        }
+    }
+
+    public boolean IsAnalizing(URL OtherFile) {
+        return OtherFile.toString().equals(Analist.getAnalisisSource());
     }
 
     public void RunAnalist(boolean NewThread) {

@@ -55,10 +55,22 @@ public class StegnoAnalist {
     public StegnoAnalist(URL Address) {
         this.ImageAddress = Address;
     }
+    
+    public Path getFilePath(){
+        return File;
+    }
+    
+    public String getAnalisisSource() {
+        if (File != null) {
+            return File.toString();
+        }else {
+            return ImageAddress.toString();
+        }
+    }
 
     public List<Pair<String, BufferedImage>> RunTrasFormations(boolean forced) throws IOException {
         LoadImage(forced);
-        if (ImageCache == null &&ImageCache.ImageIsValid()) {
+        if (ImageCache == null && ImageCache.ImageIsValid()) {
             //notify error.
             //fail to load the image we might throw a error instead? 
             return null;
@@ -123,15 +135,17 @@ public class StegnoAnalist {
         });
         return transform;
     }
-    
+
     /**
      * Inverts the color of the image using HSV Rotation. <br>
-     * <a href="https://www.niwa.nu/2013/05/math-behind-colorspace-conversions-rgb-hsl/">Source 1</a>
-     * <a href="https://geraldbakker.nl/psnumbers/hsb-explained.html">Source 2</a>
+     * <a href="https://www.niwa.nu/2013/05/math-behind-colorspace-conversions-rgb-hsl/">Source
+     * 1</a>
+     * <a href="https://geraldbakker.nl/psnumbers/hsb-explained.html">Source
+     * 2</a>
      *
      * @return a instance of BufferImage with the inverted HUE colors.
      */
-    private void getHSVInversions(List<Pair<String, BufferedImage>> storage){
+    private void getHSVInversions(List<Pair<String, BufferedImage>> storage) {
         //inverted hue 
         var transform = ImageCache.createBIemptyCopy();
         //iverted hue and Brightness 
@@ -139,8 +153,8 @@ public class StegnoAnalist {
         //inverted saturation
         var transform3 = ImageCache.createBIemptyCopy();
         //inverted brightness only.
-         var transform4 = ImageCache.createBIemptyCopy();
-         
+        var transform4 = ImageCache.createBIemptyCopy();
+
         ImageCache.MathOnPixels((RGB, PixelPoint) -> {
             float[] HSV = new float[3];
             Color.RGBtoHSB(
@@ -148,34 +162,36 @@ public class StegnoAnalist {
                     RGB[ImageContainer.GREEN],
                     RGB[ImageContainer.BLUE],
                     HSV);
-            var invertedHue=(HSV[0] + 0.5f) % 1f;
-            var invertedbright=1f-HSV[2];
-            var InvertedColor = Color.HSBtoRGB(invertedHue,HSV[1],HSV[2]);
+            var invertedHue = (HSV[0] + 0.5f) % 1f;
+            var invertedbright = 1f - HSV[2];
+            var InvertedColor = Color.HSBtoRGB(invertedHue, HSV[1], HSV[2]);
             transform.setRGB(PixelPoint.x, PixelPoint.y, InvertedColor);
-            InvertedColor = Color.HSBtoRGB(invertedHue,HSV[1],invertedbright);
+            InvertedColor = Color.HSBtoRGB(invertedHue, HSV[1], invertedbright);
             transform2.setRGB(PixelPoint.x, PixelPoint.y, InvertedColor);
-            InvertedColor = Color.HSBtoRGB(HSV[1],1f-HSV[1],HSV[2]);
-            transform3.setRGB(PixelPoint.x, PixelPoint.y, InvertedColor);            
-            InvertedColor = Color.HSBtoRGB(HSV[1],HSV[1],invertedbright);
-            transform4.setRGB(PixelPoint.x, PixelPoint.y, InvertedColor);     
+            InvertedColor = Color.HSBtoRGB(HSV[1], 1f - HSV[1], HSV[2]);
+            transform3.setRGB(PixelPoint.x, PixelPoint.y, InvertedColor);
+            InvertedColor = Color.HSBtoRGB(HSV[1], HSV[1], invertedbright);
+            transform4.setRGB(PixelPoint.x, PixelPoint.y, InvertedColor);
         });
-        storage.add(new Pair<>("Inverted Hue",transform));
-        storage.add(new Pair<>("Inverted Hue and Brightness",transform2));
-        storage.add(new Pair<>("Inverted Saturation",transform3));
-        storage.add(new Pair<>("Inverted Brightness",transform4));    
+        storage.add(new Pair<>("Inverted Hue", transform));
+        storage.add(new Pair<>("Inverted Hue and Brightness", transform2));
+        storage.add(new Pair<>("Inverted Saturation", transform3));
+        storage.add(new Pair<>("Inverted Brightness", transform4));
     }
 
     /**
      * Inverts the color of the image using HSV Rotation. <br>
-     * <a href="https://www.niwa.nu/2013/05/math-behind-colorspace-conversions-rgb-hsl/">Source 1</a>
-     * <a href="https://geraldbakker.nl/psnumbers/hsb-explained.html">Source 2</a>
+     * <a href="https://www.niwa.nu/2013/05/math-behind-colorspace-conversions-rgb-hsl/">Source
+     * 1</a>
+     * <a href="https://geraldbakker.nl/psnumbers/hsb-explained.html">Source
+     * 2</a>
      *
      * @return a instance of BufferImage with the inverted HUE colors.
      */
     private BufferedImage HueInversionHSV() {
         //inverted hue 
         var transform = ImageCache.createBIemptyCopy();
-        
+
         ImageCache.MathOnPixels(transform, RGB -> {
             float[] HSV = new float[3];
             Color.RGBtoHSB(
@@ -190,7 +206,6 @@ public class StegnoAnalist {
         });
         return transform;
     }
-
 
     /**
      * Inverts the RGB color of the image.

@@ -11,16 +11,18 @@
  */
 package com.aeongames.stegsolveplus.ui;
 
+import com.aeongames.edi.utils.error.LoggingHelper;
 import com.aeongames.edi.utils.visual.ImageScaleComponents;
 import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalist;
+import java.awt.IllegalComponentStateException;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.nio.file.Path;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
-import javax.swing.LookAndFeel;
+import javax.swing.JRootPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
@@ -28,12 +30,17 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import org.pushingpixels.radiance.theming.api.skin.RadianceNightShadeLookAndFeel;
 
 /**
+ * the Main Windows(frame) for the application. this application is intended to
+ * have as few windows as possible and most data to be review within tabs on the
+ * Main Windows. with the exceptions of "opening files" and a few particular
+ * exceptions.
  *
- * @author Eduardo
+ * @author Eduardo Vindas
  */
 public class MainFrame extends javax.swing.JFrame {
 
     private int BusyTabs;
+    private boolean HackishOpenFile;
 
     /**
      * Creates new form MainFrame
@@ -41,6 +48,12 @@ public class MainFrame extends javax.swing.JFrame {
     public MainFrame() {
         BusyTabs = 0;
         initComponents();
+        var image = MainFrame.class.getResource("/com/aeongames/stegsolveplus/ui/OIG3.jpg") == null
+                ? null : new javax.swing.ImageIcon(
+                        MainFrame.class.getResource("/com/aeongames/stegsolveplus/ui/OIG3.jpg"));
+        if (image != null) {
+            this.setIconImage(image.getImage());
+        }
     }
 
     /**
@@ -55,10 +68,12 @@ public class MainFrame extends javax.swing.JFrame {
         MainMenu = new javax.swing.JMenuBar();
         FileMenu = new javax.swing.JMenu();
         MOpen = new javax.swing.JMenuItem();
+        jMenuItem2 = new javax.swing.JMenuItem();
         jMenu2 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("StegnoSolver + (ALPHA)");
         setMinimumSize(new java.awt.Dimension(370, 510));
 
         MainTabPane.setBackgroundPolicy(ImageScaleComponents.SCALE_ALWAYS);
@@ -75,6 +90,16 @@ public class MainFrame extends javax.swing.JFrame {
             }
         });
         FileMenu.add(MOpen);
+
+        jMenuItem2.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_L, java.awt.event.InputEvent.CTRL_DOWN_MASK));
+        jMenuItem2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/link.png"))); // NOI18N
+        jMenuItem2.setText("Open Link");
+        jMenuItem2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem2ActionPerformed(evt);
+            }
+        });
+        FileMenu.add(jMenuItem2);
 
         MainMenu.add(FileMenu);
 
@@ -107,6 +132,13 @@ public class MainFrame extends javax.swing.JFrame {
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
+    private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
+        var currentTab = MainTabPane.getSelectedComponent();
+        if (currentTab instanceof InvestigationTab ITab) {
+            ITab.RunAnalist(true);
+        }
+    }//GEN-LAST:event_jMenuItem1ActionPerformed
+
     /**
      * trigger by click on Open Action on the Menu bar.
      *
@@ -114,6 +146,9 @@ public class MainFrame extends javax.swing.JFrame {
      */
     private void MOpenActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MOpenActionPerformed
         MOpen.setEnabled(false);
+        if (HackishOpenFile) {
+            SetDefOSUI();
+        }
         JFileChooser fileChooser = new JFileChooser(System.getProperty("user.dir"));
         StringBuilder descriptor = new StringBuilder("Images (");
         var list2 = StegnoAnalist.ValidImagesFiles;
@@ -127,49 +162,107 @@ public class MainFrame extends javax.swing.JFrame {
         fileChooser.setFileFilter(new FileNameExtensionFilter(descriptor.toString(), list2));
         fileChooser.setMultiSelectionEnabled(true);
         int rVal = fileChooser.showOpenDialog(this);
+        if (HackishOpenFile) {
+            setRadianceUI();
+        }
         System.setProperty("user.dir", fileChooser.getCurrentDirectory().getAbsolutePath());
         if (rVal == JFileChooser.APPROVE_OPTION) {
             var selecteddata = fileChooser.getSelectedFiles();
             if (!loadImages(selecteddata)) {
                 MOpen.setEnabled(true);
             }
-            //TODO remove this reenabled. and only reenable once the task to load is done. 
+            //TODO remove this reenabled. and only reenable once the task to load is done.
             MOpen.setEnabled(true);
         } else {
             MOpen.setEnabled(true);
         }
     }//GEN-LAST:event_MOpenActionPerformed
 
-    private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
-        var currentTab = MainTabPane.getSelectedComponent();
-        if (currentTab instanceof InvestigationTab ITab) {
-                ITab.RunAnalist(true);
-        }
-    }//GEN-LAST:event_jMenuItem1ActionPerformed
+    private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
+        //prompt for a link. 
+    }//GEN-LAST:event_jMenuItem2ActionPerformed
 
     /**
-     * check if the file exist and can be read. if so lets create a new tab per
-     * file
+     * Checks whenever or not the File can be used. if the file is ready. check
+     * if we already have a tab for it. and if we do changes the tab to that
+     * particular file
      */
     private boolean loadImages(File[] selecteddata) {
-        var loadedTabs=false;
+        var loadedTabs = false;
         for (var file : selecteddata) {
             if (file.exists() && file.isFile() && file.canRead()) {
+                var pathFile = file.toPath();
+                int tabindx;
+                if ((tabindx = hasTabforFile(pathFile)) >= 0) {
+                    MainTabPane.setSelectedIndex(tabindx);
+                    continue;
+                }
                 InvestigationTab tab = null;
                 try {
-                    tab = new InvestigationTab(file.toPath());
+                    tab = new InvestigationTab(pathFile);
                     BusyTabs++;
                 } catch (FileNotFoundException ex) {
-                    Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
-                    //TODO sent this Error information into the Notification area or a log. 
+                    LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "File fail to load. while creating the Tab", ex);
                 }
                 if (tab != null) {
                     MainTabPane.add(tab);
-                    loadedTabs=true;// we m,ight want to do something extra here. but this will do for now. 
+                    loadedTabs = true;// we m,ight want to do something extra here. but this will do for now. 
                 }
             }
         }
         return loadedTabs;
+    }
+
+    private int hasTabforFile(Path pathFile) {
+        for (var index = 0; index < MainTabPane.getTabCount(); index++) {
+            if (MainTabPane.getComponentAt(index) instanceof InvestigationTab tab) {
+                if (tab.IsAnalizing(pathFile)) {
+                    return index;
+                }
+            }
+        }
+        return -1;
+    }
+
+    private void SetDefOSUI() {
+        this.setVisible(false);
+        dispose();
+        trySetLaFByName(UIManager.getSystemLookAndFeelClassName());
+        javax.swing.SwingUtilities.updateComponentTreeUI(this);
+        if (!UIManager.getLookAndFeel().getSupportsWindowDecorations()) {
+            try {
+                setUndecorated(false);
+            } catch (IllegalComponentStateException err) {
+            }
+            try {
+                getRootPane().setWindowDecorationStyle(JRootPane.NONE);
+            } catch (IllegalComponentStateException err) {
+            }
+        }
+        this.revalidate();
+        // this.setVisible(true);
+    }
+
+    private void setRadianceUI() {
+        this.setVisible(false);
+        dispose();
+        trySetLaFByName(RadianceNightShadeLookAndFeel.class.getName());
+        javax.swing.SwingUtilities.updateComponentTreeUI(this);
+        if (!UIManager.getLookAndFeel().getSupportsWindowDecorations()) {
+            try {
+                setUndecorated(false);
+            } catch (IllegalComponentStateException err) {
+            }
+            try {
+                getRootPane().setWindowDecorationStyle(JRootPane.NONE);
+            } catch (IllegalComponentStateException err) {
+            }
+        } else {
+            setUndecorated(true);
+            getRootPane().setWindowDecorationStyle(JRootPane.FRAME);
+        }
+        this.revalidate();
+        this.setVisible(true);
     }
 
     // <editor-fold defaultstate="collapsed" desc="Start Up Functions">
@@ -178,15 +271,30 @@ public class MainFrame extends javax.swing.JFrame {
      * on the EDT
      */
     private static void InitLAF() {
-        try {
-            LookAndFeel laf = new RadianceNightShadeLookAndFeel();
-            UIManager.setLookAndFeel(laf);//UIManager.getSystemLookAndFeelClassName());
-        } catch (UnsupportedLookAndFeelException e) {
-            //unable to set the UI LAF we could try just allowing the defaults. 
-            Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, e);
+        String LaFName = RadianceNightShadeLookAndFeel.class.getName();
+        if (!trySetLaFByName(LaFName)) {
+            trySetLaFByName(UIManager.getSystemLookAndFeelClassName());
         }
-        JFrame.setDefaultLookAndFeelDecorated(true);
-        JDialog.setDefaultLookAndFeelDecorated(true);
+    }
+
+    private static boolean trySetLaFByName(String Name) {
+        var result = false;
+        try {
+            UIManager.setLookAndFeel(Name);
+            result = true;
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
+            //unable to set the UI LAF we could try just allowing the defaults. 
+            LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "Unable to setup the UI LaF", e);
+        }
+
+        if (UIManager.getLookAndFeel().getSupportsWindowDecorations()) {
+            JFrame.setDefaultLookAndFeelDecorated(true);
+            javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
+        } else {
+            JFrame.setDefaultLookAndFeelDecorated(false);
+            javax.swing.JDialog.setDefaultLookAndFeelDecorated(false);
+        }
+        return result;
     }
 
     private static void ParseParams(String[] params) {
@@ -224,6 +332,7 @@ public class MainFrame extends javax.swing.JFrame {
     private com.aeongames.stegsolveplus.ui.JStegnoTabbedPane MainTabPane;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenuItem jMenuItem1;
+    private javax.swing.JMenuItem jMenuItem2;
     // End of variables declaration//GEN-END:variables
     // </editor-fold>  
 

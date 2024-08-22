@@ -176,10 +176,6 @@ public class TabCloseComp extends javax.swing.JPanel {
             addActionListener(e -> Close());
         }
 
-        //we don't want to update UI for this button
-        @Override
-        public void updateUI() {
-        }
         //paint the cross
 
         @Override
