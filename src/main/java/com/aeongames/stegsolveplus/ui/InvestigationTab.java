@@ -12,6 +12,7 @@
  */
 package com.aeongames.stegsolveplus.ui;
 
+import com.aeongames.stegsolveplus.ui.tabcomponents.Tab;
 import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalist;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;

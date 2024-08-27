@@ -9,7 +9,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.aeongames.stegsolveplus.ui;
+package com.aeongames.stegsolveplus.ui.tabcomponents;
 
 import static org.pushingpixels.radiance.theming.api.RadianceThemingCortex.GlobalScope;
 

@@ -253,10 +253,10 @@ public class ImagePanel extends javax.swing.JPanel {
 //                RenderingHints.VALUE_RENDER_QUALITY);
         switch (ScalePolicy) {
             case SCALE_ALWAYS:
-                paint_respect_ratio(g);
+                paintRespectRatio(g);
                 break;
             case SCALE_USE_ALL_SPACE:
-                paint_default(g);
+                paintDefault(g);
                 break;
             case NO_SCALABLE_TEXTURE:
                 paintsTexture(g);
@@ -264,7 +264,7 @@ public class ImagePanel extends javax.swing.JPanel {
             default:/*do the same as SCALE_SMALL_ONLY by default*/
             case SCALE_SMALL_ONLY:
                 //meh lets set paint to size as default if somthing is wrong...
-                paint_to_size(g);
+                paintToSize(g);
                 break;
         }
     }
@@ -274,13 +274,13 @@ public class ImagePanel extends javax.swing.JPanel {
      * will respect the image ratio so the image will be show as it should with
      * not forced size also will center the image
      */
-    private void paint_to_size(Graphics g) {
+    private void paintToSize(Graphics g) {
         if (RenderImage.getWidth(null) > -1 && RenderImage.getWidth(null) < getWidth() && RenderImage.getHeight(null) < getHeight()) {
             int Width = (getWidth() / 2) - RenderImage.getWidth(null) / 2;
             int Height = (getHeight() / 2) - RenderImage.getHeight(null) / 2;
             g.drawImage(RenderImage, Width, Height, RenderImage.getWidth(null), RenderImage.getHeight(null), this);
         } else {
-            paint_respect_ratio(g);
+            paintRespectRatio(g);
         }
     }
 
@@ -289,7 +289,7 @@ public class ImagePanel extends javax.swing.JPanel {
      * unknown to me) use with caution also if the image is expanded to much
      * might eventually look... stretch... it respect the image ratio BTW
      */
-    private void paint_respect_ratio(Graphics g) {
+    private void paintRespectRatio(Graphics g) {
         //ok now we want to keep the image ratio so lets try the new aproach
         int[] size = ImageUtils.keep_ratio_for_size(getWidth(),getHeight(), RenderImage);
         g.drawImage(RenderImage, size[2], size[3], size[0], size[1], this);
@@ -299,7 +299,7 @@ public class ImagePanel extends javax.swing.JPanel {
      * sets the image on the panel but stretch to the PANEL size so this will
      * not respect the ratio will fill the hold panel.
      */
-    private void paint_default(Graphics g) {
+    private void paintDefault(Graphics g) {
         g.drawImage(RenderImage, 0, 0, getWidth(),getHeight(), this);
     }
 
@@ -331,6 +331,7 @@ public class ImagePanel extends javax.swing.JPanel {
     /**
      * provides the image Dimension. the Dimensions are generated each time this
      * method is called.
+     * @return returns the Dimension of the underline image that is being rendered.
      */
     public Dimension getImageSize() {
         if (RenderImage != null) {

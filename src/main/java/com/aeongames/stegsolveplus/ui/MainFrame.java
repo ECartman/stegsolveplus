@@ -19,7 +19,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JRootPane;
@@ -39,7 +38,13 @@ import org.pushingpixels.radiance.theming.api.skin.RadianceNightShadeLookAndFeel
  */
 public class MainFrame extends javax.swing.JFrame {
 
+    /**
+     * TODO: remove
+     */
     private int BusyTabs;
+    /**
+     * TODO: better approach using javaFX or Low level?
+     */
     private boolean HackishOpenFile;
 
     /**
@@ -64,7 +69,7 @@ public class MainFrame extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        MainTabPane = new com.aeongames.stegsolveplus.ui.JStegnoTabbedPane();
+        MainTabPane = new com.aeongames.stegsolveplus.ui.tabcomponents.JStegnoTabbedPane();
         MainMenu = new javax.swing.JMenuBar();
         FileMenu = new javax.swing.JMenu();
         MOpen = new javax.swing.JMenuItem();
@@ -75,6 +80,7 @@ public class MainFrame extends javax.swing.JFrame {
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("StegnoSolver + (ALPHA)");
         setMinimumSize(new java.awt.Dimension(370, 510));
+        setName("MainFrame"); // NOI18N
 
         MainTabPane.setBackgroundPolicy(ImageScaleComponents.SCALE_ALWAYS);
 
@@ -179,9 +185,10 @@ public class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_MOpenActionPerformed
 
     private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
-        //prompt for a link. 
+        //TODO:prompt for a link. 
     }//GEN-LAST:event_jMenuItem2ActionPerformed
 
+    
     /**
      * Checks whenever or not the File can be used. if the file is ready. check
      * if we already have a tab for it. and if we do changes the tab to that
@@ -317,7 +324,7 @@ public class MainFrame extends javax.swing.JFrame {
                 frame.setVisible(true);
             } catch (Exception e) {
                 //log the error
-                Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, e);
+                LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "Exception at Main, Something crashed", e);
                 throw e;
             }
         });
@@ -329,7 +336,7 @@ public class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenu FileMenu;
     private javax.swing.JMenuItem MOpen;
     private javax.swing.JMenuBar MainMenu;
-    private com.aeongames.stegsolveplus.ui.JStegnoTabbedPane MainTabPane;
+    private com.aeongames.stegsolveplus.ui.tabcomponents.JStegnoTabbedPane MainTabPane;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JMenuItem jMenuItem2;

@@ -27,7 +27,7 @@ public class TranslucentPanel extends JPanel {
     public static final Color DEFAULT_COLOR = new Color(219, 229, 241, DEFTRANSPARENCY); //r,g,b,alpha
     private int arcWidth = DEFAULTARC,
             arcHeight = DEFAULTARC;
-    private int alphaIntensity = DEFTRANSPARENCY;
+    private short alphaIntensity = DEFTRANSPARENCY;
     private Color ColorOverride = DEFAULT_COLOR;
 
     public TranslucentPanel() {
@@ -51,15 +51,15 @@ public class TranslucentPanel extends JPanel {
         }
     }
 
-    public void setPanelTrasparency(int Trasparency) {
-        if (Trasparency >= 0 && Trasparency <= 255) {
+    public void setPanelTrasparency(short Trasparency) {
+        if (Trasparency >= MIN_ALPHA && Trasparency <= MAX_ALPHA) {
             alphaIntensity = Trasparency;
             setColor(ColorOverride);
         }
         repaint();
     }
 
-    public int getpanelAlpha() {
+    public short getpanelAlpha() {
         return alphaIntensity;
     }
 
@@ -117,13 +117,13 @@ public class TranslucentPanel extends JPanel {
             if (alphaIntensity == 0xFF && col.getAlpha() == 0xFF) {
                 ColorOverride = col;
             }
-            if (col.getAlpha() == 0xFF || !UseColorAlpha) {
+            if (!UseColorAlpha) {
                 var colorvalue = 0x00FFFFFF & col.getRGB();//strip alpha if any
                 colorvalue = ((alphaIntensity & 0xFF) << 24) | colorvalue;
                 ColorOverride = new Color(colorvalue, true);
             } else if (UseColorAlpha) {
                 ColorOverride = col;
-                alphaIntensity = ColorOverride.getAlpha();
+                alphaIntensity = (short) ColorOverride.getAlpha();
             }
             this.repaint();
         }

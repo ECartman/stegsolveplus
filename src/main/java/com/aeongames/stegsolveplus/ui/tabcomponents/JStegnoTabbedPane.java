@@ -9,7 +9,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.aeongames.stegsolveplus.ui;
+package com.aeongames.stegsolveplus.ui.tabcomponents;
 
 import com.aeongames.edi.utils.visual.Panels.JAeonTabPane;
 import java.awt.Component;
