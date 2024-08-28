@@ -23,7 +23,8 @@ import javax.swing.Icon;
  * @see JAeonTabPane
  */
 public class JStegnoTabbedPane extends JAeonTabPane {
-
+    public static final String TAB_REMOVED_EVT="JAeonTabPane.TabRemoved";
+    
     /**
      * {@inheritDoc}
      */
@@ -52,7 +53,8 @@ public class JStegnoTabbedPane extends JAeonTabPane {
             tab.setTabID(-1);
         }
         super.removeTabAt(index);
-        updateTabTitles(index);
+        updateTabTitles(index);        
+        firePropertyChange(TAB_REMOVED_EVT, getTabCount()+1,getTabCount());
     }
 
     /**

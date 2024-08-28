@@ -74,7 +74,7 @@ public class JAeonTabPane extends JImageTabPane {
      *
      * @see JAeonTabPane#DATA_FLAVOR_NAME
      */
-    private static final DataFlavor J_AEON_TAB_FLAVOR = new DataFlavor(DataFlavor.javaJVMLocalObjectMimeType, DATA_FLAVOR_NAME);
+    public static final DataFlavor J_AEON_TAB_FLAVOR = new DataFlavor(DataFlavor.javaJVMLocalObjectMimeType, DATA_FLAVOR_NAME);
     // </editor-fold>
 
     // <editor-fold defaultstate="collapsed" desc="ReadOnly">
@@ -574,7 +574,7 @@ public class JAeonTabPane extends JImageTabPane {
             }
         }
         //not found. check if we moved beyond the last tab.
-        Rectangle r = getBoundsAt(getTabCount() - 1);
+        Rectangle r = getTabCount()>0?getBoundsAt(getTabCount() - 1):null;
         if (r == null) {
             r = last;
         }
@@ -692,6 +692,10 @@ public class JAeonTabPane extends JImageTabPane {
 
         @Override
         public void dragOver(final DropTargetDragEvent e) {
+            if(!isDragAcceptable(e)){
+                e.rejectDrag();
+                return;
+            }
             var DragLocation = e.getLocation();
             lineRect.setBounds(getTargetRectangle(getTargetTabIndex(DragLocation)));
             if (DrawsGhost()) {

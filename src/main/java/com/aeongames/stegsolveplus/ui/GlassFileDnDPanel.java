@@ -21,11 +21,41 @@ import com.aeongames.edi.utils.visual.Panels.TranslucentImagedPanel;
  */
 public class GlassFileDnDPanel extends javax.swing.JPanel {
 
+    private short Alphalevel;
+    private float ImageAlpha;
+    private DragAndDrop dndHelper;
+
     /**
      * Creates new form GlassFileDnDpanel
      */
-    public GlassFileDnDPanel() {
+    public GlassFileDnDPanel(DragAndDrop helper) {
         initComponents();
+        dndHelper=helper;
+    }
+    
+
+    /**
+     * this sets the panel to be visible HOWEVER fully transparent.
+     *
+     * @param Invisible
+     */
+    public void setInvisible(boolean Invisible) {
+        var alpha = translucentImagedPanel1.getpanelAlpha();
+        if (alpha != 0) {
+            Alphalevel = alpha;
+        }
+        var alphaimg = translucentImagedPanel1.getImageAlphaLevel();
+        if (alphaimg != 0) {
+            ImageAlpha = alphaimg;
+        }
+        translucentImagedPanel1.setPanelTrasparency(Invisible ? 0 : Alphalevel);
+        translucentImagedPanel1.setImageTrasparency(Invisible ? 0 : ImageAlpha);
+    }
+
+    @Override
+    public void removeNotify() {
+        dndHelper.UnRegisterTarget(this);
+        super.removeNotify();
     }
 
     /**
@@ -45,6 +75,7 @@ public class GlassFileDnDPanel extends javax.swing.JPanel {
 
         setOpaque(false);
 
+        translucentImagedPanel1.setBackground(new java.awt.Color(255, 255, 0));
         translucentImagedPanel1.setArcHeight(100);
         translucentImagedPanel1.setArcWidth(100);
 
@@ -52,22 +83,28 @@ public class GlassFileDnDPanel extends javax.swing.JPanel {
         translucentImagedPanel1.setLayout(translucentImagedPanel1Layout);
         translucentImagedPanel1Layout.setHorizontalGroup(
             translucentImagedPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 455, Short.MAX_VALUE)
+            .addGap(0, 368, Short.MAX_VALUE)
         );
         translucentImagedPanel1Layout.setVerticalGroup(
             translucentImagedPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 340, Short.MAX_VALUE)
+            .addGap(0, 230, Short.MAX_VALUE)
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(translucentImagedPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addGap(80, 80, 80)
+                .addComponent(translucentImagedPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGap(80, 80, 80))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(translucentImagedPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addGap(80, 80, 80)
+                .addComponent(translucentImagedPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGap(80, 80, 80))
         );
     }// </editor-fold>//GEN-END:initComponents
 

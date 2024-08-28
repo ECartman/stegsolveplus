@@ -12,12 +12,20 @@
 package com.aeongames.stegsolveplus.ui;
 
 import com.aeongames.edi.utils.error.LoggingHelper;
+import com.aeongames.edi.utils.visual.Panels.JAeonTabPane;
+import java.awt.Component;
+import java.awt.datatransfer.DataFlavor;
 import java.awt.dnd.DnDConstants;
+import java.awt.dnd.DropTarget;
 import java.awt.dnd.DropTargetDragEvent;
 import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DropTargetEvent;
 import java.awt.dnd.DropTargetListener;
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import javax.swing.SwingUtilities;
 
@@ -32,12 +40,59 @@ import javax.swing.SwingUtilities;
 public abstract class DragAndDrop implements DropTargetListener {
 
     /**
+     * the DropTargets that can receive the Drop into. it is an array as we may
+     * support multiple drops components
+     */
+    protected Map<Component, DropTarget> Targets = new HashMap<>();
+    /**
+     * a list of flavors to ignore for this particular Listener.
+     */
+    protected List<DataFlavor> FlavorsIgnore = new LinkedList<>();
+
+    public DragAndDrop() {
+        //TODO: maybe move this 
+        FlavorsIgnore.add(JAeonTabPane.J_AEON_TAB_FLAVOR);
+    }
+
+    public boolean RegisterTarget(Component comp) {
+        if (Targets.containsKey(comp)) {
+            return false;
+        }
+        var newdrop = new DropTarget(comp, DnDConstants.ACTION_COPY_OR_MOVE, this);
+        Targets.put(comp, newdrop);
+        return true;
+    }
+
+    public DropTarget getDropTargetFor(Component comp) {
+        if (Targets.containsKey(comp)) {
+            return Targets.get(comp);
+        }
+        return null;
+    }
+
+    public boolean UnRegisterTarget(Component comp) {
+        if (Targets.containsKey(comp)) {
+            Targets.get(comp).removeDropTargetListener(this);
+            Targets.get(comp).removeNotify();
+             Targets.get(comp).setActive(false);
+            Targets.remove(comp);
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
     public final void dragEnter(DropTargetDragEvent dtde) {
         var log = LoggingHelper.getLogger(DragAndDrop.class.getName());
         log.entering(DragAndDrop.class.getName(), "<<Drag and Drop>> --> dragEnter");
+        if (ignoreFlavor(dtde)) {
+            log.log(Level.INFO, "DragEnter is to be Rejected");
+            dtde.rejectDrag();
+            return;
+        }
         //trigger update to the UI. 
         triggerDragdetected(dtde);
         log.log(Level.INFO, "DragEnter at Location: {0}", dtde.getLocation());
@@ -61,6 +116,11 @@ public abstract class DragAndDrop implements DropTargetListener {
     public void dragOver(DropTargetDragEvent dtde) {
         var log = LoggingHelper.getLogger(DragAndDrop.class.getName());
         log.entering(DragAndDrop.class.getName(), "<<Drag and Drop>> --> dragOver");
+        if (ignoreFlavor(dtde)) {
+            log.log(Level.INFO, "dragOver is to be Rejected");
+            dtde.rejectDrag();
+            return;
+        }
         log.log(Level.INFO, "dragOver at Location: {0}", dtde.getLocation());
         dtde.acceptDrag(DnDConstants.ACTION_COPY);
         //this one will trigger when a Drag is moved but has not finish (actively dragging)
@@ -73,7 +133,11 @@ public abstract class DragAndDrop implements DropTargetListener {
      */
     @Override
     public void dropActionChanged(DropTargetDragEvent dtde) {
-        //we dont need this event. 
+        var log = LoggingHelper.getLogger(DragAndDrop.class.getName());
+        if (ignoreFlavor(dtde)) {
+            log.log(Level.INFO, "dropActionChanged is to be Rejected");
+            dtde.rejectDrag();
+        }
     }
 
     /**
@@ -104,18 +168,20 @@ public abstract class DragAndDrop implements DropTargetListener {
             if (supportedflavor.isFlavorJavaFileListType()) {
                 dtde.acceptDrop(DnDConstants.ACTION_COPY);
                 //process files
-                handled=true;
+                handled = true;
                 break;
             } else if (supportedflavor.isFlavorTextType()) {
                 dtde.acceptDrop(DnDConstants.ACTION_COPY);
                 //process text
-                handled=true;
+                handled = true;
                 break;
             }
         }
-        if(!handled){
+        if (!handled) {
             //we are unable to handle this type of drop thus lets reject it. 
             dtde.rejectDrop();
+        } else {
+            dtde.dropComplete(true);
         }
 
         log.exiting(DragAndDrop.class.getName(), "<<Drag and Drop>> --> Drop");
@@ -124,8 +190,10 @@ public abstract class DragAndDrop implements DropTargetListener {
     private void triggerDragdetected(final DropTargetDragEvent dtde) {
         if (SwingUtilities.isEventDispatchThread()) {
             triggerDragdetectedImp(dtde);
+            return;
         }
         try {
+            //call this function again but from EDT
             SwingUtilities.invokeAndWait(() -> this.triggerDragdetected(dtde));
         } catch (InterruptedException ex) {
             LoggingHelper.getLogger(DragAndDrop.class.getName()).log(Level.SEVERE, "A call to UI was Interrupted", ex);
@@ -137,8 +205,10 @@ public abstract class DragAndDrop implements DropTargetListener {
     private void triggerDragExit(final DropTargetEvent dte) {
         if (SwingUtilities.isEventDispatchThread()) {
             triggerDragExitImp(dte);
+            return;
         }
         try {
+            //call this function again but from EDT
             SwingUtilities.invokeAndWait(() -> this.triggerDragExit(dte));
         } catch (InterruptedException ex) {
             LoggingHelper.getLogger(DragAndDrop.class.getName()).log(Level.SEVERE, "A call to UI was Interrupted", ex);
@@ -174,5 +244,15 @@ public abstract class DragAndDrop implements DropTargetListener {
      * @param dte the event details data
      */
     public abstract void triggerDragExitImp(DropTargetEvent dte);
+
+    private boolean ignoreFlavor(DropTargetDragEvent dtde) {
+        //we asume is not null
+        for (var flavor : dtde.getCurrentDataFlavors()) {
+            if (FlavorsIgnore.contains(flavor)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
 }

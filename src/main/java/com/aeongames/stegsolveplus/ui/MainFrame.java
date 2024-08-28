@@ -14,7 +14,10 @@ package com.aeongames.stegsolveplus.ui;
 import com.aeongames.edi.utils.error.LoggingHelper;
 import com.aeongames.edi.utils.visual.ImageScaleComponents;
 import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalist;
+import com.aeongames.stegsolveplus.ui.tabcomponents.JStegnoTabbedPane;
 import java.awt.IllegalComponentStateException;
+import java.awt.dnd.DropTargetDragEvent;
+import java.awt.dnd.DropTargetEvent;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
@@ -46,6 +49,10 @@ public class MainFrame extends javax.swing.JFrame {
      * TODO: better approach using javaFX or Low level?
      */
     private boolean HackishOpenFile;
+    /**
+     * Drag and Drop Helper to handle File Loading from System Dragging images
+     */
+    private DragAndDrop DragAndDrophelper;
 
     /**
      * Creates new form MainFrame
@@ -59,6 +66,7 @@ public class MainFrame extends javax.swing.JFrame {
         if (image != null) {
             this.setIconImage(image.getImage());
         }
+        EnableDragAndDrop();
     }
 
     /**
@@ -72,8 +80,8 @@ public class MainFrame extends javax.swing.JFrame {
         MainTabPane = new com.aeongames.stegsolveplus.ui.tabcomponents.JStegnoTabbedPane();
         MainMenu = new javax.swing.JMenuBar();
         FileMenu = new javax.swing.JMenu();
-        MOpen = new javax.swing.JMenuItem();
-        jMenuItem2 = new javax.swing.JMenuItem();
+        MOpenFile = new javax.swing.JMenuItem();
+        MOpenLink = new javax.swing.JMenuItem();
         jMenu2 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
 
@@ -83,29 +91,34 @@ public class MainFrame extends javax.swing.JFrame {
         setName("MainFrame"); // NOI18N
 
         MainTabPane.setBackgroundPolicy(ImageScaleComponents.SCALE_ALWAYS);
+        MainTabPane.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
+            public void propertyChange(java.beans.PropertyChangeEvent evt) {
+                MainTabPanePropertyChange(evt);
+            }
+        });
 
         FileMenu.setText("File");
         FileMenu.setToolTipText("File Menu");
 
-        MOpen.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.CTRL_DOWN_MASK));
-        MOpen.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/file_open_20dp_opsz20.png"))); // NOI18N
-        MOpen.setText("Open File");
-        MOpen.addActionListener(new java.awt.event.ActionListener() {
+        MOpenFile.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.CTRL_DOWN_MASK));
+        MOpenFile.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/file_open_20dp_opsz20.png"))); // NOI18N
+        MOpenFile.setText("Open File");
+        MOpenFile.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                MOpenActionPerformed(evt);
+                MOpenFileActionPerformed(evt);
             }
         });
-        FileMenu.add(MOpen);
+        FileMenu.add(MOpenFile);
 
-        jMenuItem2.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_L, java.awt.event.InputEvent.CTRL_DOWN_MASK));
-        jMenuItem2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/link.png"))); // NOI18N
-        jMenuItem2.setText("Open Link");
-        jMenuItem2.addActionListener(new java.awt.event.ActionListener() {
+        MOpenLink.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_L, java.awt.event.InputEvent.CTRL_DOWN_MASK));
+        MOpenLink.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/link.png"))); // NOI18N
+        MOpenLink.setText("Open Link");
+        MOpenLink.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem2ActionPerformed(evt);
+                MOpenLinkActionPerformed(evt);
             }
         });
-        FileMenu.add(jMenuItem2);
+        FileMenu.add(MOpenLink);
 
         MainMenu.add(FileMenu);
 
@@ -150,8 +163,8 @@ public class MainFrame extends javax.swing.JFrame {
      *
      * @param evt not used
      */
-    private void MOpenActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MOpenActionPerformed
-        MOpen.setEnabled(false);
+    private void MOpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MOpenFileActionPerformed
+        MOpenFile.setEnabled(false);
         if (HackishOpenFile) {
             SetDefOSUI();
         }
@@ -175,20 +188,27 @@ public class MainFrame extends javax.swing.JFrame {
         if (rVal == JFileChooser.APPROVE_OPTION) {
             var selecteddata = fileChooser.getSelectedFiles();
             if (!loadImages(selecteddata)) {
-                MOpen.setEnabled(true);
+                MOpenFile.setEnabled(true);
             }
             //TODO remove this reenabled. and only reenable once the task to load is done.
-            MOpen.setEnabled(true);
+            MOpenFile.setEnabled(true);
         } else {
-            MOpen.setEnabled(true);
+            MOpenFile.setEnabled(true);
         }
-    }//GEN-LAST:event_MOpenActionPerformed
+    }//GEN-LAST:event_MOpenFileActionPerformed
 
-    private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
-        //TODO:prompt for a link. 
-    }//GEN-LAST:event_jMenuItem2ActionPerformed
+    private void MOpenLinkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MOpenLinkActionPerformed
 
-    
+    }//GEN-LAST:event_MOpenLinkActionPerformed
+
+    private void MainTabPanePropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_MainTabPanePropertyChange
+        if (JStegnoTabbedPane.TAB_REMOVED_EVT.equals(evt.getPropertyName())) {
+            if ((int) evt.getNewValue() == 0) {//this should never be null. 
+                EnableDragAndDrop();
+            }
+        }
+    }//GEN-LAST:event_MainTabPanePropertyChange
+
     /**
      * Checks whenever or not the File can be used. if the file is ready. check
      * if we already have a tab for it. and if we do changes the tab to that
@@ -213,6 +233,10 @@ public class MainFrame extends javax.swing.JFrame {
                 }
                 if (tab != null) {
                     MainTabPane.add(tab);
+                    if (getRootPane().getGlassPane() instanceof GlassFileDnDPanel panel) {
+                        DragAndDrophelper.UnRegisterTarget(panel);
+
+                    }
                     loadedTabs = true;// we m,ight want to do something extra here. but this will do for now. 
                 }
             }
@@ -229,6 +253,49 @@ public class MainFrame extends javax.swing.JFrame {
             }
         }
         return -1;
+    }
+
+    private void EnableDragAndDrop() {
+        if (DragAndDrophelper != null) {
+            if (getRootPane().getGlassPane().getClass() != GlassFileDnDPanel.class) {
+                var glasspane = new GlassFileDnDPanel(DragAndDrophelper);
+                DragAndDrophelper.RegisterTarget(glasspane);
+                getRootPane().setGlassPane(glasspane);
+                glasspane.setVisible(true);
+                glasspane.setInvisible(true);
+            }else{
+                //maybe consider updating the reference at the glasspane. 
+                DragAndDrophelper.RegisterTarget(getRootPane().getGlassPane());
+            }
+            return;
+        }
+        DragAndDrophelper = new DragAndDrop() {
+            @Override
+            public void triggerDragdetectedImp(DropTargetDragEvent dtde) {
+                var source = dtde.getDropTargetContext().getComponent();
+                if (source instanceof GlassFileDnDPanel panel) {
+                    panel.setInvisible(false);
+                }
+            }
+
+            @Override
+            public void triggerDragExitImp(DropTargetEvent dte) {
+                var source = dte.getDropTargetContext().getComponent();
+                if (source instanceof GlassFileDnDPanel panel) {
+                    panel.setInvisible(true);
+                }
+            }
+        };
+
+        if (getRootPane().getGlassPane().getClass() != GlassFileDnDPanel.class) {
+            var glasspane = new GlassFileDnDPanel(DragAndDrophelper);
+            DragAndDrophelper.RegisterTarget(glasspane);
+            getRootPane().setGlassPane(glasspane);
+            glasspane.setVisible(true);
+            glasspane.setInvisible(true);
+        }
+        //also register *the Window so we can trigger DnD events from toolbar
+        DragAndDrophelper.RegisterTarget(this);
     }
 
     private void SetDefOSUI() {
@@ -334,12 +401,12 @@ public class MainFrame extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="UI components">    
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu FileMenu;
-    private javax.swing.JMenuItem MOpen;
+    private javax.swing.JMenuItem MOpenFile;
+    private javax.swing.JMenuItem MOpenLink;
     private javax.swing.JMenuBar MainMenu;
     private com.aeongames.stegsolveplus.ui.tabcomponents.JStegnoTabbedPane MainTabPane;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenuItem jMenuItem1;
-    private javax.swing.JMenuItem jMenuItem2;
     // End of variables declaration//GEN-END:variables
     // </editor-fold>  
 

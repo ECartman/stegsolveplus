@@ -69,7 +69,7 @@ public class TranslucentImagedPanel extends TranslucentPanel {
     /**
      * minimal transparency
      */
-    private static final float MINTRASPT = 0.20f;
+    private static final float MINTRASPT = 0f;
 
     /**
      * the TranslucentImagedPanel is a normal Swing panel that can be at
@@ -139,7 +139,11 @@ public class TranslucentImagedPanel extends TranslucentPanel {
         if (Objects.isNull(RenderImage)) {
             return;//nothing to config
         }
-        if (translucent < MINTRASPT || translucent >= 1.0f) {
+        if (translucent < MINTRASPT || translucent > 1.0f) {
+            return;
+        }
+        if(translucent == 1.0f && OriginalImage !=null){
+            RenderImage = OriginalImage;
             return;
         }
         BufferedImage BuffOrigin;
