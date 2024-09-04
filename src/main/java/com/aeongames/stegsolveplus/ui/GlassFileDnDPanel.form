@@ -46,7 +46,7 @@
         <Property name="arcWidth" type="int" value="100"/>
       </Properties>
       <AuxValues>
-        <AuxValue name="JavaCodeGenerator_CreateCodeCustom" type="java.lang.String" value="new TranslucentImagedPanel(image.getImage())"/>
+        <AuxValue name="JavaCodeGenerator_CreateCodeCustom" type="java.lang.String" value="new TranslucentImagedPanel(ImageUtils.toBufferedImage(image.getImage()))"/>
         <AuxValue name="JavaCodeGenerator_CreateCodePost" type="java.lang.String" value="translucentImagedPanel1.setBackgroundPolicy(ImageScaleComponents.SCALE_SMALL_ONLY);"/>
         <AuxValue name="JavaCodeGenerator_CreateCodePre" type="java.lang.String" value="var image = MainFrame.class.getResource(&quot;/com/aeongames/stegsolveplus/ui/Drop.png&quot;) == null&#xa;                ? null : new javax.swing.ImageIcon(&#xa;                        MainFrame.class.getResource(&quot;/com/aeongames/stegsolveplus/ui/Drop.png&quot;));"/>
       </AuxValues>

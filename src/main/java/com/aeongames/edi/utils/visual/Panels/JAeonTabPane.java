@@ -31,7 +31,6 @@ import javax.swing.Action;
 import javax.swing.ActionMap;
 import javax.swing.Icon;
 import javax.swing.JTabbedPane;
-import static javax.swing.JTabbedPane.SCROLL_TAB_LAYOUT;
 import javax.swing.SwingUtilities;
 
 /**

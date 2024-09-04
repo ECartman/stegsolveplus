@@ -176,7 +176,7 @@ public class ImageUtils {
         }
         PixelGrabber pg = new PixelGrabber(image, 0, 0, 1, 1, false);
         try {
-            pg.grabPixels();
+            pg.grabPixels(1000);
         } catch (InterruptedException e) {
         }
         ColorModel cm = pg.getColorModel();

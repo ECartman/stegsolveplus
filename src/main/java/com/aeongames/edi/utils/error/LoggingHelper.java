@@ -84,7 +84,7 @@ public class LoggingHelper {
 
     private static boolean isLoggingIntoFile(Logger test) {
         for (var handler : test.getHandlers()) {
-            if (handler instanceof FileHandler fhlr) {
+            if (handler instanceof FileHandler) {
                 return true;
             }
         }

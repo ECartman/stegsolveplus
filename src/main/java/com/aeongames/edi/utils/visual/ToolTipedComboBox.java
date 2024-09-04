@@ -21,13 +21,18 @@ import javax.swing.plaf.basic.BasicComboBoxRenderer;
  */
 public class ToolTipedComboBox extends BasicComboBoxRenderer {
     @Override
-    public Component getListCellRendererComponent(JList list, Object value,
+    public Component getListCellRendererComponent(JList<?> list, Object value,
         int index, boolean isSelected, boolean cellHasFocus) {
       if (isSelected) {
         setBackground(list.getSelectionBackground());
         setForeground(list.getSelectionForeground());
         if (-1 < index) {
-          list.setToolTipText((String)list.getModel().getElementAt(index));//tooltips[index]);
+          if((String)list.getModel().getElementAt(index) instanceof String StringData){
+            list.setToolTipText(StringData);
+          }else{
+            //list.setToolTipText((String)list.getModel().getElementAt(index).toString());
+          }
+         
         }
       } else {
         setBackground(list.getBackground());

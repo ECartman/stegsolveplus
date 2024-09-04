@@ -13,14 +13,19 @@ package com.aeongames.stegsolveplus.ui;
 
 import com.aeongames.edi.utils.error.LoggingHelper;
 import com.aeongames.edi.utils.visual.ImageScaleComponents;
+import com.aeongames.edi.utils.visual.Panels.JAeonTabPane;
 import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalist;
 import com.aeongames.stegsolveplus.ui.tabcomponents.JStegnoTabbedPane;
 import java.awt.IllegalComponentStateException;
 import java.awt.dnd.DropTargetDragEvent;
+import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DropTargetEvent;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.logging.Level;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -235,10 +240,39 @@ public class MainFrame extends javax.swing.JFrame {
                     MainTabPane.add(tab);
                     if (getRootPane().getGlassPane() instanceof GlassFileDnDPanel panel) {
                         DragAndDrophelper.UnRegisterTarget(panel);
-
                     }
-                    loadedTabs = true;// we m,ight want to do something extra here. but this will do for now. 
+                    loadedTabs = true;// we might want to do something extra here. but this will do for now. 
                 }
+            }
+        }
+        return loadedTabs;
+    }
+
+    private boolean loadImages(List<Path> FileList) {
+        var loadedTabs = false;
+        for (var file : FileList) {
+            if (Files.exists(file) && Files.isRegularFile(file) && Files.isReadable(file)) {
+                int tabindx;
+                if ((tabindx = hasTabforFile(file)) >= 0) {
+                    MainTabPane.setSelectedIndex(tabindx);
+                    continue;
+                }
+                InvestigationTab tab = null;
+                try {
+                    tab = new InvestigationTab(file);
+                    BusyTabs++;
+                } catch (FileNotFoundException ex) {
+                    LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "File fail to load. while creating the Tab", ex);
+                }
+                if (tab != null) {
+                    MainTabPane.add(tab);
+                    if (getRootPane().getGlassPane() instanceof GlassFileDnDPanel panel) {
+                        DragAndDrophelper.UnRegisterTarget(panel);
+                    }
+                    loadedTabs = true;// we might want to do something extra here. but this will do for now. 
+                }
+            }else{
+                LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.WARNING, "the Path {0} Does not exist, is not a File. or Cannot be Read", file.toString());
             }
         }
         return loadedTabs;
@@ -263,13 +297,13 @@ public class MainFrame extends javax.swing.JFrame {
                 getRootPane().setGlassPane(glasspane);
                 glasspane.setVisible(true);
                 glasspane.setInvisible(true);
-            }else{
+            } else {
                 //maybe consider updating the reference at the glasspane. 
                 DragAndDrophelper.RegisterTarget(getRootPane().getGlassPane());
             }
             return;
         }
-        DragAndDrophelper = new DragAndDrop() {
+        DragAndDrophelper = new DragAndDrop(JAeonTabPane.J_AEON_TAB_FLAVOR) {
             @Override
             public void triggerDragdetectedImp(DropTargetDragEvent dtde) {
                 var source = dtde.getDropTargetContext().getComponent();
@@ -281,6 +315,24 @@ public class MainFrame extends javax.swing.JFrame {
             @Override
             public void triggerDragExitImp(DropTargetEvent dte) {
                 var source = dte.getDropTargetContext().getComponent();
+                if (source instanceof GlassFileDnDPanel panel) {
+                    panel.setInvisible(true);
+                }
+            }
+
+            @Override
+            public void NotifyFoundPaths(List<Path> fileList) {
+                loadImages(fileList);
+            }
+
+            @Override
+            public void NotifyFoundUrl(URL link) {
+                //TODO: implement
+            }
+            
+            @Override
+            public void DropComplete(DropTargetDropEvent dtde){
+                var source = dtde.getDropTargetContext().getComponent();
                 if (source instanceof GlassFileDnDPanel panel) {
                     panel.setInvisible(true);
                 }
