@@ -53,6 +53,34 @@ import javax.swing.SwingUtilities;
  * @author Eduardo Vindas
  */
 public abstract class DragAndDrop implements DropTargetListener {
+    
+    private static final PropertiesHelper REGEX_RESOURCE = loadProperties();
+    
+    /**
+     * 
+     */
+    public static final Pattern WINDOWS_PATTERN = 
+            REGEX_RESOURCE != null
+            ?Pattern.compile(REGEX_RESOURCE.getProperty("WindowsPathPattern"))
+            :Pattern.compile("\\\"?((?:\\\\\\\\\\?\\\\)?(?:[a-zA-Z]:[\\\\/]|[\\\\]{2})(?:[^\\\\/\\\"<>:\\|\\?\\*\\r\\n]+[\\\\/])*[^\\\\/\\\"<>:\\|\\?\\*\\r\\n ]+)(?:\\\")?");
+    public static final Pattern LINUX_PATTERN = 
+            REGEX_RESOURCE != null
+            ?Pattern.compile(REGEX_RESOURCE.getProperty("LinuxPathPattern"))
+            :Pattern.compile("^(/[^/\\x00 ]*)+/?$");
+    public static final Pattern URL_PATTERN = 
+            REGEX_RESOURCE != null
+            ?Pattern.compile(REGEX_RESOURCE.getProperty("URLPattern"))
+            :Pattern.compile("^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
+    
+    private static PropertiesHelper loadProperties() {
+        PropertiesHelper res = null;
+        try {
+            res = new PropertiesHelper("/com/aeongames/stegsolveplus/text/Regex.properties", false, DragAndDrop.class);
+        } catch (IOException ex) {
+            LoggingHelper.getLogger(DragAndDrop.class.getName()).log(Level.SEVERE, "unable to load Resource", ex);
+        }
+        return res;
+    }
 
     /**
      * the DropTargets that register **this** listener instance. and that can
@@ -68,8 +96,6 @@ public abstract class DragAndDrop implements DropTargetListener {
      *
      */
     protected List<DataFlavor> FlavorsIgnore = new LinkedList<>();
-    //TODO: move the Regex from the inline to be read from the Property file.
-    private final PropertiesHelper RegexSettings;
 
     /**
      * create a new instance of this Class. receive a list of DataFlavors to
@@ -80,7 +106,6 @@ public abstract class DragAndDrop implements DropTargetListener {
     public DragAndDrop(List<DataFlavor> listToFill) {
         Objects.requireNonNull(listToFill, "invalid List");
         FlavorsIgnore.addAll(listToFill);
-        RegexSettings = loadProperties();
     }
 
     /**
@@ -94,18 +119,7 @@ public abstract class DragAndDrop implements DropTargetListener {
         if (ignoreFlavors != null && ignoreFlavors.length > 0) {
             FlavorsIgnore.addAll(Arrays.asList(ignoreFlavors));
         }
-        RegexSettings = loadProperties();
         // if no flavor is provided assume its A OK. just no flavors are to be ignored.
-    }
-
-    private PropertiesHelper loadProperties() {
-        PropertiesHelper res = null;
-        try {
-            res = new PropertiesHelper("/com/aeongames/stegsolveplus/text/Regex.properties", false, DragAndDrop.class);
-        } catch (IOException ex) {
-            LoggingHelper.getLogger(DragAndDrop.class.getName()).log(Level.SEVERE, "unable to load Resource", ex);
-        }
-        return res;
     }
 
     /**
@@ -373,29 +387,6 @@ public abstract class DragAndDrop implements DropTargetListener {
     }
 
     /**
-     * https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file
-     * Note: some characters mighr require further scaping. option A:
-     * (?:"?(?:\\\\\?\\)?(?:[a-zA-Z]:[\\/]|[\\]{2})
-     * (?:[^\\/"<>:\\|?\\*]+[\\/])*) [^\\/"<>:\\|?\\* ]+(?:"|(?!\s))? lets allow
-     * matching UNC (Start) path for example: "\\networkshare\xxxxxx" lets allow
-     * matching C:\ or C:/ (either "\/") lets match whatever path that does not
-     * contain the Reserved characters (according to MS documentations) support
-     * Extended path ("\\?\") option B:
-     * (?:"?(?:\\\\\?\\)?(?:[a-zA-Z]:[\\/]|[\\]{2})
-     * (?:[-\u4e00-\u9fa5\w\s.()~!@#$%^&()\[\]{}+=]+[\\/])+
-     * (?:[-\u4e00-\u9fa5\w\s.()~!@#$%^&()\[\]{}+=]+)(?:\"|(?!\s)) lets
-     * basically reverse: * // //option B: //
-     */
-    /**
-     * NOTE: on windows (modern) path limit is 0x7FFF (extended-length) or
-     * otherwise 260 (MAX_PATH) characters according to MS doco. a Extended path
-     * should use the pprefix "\\?\"
-     */
-    public static final Pattern WindowsPattern = Pattern.compile("\\\"?((?:\\\\\\\\\\?\\\\)?(?:[a-zA-Z]:[\\\\/]|[\\\\]{2})(?:[^\\\\/\\\"<>:\\|\\?\\*\\r\\n]+[\\\\/])*[^\\\\/\\\"<>:\\|\\?\\*\\r\\n ]+)(?:\\\")?");
-    public static final Pattern LinuxPattern = Pattern.compile("^(/[^/\\x00 ]*)+/?$");
-    public static final Pattern URLPattern = Pattern.compile("^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
-
-    /**
      * Process a Drop action which Flavor is MimeType text. (note there are
      * several Text mime's types )
      *
@@ -420,7 +411,7 @@ public abstract class DragAndDrop implements DropTargetListener {
             //a String Could be a path to a file or a URL. 
             //if neither. COULD be a string representation of the file. content 
             //but we will NOT support that. 
-            if (URLPattern.matcher(Data).matches()) {
+            if (URL_PATTERN.matcher(Data).matches()) {
                 URI uri = URI.create(Data);
                 var scheme = uri.getScheme();
                 if (scheme != null ? scheme.equalsIgnoreCase("file") : false) {
@@ -442,8 +433,8 @@ public abstract class DragAndDrop implements DropTargetListener {
              * testing.
              */
             var matcher = iswin
-                    ? WindowsPattern.matcher(Data)
-                    : LinuxPattern.matcher(Data);
+                    ? WINDOWS_PATTERN.matcher(Data)
+                    : LINUX_PATTERN.matcher(Data);
             var fileList = new LinkedList<Path>();
             var charlimit = iswin ? 0x7FFF : 0xFF;
             for (int matched = 0; matcher.find(); matched++) {

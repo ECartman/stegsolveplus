@@ -17,18 +17,24 @@ import com.aeongames.edi.utils.visual.Panels.JAeonTabPane;
 import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalist;
 import com.aeongames.stegsolveplus.ui.tabcomponents.JStegnoTabbedPane;
 import java.awt.IllegalComponentStateException;
+import java.awt.Image;
 import java.awt.dnd.DropTargetDragEvent;
 import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DropTargetEvent;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
+import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JRootPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -203,7 +209,28 @@ public class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_MOpenFileActionPerformed
 
     private void MOpenLinkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MOpenLinkActionPerformed
-
+        var UIresponse = JOptionPane.showInputDialog(this, "Please Provide a Image Url to Load", "URL Request", JOptionPane.QUESTION_MESSAGE, new ImageIcon(this.getIconImage().getScaledInstance(50, 50, Image.SCALE_FAST), "AppIcon"), null, null);
+        var responce = UIresponse.toString().strip();
+        if (responce != null) {
+            var matcher = DragAndDrop.URL_PATTERN.matcher(responce);
+            if (matcher.matches()) {
+                URI uri = URI.create(responce);
+                var scheme = uri.getScheme();
+                if (scheme != null ? scheme.equalsIgnoreCase("file") : false) {
+                    //the URL is a File we should be able to open it with the 
+                    //filesystem 
+                    var list = new LinkedList<Path>();
+                    list.add(Path.of(uri));
+                    loadImages(list);
+                } else {
+                    try {
+                        loadUrl(uri.toURL());
+                    } catch (MalformedURLException ex) {
+                        LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "unable to transform the URI to URL", ex);
+                    }
+                }
+            }
+        }
     }//GEN-LAST:event_MOpenLinkActionPerformed
 
     private void MainTabPanePropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_MainTabPanePropertyChange
@@ -251,6 +278,7 @@ public class MainFrame extends javax.swing.JFrame {
     private boolean loadImages(List<Path> FileList) {
         var loadedTabs = false;
         for (var file : FileList) {
+            //TODO: this check COULD take some time IF the file is on Network or slow HDD... maybe we should consider doing this in parallel
             if (Files.exists(file) && Files.isRegularFile(file) && Files.isReadable(file)) {
                 int tabindx;
                 if ((tabindx = hasTabforFile(file)) >= 0) {
@@ -271,17 +299,51 @@ public class MainFrame extends javax.swing.JFrame {
                     }
                     loadedTabs = true;// we might want to do something extra here. but this will do for now. 
                 }
-            }else{
+            } else {
                 LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.WARNING, "the Path {0} Does not exist, is not a File. or Cannot be Read", file.toString());
             }
         }
         return loadedTabs;
     }
 
+    private boolean loadUrl(URL Link) {
+        boolean Tabcreated = false;
+        int tabindx;
+        if ((tabindx = hasTabforLink(Link)) >= 0) {
+            MainTabPane.setSelectedIndex(tabindx);
+        }
+        InvestigationTab tab = null;
+        try {
+            tab = new InvestigationTab(Link);
+            BusyTabs++;
+        } catch (Exception ex) {
+            LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "Link fail to load. while creating the Tab", ex);
+        }
+        if (tab != null) {
+            MainTabPane.add(tab);
+            if (getRootPane().getGlassPane() instanceof GlassFileDnDPanel panel) {
+                DragAndDrophelper.UnRegisterTarget(panel);
+            }
+            Tabcreated = true;// we might want to do something extra here. but this will do for now. 
+        }
+        return Tabcreated;
+    }
+
     private int hasTabforFile(Path pathFile) {
         for (var index = 0; index < MainTabPane.getTabCount(); index++) {
             if (MainTabPane.getComponentAt(index) instanceof InvestigationTab tab) {
                 if (tab.IsAnalizing(pathFile)) {
+                    return index;
+                }
+            }
+        }
+        return -1;
+    }
+
+    private int hasTabforLink(URL Link) {
+        for (var index = 0; index < MainTabPane.getTabCount(); index++) {
+            if (MainTabPane.getComponentAt(index) instanceof InvestigationTab tab) {
+                if (tab.IsAnalizing(Link)) {
                     return index;
                 }
             }
@@ -327,11 +389,11 @@ public class MainFrame extends javax.swing.JFrame {
 
             @Override
             public void NotifyFoundUrl(URL link) {
-                //TODO: implement
+                loadUrl(link);
             }
-            
+
             @Override
-            public void DropComplete(DropTargetDropEvent dtde){
+            public void DropComplete(DropTargetDropEvent dtde) {
                 var source = dtde.getDropTargetContext().getComponent();
                 if (source instanceof GlassFileDnDPanel panel) {
                     panel.setInvisible(true);

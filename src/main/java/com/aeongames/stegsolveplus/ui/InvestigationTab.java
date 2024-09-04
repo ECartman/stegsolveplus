@@ -58,11 +58,20 @@ public class InvestigationTab extends Tab {
             throw new FileNotFoundException("the provided path is invalid");
         }
         initComponents();
-        _setTitle(FilePath);
+        SetTitleInternal(FilePath);
         Analist = new StegnoAnalist(FilePath);
         pFooter.SetProgressIndeterminate();
     }
-
+    
+    public InvestigationTab(URL Link) {
+        Link = Objects.requireNonNull(Link, "provided Link is null");
+        propertySupport = new PropertyChangeSupport(this);
+        initComponents();
+        SetTitleInternal(Link);
+        Analist = new StegnoAnalist(Link);
+        pFooter.SetProgressIndeterminate();
+    }
+    
     public boolean IsAnalizing(Path OtherFile) {
         if (OtherFile == null) {
             return false;
@@ -116,9 +125,38 @@ public class InvestigationTab extends Tab {
         propertySupport.removePropertyChangeListener(listener);
     }
 
-    private void _setTitle(Path FilePath) {
+    private void SetTitleInternal(Path FilePath) {
         //assume the file is alredy non null. we are too deep if it is not a verification was missing before
         var Filename = FilePath.getFileName().toString().strip();
+        pFooter.setFooterText(String.format("analizing File: %s", Filename));
+        var extension = Filename;
+        if (Filename != null && Filename.length() > 20) {
+            var StartExtensionIndex = Filename.lastIndexOf('.');//get the file type
+            if (StartExtensionIndex >= 0) {
+                //ditch the <.>
+                extension = Filename.substring(StartExtensionIndex + 1);
+            }
+            //ok. we want to do something like <filenameTruncated>...<.><extension>
+            //and we wante to be <=20 characters. now long extension might be a problem.
+            //but we will part from an aumption that images rarely will have a
+            //extension longer than .XXXX 
+            //the limit is 20 characters. but substract 3 for the elipsis. thus 17 
+            int limit = 20 - 3 - (extension.length());
+            //if limit is less or equal to 0 truncate the whole file name and bail
+            if (limit <= 0) {
+                Filename = Filename.substring(0, 20);
+            } else {
+                Filename = String.format("%s...%s", Filename.substring(0, limit), extension);
+            }
+        }
+        _InternalSetTitle(Filename);
+    }
+    
+    private void SetTitleInternal(URL Link) {
+      //assume the file is alredy non null. we are too deep if it is not a verification was missing before
+        var Filename = Link.getFile();
+        var index= Filename.lastIndexOf('/');
+        Filename = Filename.substring(index<0?0:index).strip();
         pFooter.setFooterText(String.format("analizing File: %s", Filename));
         var extension = Filename;
         if (Filename != null && Filename.length() > 20) {
