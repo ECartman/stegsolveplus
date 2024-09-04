@@ -63,12 +63,12 @@ public class MainFrame extends javax.swing.JFrame {
     /**
      * Drag and Drop Helper to handle File Loading from System Dragging images
      */
-    private DragAndDrop DragAndDrophelper;
+    private DragAndDrop DragAndDrophelper; 
 
     /**
      * Creates new form MainFrame
      */
-    public MainFrame() {
+    public MainFrame() {        
         BusyTabs = 0;
         initComponents();
         var image = MainFrame.class.getResource("/com/aeongames/stegsolveplus/ui/OIG3.jpg") == null
@@ -93,6 +93,7 @@ public class MainFrame extends javax.swing.JFrame {
         FileMenu = new javax.swing.JMenu();
         MOpenFile = new javax.swing.JMenuItem();
         MOpenLink = new javax.swing.JMenuItem();
+        jMenuItem2 = new javax.swing.JMenuItem();
         jMenu2 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
 
@@ -130,6 +131,16 @@ public class MainFrame extends javax.swing.JFrame {
             }
         });
         FileMenu.add(MOpenLink);
+
+        jMenuItem2.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_P, java.awt.event.InputEvent.CTRL_DOWN_MASK));
+        jMenuItem2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/paste.png"))); // NOI18N
+        jMenuItem2.setText("Open Clipboard");
+        jMenuItem2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem2ActionPerformed(evt);
+            }
+        });
+        FileMenu.add(jMenuItem2);
 
         MainMenu.add(FileMenu);
 
@@ -210,7 +221,7 @@ public class MainFrame extends javax.swing.JFrame {
 
     private void MOpenLinkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MOpenLinkActionPerformed
         var UIresponse = JOptionPane.showInputDialog(this, "Please Provide a Image Url to Load", "URL Request", JOptionPane.QUESTION_MESSAGE, new ImageIcon(this.getIconImage().getScaledInstance(50, 50, Image.SCALE_FAST), "AppIcon"), null, null);
-        var responce = UIresponse.toString().strip();
+        var responce = UIresponse == null ? null : UIresponse.toString().strip();
         if (responce != null) {
             var matcher = DragAndDrop.URL_PATTERN.matcher(responce);
             if (matcher.matches()) {
@@ -240,6 +251,10 @@ public class MainFrame extends javax.swing.JFrame {
             }
         }
     }//GEN-LAST:event_MainTabPanePropertyChange
+
+    private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jMenuItem2ActionPerformed
 
     /**
      * Checks whenever or not the File can be used. if the file is ready. check
@@ -521,6 +536,7 @@ public class MainFrame extends javax.swing.JFrame {
     private com.aeongames.stegsolveplus.ui.tabcomponents.JStegnoTabbedPane MainTabPane;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenuItem jMenuItem1;
+    private javax.swing.JMenuItem jMenuItem2;
     // End of variables declaration//GEN-END:variables
     // </editor-fold>  
 

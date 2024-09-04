@@ -30,9 +30,9 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
-import java.time.Instant;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import javax.swing.SwingUtilities;
 
@@ -53,25 +54,25 @@ import javax.swing.SwingUtilities;
  * @author Eduardo Vindas
  */
 public abstract class DragAndDrop implements DropTargetListener {
-    
+
     private static final PropertiesHelper REGEX_RESOURCE = loadProperties();
-    
+
     /**
-     * 
+     *
      */
-    public static final Pattern WINDOWS_PATTERN = 
-            REGEX_RESOURCE != null
-            ?Pattern.compile(REGEX_RESOURCE.getProperty("WindowsPathPattern"))
-            :Pattern.compile("\\\"?((?:\\\\\\\\\\?\\\\)?(?:[a-zA-Z]:[\\\\/]|[\\\\]{2})(?:[^\\\\/\\\"<>:\\|\\?\\*\\r\\n]+[\\\\/])*[^\\\\/\\\"<>:\\|\\?\\*\\r\\n ]+)(?:\\\")?");
-    public static final Pattern LINUX_PATTERN = 
-            REGEX_RESOURCE != null
-            ?Pattern.compile(REGEX_RESOURCE.getProperty("LinuxPathPattern"))
-            :Pattern.compile("^(/[^/\\x00 ]*)+/?$");
-    public static final Pattern URL_PATTERN = 
-            REGEX_RESOURCE != null
-            ?Pattern.compile(REGEX_RESOURCE.getProperty("URLPattern"))
-            :Pattern.compile("^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
-    
+    public static final Pattern WINDOWS_PATTERN
+            = REGEX_RESOURCE != null
+                    ? Pattern.compile(REGEX_RESOURCE.getProperty("WindowsPathPattern"))
+                    : Pattern.compile("\\\"?((?:\\\\\\\\\\?\\\\)?(?:[a-zA-Z]:[\\\\/]|[\\\\]{2})(?:[^\\\\/\\\"<>:\\|\\?\\*\\r\\n]+[\\\\/])*[^\\\\/\\\"<>:\\|\\?\\*\\r\\n ]+)(?:\\\")?");
+    public static final Pattern LINUX_PATTERN
+            = REGEX_RESOURCE != null
+                    ? Pattern.compile(REGEX_RESOURCE.getProperty("LinuxPathPattern"))
+                    : Pattern.compile("^(/[^/\\x00 ]*)+/?$");
+    public static final Pattern URL_PATTERN
+            = REGEX_RESOURCE != null
+                    ? Pattern.compile(REGEX_RESOURCE.getProperty("URLPattern"))
+                    : Pattern.compile("^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
+
     private static PropertiesHelper loadProperties() {
         PropertiesHelper res = null;
         try {
@@ -96,6 +97,7 @@ public abstract class DragAndDrop implements DropTargetListener {
      *
      */
     protected List<DataFlavor> FlavorsIgnore = new LinkedList<>();
+    private final Path ANALISIS_DIRECTORY;
 
     /**
      * create a new instance of this Class. receive a list of DataFlavors to
@@ -104,6 +106,14 @@ public abstract class DragAndDrop implements DropTargetListener {
      * @param listToFill a List of DataFlavors to be ignored by this class.
      */
     public DragAndDrop(List<DataFlavor> listToFill) {
+        Path tmp = null;
+        try {
+            tmp = Files.createTempDirectory("ImageAnalisis");
+            tmp.toFile().deleteOnExit();
+        } catch (IOException ex) {
+            Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "Unable to create TMP folder to analisis", ex);
+        }
+        ANALISIS_DIRECTORY = tmp;
         Objects.requireNonNull(listToFill, "invalid List");
         FlavorsIgnore.addAll(listToFill);
     }
@@ -116,6 +126,14 @@ public abstract class DragAndDrop implements DropTargetListener {
      * desired to be ignored.
      */
     public DragAndDrop(DataFlavor... ignoreFlavors) {
+        Path tmp = null;
+        try {
+            tmp = Files.createTempDirectory("ImageAnalisis");
+            tmp.toFile().deleteOnExit();
+        } catch (IOException ex) {
+            Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "Unable to create TMP folder to analisis", ex);
+        }
+        ANALISIS_DIRECTORY = tmp;
         if (ignoreFlavors != null && ignoreFlavors.length > 0) {
             FlavorsIgnore.addAll(Arrays.asList(ignoreFlavors));
         }
@@ -329,12 +347,15 @@ public abstract class DragAndDrop implements DropTargetListener {
                 if (supportedflavor.getRepresentationClass() == String.class) {
                     log.log(Level.INFO, "data is String Type Mime: {0}", supportedflavor.getMimeType());
                     flavorSupport.setTextBacked(supportedflavor);
-                } else {
-                    log.log(Level.INFO, "non handled Text Flavor: {0}", supportedflavor);
                 }
-            } else {
-                log.log(Level.INFO, "Unsupported Flavor: {0}", supportedflavor);
             }
+            /**
+             * TODO: add support for ImageFlavor ?
+             *
+             * else if (supportedflavor.equals(DataFlavor.imageFlavor)) {
+             * log.log(Level.INFO, "data is Image Type: {0}", supportedflavor);
+             * flavorSupport.setImageBacked(supportedflavor); }
+             */
             if (flavorSupport.isFileBacked() && flavorSupport.isTextBacked() && flavorSupport.isURLBacked()) {
                 log.log(Level.INFO, "found all the application supported flavors");
                 break;
@@ -484,7 +505,6 @@ public abstract class DragAndDrop implements DropTargetListener {
     }
 
     private List<Path> preProcessFile(FlavorSupportedDrop FlavorSupp, Transferable DropTransfeable) {
-        var startTime = Instant.now();
         var log = LoggingHelper.getLogger(DragAndDrop.class.getName());
         Object ob = null;
         try {
@@ -494,9 +514,6 @@ public abstract class DragAndDrop implements DropTargetListener {
         } catch (IOException ex) {
             log.log(Level.SEVERE, "IO unable to transfer data?", ex);
         }
-        var endTime = Instant.now();
-        var elapsed = Duration.between(startTime, endTime);
-        log.log(Level.INFO, "elapsed arround: {0} nanos", elapsed.toMillis());
         if (ob == null) {
             log.log(Level.WARNING, "The Transferible Object cannot be read");
             return null;
@@ -534,7 +551,28 @@ public abstract class DragAndDrop implements DropTargetListener {
                 if (objFile instanceof File DndFile) {
                     var isurl = DndFile.getName().matches("(?i).*\\.url");
                     if (!isurl && DndFile.exists() && DndFile.canRead()) {
-                        ValidFiles.add(DndFile.toPath());
+                        //the Source that Started the drag of the image MAY OR MIGHTNOT 
+                        //Delete the file or overwrite. to avoid this we will check if 
+                        //the image dragged is on the TMP folder. if so we make a copy
+                        //and use the copy (if sucessful) otherwise we consede and 
+                        //use the file we set to use
+                        boolean added = false;
+                        var pathForFile=DndFile.toPath();
+                        var tmpfolder= ANALISIS_DIRECTORY.getParent();                        
+                        if (ANALISIS_DIRECTORY != null && tmpfolder.equals(pathForFile.getParent())) {
+                            try {
+                                var tmpcopy = Files.createTempFile(ANALISIS_DIRECTORY,DndFile.getName(),null);
+                                tmpcopy.toFile().deleteOnExit();
+                                Files.copy(DndFile.toPath(), tmpcopy, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+                                added = true;
+                                ValidFiles.add(tmpcopy);
+                            } catch (IOException ex) {
+                                log.log(Level.SEVERE, "Fail to create a TMP copy", ex);
+                            }
+                        }
+                        if (!added) {
+                            ValidFiles.add(DndFile.toPath());
+                        }
                     }
                 }
             }
@@ -575,10 +613,8 @@ public abstract class DragAndDrop implements DropTargetListener {
     }
 
     /**
-     * triggered by the Event Dispatch thread when a null null null null null
-     * null null null null null null null null null null null null null null
-     * null null null null null null null null null null null null null null     {@link DropTargetListener#dragEnter(java.awt.dnd.DropTargetDragEvent)
-     * }
+     * triggered by the Event Dispatch thread when a
+     * {@link DropTargetListener#dragEnter(java.awt.dnd.DropTargetDragEvent)}
      * event happens. this method is ensured to be called by the EDT. note this
      * method will block the thread that trigger the Drag and Drop (if that
      * thread is NOT the EDT) and activity takes too long can cause problems on
@@ -605,12 +641,13 @@ public abstract class DragAndDrop implements DropTargetListener {
     public abstract void triggerDragExitImp(DropTargetEvent dte);
 
     /**
-     * a method to be implemented by child classes. 
-     * we ensure that the parameter is not null, but not that the list is not empty. 
-     * we however do NOT warrantee that the Paths exists or that are valid 
-     * thus the  implementer need to check whenever or not the path exist, can be read
-     * and such. 
-     * @param fileList a NON-null list that contains the paths desired to be loaded. 
+     * a method to be implemented by child classes. we ensure that the parameter
+     * is not null, but not that the list is not empty. we however do NOT
+     * warrantee that the Paths exists or that are valid thus the implementer
+     * need to check whenever or not the path exist, can be read and such.
+     *
+     * @param fileList a NON-null list that contains the paths desired to be
+     * loaded.
      */
     public abstract void NotifyFoundPaths(List<Path> fileList);
 
