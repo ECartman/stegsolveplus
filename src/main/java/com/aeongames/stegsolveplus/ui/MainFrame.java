@@ -23,6 +23,7 @@ import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DropTargetEvent;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -63,12 +64,12 @@ public class MainFrame extends javax.swing.JFrame {
     /**
      * Drag and Drop Helper to handle File Loading from System Dragging images
      */
-    private DragAndDrop DragAndDrophelper; 
+    private DragAndDrop DragAndDrophelper;
 
     /**
      * Creates new form MainFrame
      */
-    public MainFrame() {        
+    public MainFrame() {
         BusyTabs = 0;
         initComponents();
         var image = MainFrame.class.getResource("/com/aeongames/stegsolveplus/ui/OIG3.jpg") == null
@@ -93,7 +94,7 @@ public class MainFrame extends javax.swing.JFrame {
         FileMenu = new javax.swing.JMenu();
         MOpenFile = new javax.swing.JMenuItem();
         MOpenLink = new javax.swing.JMenuItem();
-        jMenuItem2 = new javax.swing.JMenuItem();
+        MOpenClipboard = new javax.swing.JMenuItem();
         jMenu2 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
 
@@ -132,15 +133,16 @@ public class MainFrame extends javax.swing.JFrame {
         });
         FileMenu.add(MOpenLink);
 
-        jMenuItem2.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_P, java.awt.event.InputEvent.CTRL_DOWN_MASK));
-        jMenuItem2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/paste.png"))); // NOI18N
-        jMenuItem2.setText("Open Clipboard");
-        jMenuItem2.addActionListener(new java.awt.event.ActionListener() {
+        MOpenClipboard.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_P, java.awt.event.InputEvent.CTRL_DOWN_MASK));
+        MOpenClipboard.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/paste.png"))); // NOI18N
+        MOpenClipboard.setText("Open Clipboard");
+        MOpenClipboard.setEnabled(false);
+        MOpenClipboard.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem2ActionPerformed(evt);
+                MOpenClipboardActionPerformed(evt);
             }
         });
-        FileMenu.add(jMenuItem2);
+        FileMenu.add(MOpenClipboard);
 
         MainMenu.add(FileMenu);
 
@@ -186,21 +188,13 @@ public class MainFrame extends javax.swing.JFrame {
      * @param evt not used
      */
     private void MOpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MOpenFileActionPerformed
-        MOpenFile.setEnabled(false);
+        SetMenuStatus(false);
         if (HackishOpenFile) {
             SetDefOSUI();
         }
         JFileChooser fileChooser = new JFileChooser(System.getProperty("user.dir"));
-        StringBuilder descriptor = new StringBuilder("Images (");
         var list2 = StegnoAnalist.ValidImagesFiles;
-        for (int index = 0; index < list2.length; index++) {
-            descriptor.append(list2[index]);
-            if (index + 1 < list2.length) {
-                descriptor.append(',').append(' ');
-            }
-        }
-        descriptor.append(')');
-        fileChooser.setFileFilter(new FileNameExtensionFilter(descriptor.toString(), list2));
+        fileChooser.setFileFilter(new FileNameExtensionFilter(ValidFileTypes(list2), list2));
         fileChooser.setMultiSelectionEnabled(true);
         int rVal = fileChooser.showOpenDialog(this);
         if (HackishOpenFile) {
@@ -210,16 +204,16 @@ public class MainFrame extends javax.swing.JFrame {
         if (rVal == JFileChooser.APPROVE_OPTION) {
             var selecteddata = fileChooser.getSelectedFiles();
             if (!loadImages(selecteddata)) {
-                MOpenFile.setEnabled(true);
+                SetMenuStatus(true);
             }
-            //TODO remove this reenabled. and only reenable once the task to load is done.
-            MOpenFile.setEnabled(true);
+            //SetMenuStatus(true);
         } else {
-            MOpenFile.setEnabled(true);
+            SetMenuStatus(true);
         }
     }//GEN-LAST:event_MOpenFileActionPerformed
 
     private void MOpenLinkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MOpenLinkActionPerformed
+        SetMenuStatus(false);
         var UIresponse = JOptionPane.showInputDialog(this, "Please Provide a Image Url to Load", "URL Request", JOptionPane.QUESTION_MESSAGE, new ImageIcon(this.getIconImage().getScaledInstance(50, 50, Image.SCALE_FAST), "AppIcon"), null, null);
         var responce = UIresponse == null ? null : UIresponse.toString().strip();
         if (responce != null) {
@@ -232,16 +226,22 @@ public class MainFrame extends javax.swing.JFrame {
                     //filesystem 
                     var list = new LinkedList<Path>();
                     list.add(Path.of(uri));
-                    loadImages(list);
+                    if (loadImages(list)) {
+                        return;
+                    }
                 } else {
                     try {
-                        loadUrl(uri.toURL());
+                        if (!loadUrl(uri.toURL())) {
+                            SetMenuStatus(true);
+                        }
+                        return;
                     } catch (MalformedURLException ex) {
                         LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "unable to transform the URI to URL", ex);
                     }
                 }
             }
         }
+        SetMenuStatus(true);
     }//GEN-LAST:event_MOpenLinkActionPerformed
 
     private void MainTabPanePropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_MainTabPanePropertyChange
@@ -252,9 +252,21 @@ public class MainFrame extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_MainTabPanePropertyChange
 
-    private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
+    private void MOpenClipboardActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MOpenClipboardActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jMenuItem2ActionPerformed
+    }//GEN-LAST:event_MOpenClipboardActionPerformed
+
+    private String ValidFileTypes(String list2[]) {
+        var descriptor = new StringBuilder("Images (");
+        for (int index = 0; index < list2.length; index++) {
+            descriptor.append(list2[index]);
+            if (index + 1 < list2.length) {
+                descriptor.append(',').append(' ');
+            }
+        }
+        descriptor.append(')');
+        return descriptor.toString();
+    }
 
     /**
      * Checks whenever or not the File can be used. if the file is ready. check
@@ -321,6 +333,40 @@ public class MainFrame extends javax.swing.JFrame {
         return loadedTabs;
     }
 
+    private void ProcessDropedFiles(final List<Path> FileList) {
+        if (SwingUtilities.isEventDispatchThread()) {
+            SetMenuStatus(false);
+            if (!loadImages(FileList)) {
+                SetMenuStatus(true);
+            }
+            return;
+        }
+        try {
+            SwingUtilities.invokeAndWait(() -> this.ProcessDropedFiles(FileList));
+        } catch (InterruptedException ex) {
+            LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "A call to UI was Interrupted", ex);
+        } catch (InvocationTargetException ex) {
+            LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "Could not invoke the UI", ex);
+        }
+    }
+
+    private void ProcessDropedLinks(final URL link) {
+        if (SwingUtilities.isEventDispatchThread()) {
+            SetMenuStatus(false);
+            if (!loadUrl(link)) {
+                SetMenuStatus(true);
+            }
+            return;
+        }
+        try {
+            SwingUtilities.invokeAndWait(() -> this.ProcessDropedLinks(link));
+        } catch (InterruptedException ex) {
+            LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "A call to UI was Interrupted", ex);
+        } catch (InvocationTargetException ex) {
+            LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "Could not invoke the UI", ex);
+        }
+    }
+    
     private boolean loadUrl(URL Link) {
         boolean Tabcreated = false;
         int tabindx;
@@ -342,6 +388,13 @@ public class MainFrame extends javax.swing.JFrame {
             Tabcreated = true;// we might want to do something extra here. but this will do for now. 
         }
         return Tabcreated;
+    }
+
+    private void SetMenuStatus(boolean status) {
+        MOpenFile.setEnabled(status);
+        MOpenLink.setEnabled(status);
+        //this is not ready to be changed.
+        //MOpenClipboard.setEnabled(status);
     }
 
     private int hasTabforFile(Path pathFile) {
@@ -399,12 +452,12 @@ public class MainFrame extends javax.swing.JFrame {
 
             @Override
             public void NotifyFoundPaths(List<Path> fileList) {
-                loadImages(fileList);
+                ProcessDropedFiles(fileList);
             }
 
             @Override
             public void NotifyFoundUrl(URL link) {
-                loadUrl(link);
+                ProcessDropedLinks(link);
             }
 
             @Override
@@ -530,13 +583,13 @@ public class MainFrame extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="UI components">    
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu FileMenu;
+    private javax.swing.JMenuItem MOpenClipboard;
     private javax.swing.JMenuItem MOpenFile;
     private javax.swing.JMenuItem MOpenLink;
     private javax.swing.JMenuBar MainMenu;
     private com.aeongames.stegsolveplus.ui.tabcomponents.JStegnoTabbedPane MainTabPane;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenuItem jMenuItem1;
-    private javax.swing.JMenuItem jMenuItem2;
     // End of variables declaration//GEN-END:variables
     // </editor-fold>  
 

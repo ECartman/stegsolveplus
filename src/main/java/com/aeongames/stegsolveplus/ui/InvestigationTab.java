@@ -27,7 +27,7 @@ import java.util.logging.Logger;
 
 /**
  *
- * @author Ed
+ * @author Eduardo Vindas
  */
 public class InvestigationTab extends Tab {
 
@@ -154,10 +154,10 @@ public class InvestigationTab extends Tab {
     
     private void SetTitleInternal(URL Link) {
       //assume the file is alredy non null. we are too deep if it is not a verification was missing before
-        var Filename = Link.getFile();
+        var Filename = Link.getPath();//Link.getFile();
         var index= Filename.lastIndexOf('/');
         Filename = Filename.substring(index<0?0:index).strip();
-        pFooter.setFooterText(String.format("analizing File: %s", Filename));
+        pFooter.setFooterText(String.format("analizing Link: %s", Link.toString()));
         var extension = Filename;
         if (Filename != null && Filename.length() > 20) {
             var StartExtensionIndex = Filename.lastIndexOf('.');//get the file type

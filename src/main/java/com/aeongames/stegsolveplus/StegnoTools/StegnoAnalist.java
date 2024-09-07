@@ -32,7 +32,7 @@ import javax.imageio.ImageIO;
  * TODO: load image from URL should be easy to add. but require changes on the
  * UI to support it.
  *
- * @author Ed
+ * @author Eduardo Vindas
  */
 public class StegnoAnalist {
 

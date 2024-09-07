@@ -317,7 +317,21 @@ public abstract class DragAndDrop implements DropTargetListener {
         } else {
             dtde.dropComplete(true);
         }
-        DropComplete(dtde);
+        DropCompleteUI(dtde);
+    }
+    
+    private void DropCompleteUI(DropTargetDropEvent dtde){
+        if (SwingUtilities.isEventDispatchThread()) {
+             DropComplete(dtde);
+            return;
+        }
+        try {
+            SwingUtilities.invokeAndWait(() -> this.DropCompleteUI(dtde));
+        } catch (InterruptedException ex) {
+            LoggingHelper.getLogger(DragAndDrop.class.getName()).log(Level.SEVERE, "A call to UI was Interrupted", ex);
+        } catch (InvocationTargetException ex) {
+            LoggingHelper.getLogger(DragAndDrop.class.getName()).log(Level.SEVERE, "Could not invoke the UI", ex);
+        }
     }
 
     /**
@@ -519,60 +533,12 @@ public abstract class DragAndDrop implements DropTargetListener {
             return null;
         }
         if (ob instanceof List<?> FileList) {
-            /*
-             * we cannot at runtime safely cast to file but we can almost be
-             * assure they are files...
-             * there are some code we could add for example streaming the list
-             * into another. but that is wasting computation. for the needs
-             * also do note this code is likely executing on the EDT AND the OS
-             * DnD we could be hanging another app or even the OS...
-             * and thus we need to move FAST!
-             */
-            /**
-             * it is possible for Flavors available to be better to handle this
-             * case for example. a File can be created for a URL lets say for
-             * instance we dragged a Text that is a &lt;a&gt; (<a></a>)and thus
-             * it is possible for that link to consider itself several flavors
-             * INCLUDING a File. but the actual file would contains basically
-             * text that links to an URL for example:
-             * <p>
-             * <code>
-             * [InternetShortcut]
-             * URL=https://commons.wikimedia.org/wiki/File:Vincent_van_Gogh_-_De_slaapkamer_-_Google_Art_Project.jpg
-             * </code> and that would be the content and thus. this would NOT
-             * meet our goal and in fact might be wasteful. if the list
-             * therefore only contain files that refer to a .URL we will ignore
-             * them and if the list ONLY contains such we shall then return
-             * false. thus the parent method should handle another way to read
-             * the desire data (opening the URL)
-             */
             List<Path> ValidFiles = new ArrayList<>();
             for (var objFile : FileList) {
                 if (objFile instanceof File DndFile) {
-                    var isurl = DndFile.getName().matches("(?i).*\\.url");
-                    if (!isurl && DndFile.exists() && DndFile.canRead()) {
-                        //the Source that Started the drag of the image MAY OR MIGHTNOT 
-                        //Delete the file or overwrite. to avoid this we will check if 
-                        //the image dragged is on the TMP folder. if so we make a copy
-                        //and use the copy (if sucessful) otherwise we consede and 
-                        //use the file we set to use
-                        boolean added = false;
-                        var pathForFile=DndFile.toPath();
-                        var tmpfolder= ANALISIS_DIRECTORY.getParent();                        
-                        if (ANALISIS_DIRECTORY != null && tmpfolder.equals(pathForFile.getParent())) {
-                            try {
-                                var tmpcopy = Files.createTempFile(ANALISIS_DIRECTORY,DndFile.getName(),null);
-                                tmpcopy.toFile().deleteOnExit();
-                                Files.copy(DndFile.toPath(), tmpcopy, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
-                                added = true;
-                                ValidFiles.add(tmpcopy);
-                            } catch (IOException ex) {
-                                log.log(Level.SEVERE, "Fail to create a TMP copy", ex);
-                            }
-                        }
-                        if (!added) {
-                            ValidFiles.add(DndFile.toPath());
-                        }
+                    if (!DndFile.getName().matches("(?i).*\\.url")) {
+                        var pathForFile = PrepareFile(DndFile);
+                        ValidFiles.add(pathForFile);
                     }
                 }
             }
@@ -581,6 +547,43 @@ public abstract class DragAndDrop implements DropTargetListener {
             }
         }
         return null;
+    }
+
+    /**
+     * prepares a file to be used. 
+     * if the file exist and can be read. we will check if this file is a Temporal
+     * file. if so we made a copy because the Source that Started the drag 
+     * of the image MAY OR MIGHTNOT Delete the file or overwrite. to avoid this
+     * we will check if the image dragged is on the TMP folder. if so we make a copy
+     * @param Potentialfile the file to analyze 
+     * @return a Path that target the original file OR if the file is at the 
+     * temporal folder a copy of that that we can use securely.
+     */
+    private Path PrepareFile(File Potentialfile ) {
+        var log = LoggingHelper.getLogger(DragAndDrop.class.getName());
+        var pathForFile = Potentialfile.toPath();
+        if (!Potentialfile.exists() || !Potentialfile.canRead()) {
+            return pathForFile;
+        }
+        //the Source that Started the drag of the image MAY OR MIGHTNOT 
+        //Delete the file or overwrite. to avoid this we will check if 
+        //the image dragged is on the TMP folder. if so we make a copy
+        //and use the copy (if sucessful) otherwise we consede and 
+        //use the file we set to use
+        if (ANALISIS_DIRECTORY != null) {
+            var tmpfolder = ANALISIS_DIRECTORY.getParent();
+            if (tmpfolder.equals(pathForFile.getParent())) {
+                try {
+                    var tmpcopy = Files.createTempFile(ANALISIS_DIRECTORY, pathForFile.getFileName().toString(), null);
+                    tmpcopy.toFile().deleteOnExit();
+                    Files.copy(pathForFile, tmpcopy, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+                    return tmpcopy;
+                } catch (IOException ex) {
+                    log.log(Level.SEVERE, "Fail to create a TMP copy", ex);
+                }
+            }
+        }
+        return pathForFile;
     }
 
     private void triggerDragdetected(final DropTargetDragEvent dtde) {
@@ -645,21 +648,43 @@ public abstract class DragAndDrop implements DropTargetListener {
      * is not null, but not that the list is not empty. we however do NOT
      * warrantee that the Paths exists or that are valid thus the implementer
      * need to check whenever or not the path exist, can be read and such.
+     * <strong>we do not warrantee this will be called from EDT</strong>
      *
      * @param fileList a NON-null list that contains the paths desired to be
      * loaded.
      */
     public abstract void NotifyFoundPaths(List<Path> fileList);
 
+    /**
+     *  a method to be implemented by child classes. we ensure that the parameter
+     * is not null, we do not ensure the link is valid or is warrantee to connect.
+     * the implementer will need to check on that. 
+     * <strong>we do not warrantee this will be called from EDT</strong>
+     * 
+     * @param link a URL with the data provided from the Drag and Drop
+     * 
+     */
     public abstract void NotifyFoundUrl(URL link);
 
+     /**
+     * triggered by the Event Dispatch thread when a
+     * {@link DropTargetListener#drop(java.awt.dnd.DropTargetDropEvent)} event
+     * concludes its execution and the Drop is consumed. this method is ensured
+     * to be called by the EDT. note this method will block the thread that 
+     * trigger the Drag and Drop (if that thread is NOT the EDT) and activity
+     * takes too long can cause problems on the OS
+     * Drag And Drop functionality. thus make sure this method returns as fast
+     * as possible. also note. the even is unfiltered.
+     *
+     * @param dtde the event details data
+     */
     public abstract void DropComplete(DropTargetDropEvent dtde);
 
     /**
      * if the event contains AT LEAST one of the Flavors to ignore. will return
      * true.
      *
-     * @param dtde the Event to analize.
+     * @param dtde the Event to analyze.
      * @return true if ANY of the flavors match.
      */
     private boolean ignoreFlavor(DropTargetDragEvent dtde) {
