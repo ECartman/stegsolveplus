@@ -12,6 +12,7 @@
  */
 package com.aeongames.stegsolveplus.ui;
 
+import com.aeongames.edi.utils.error.LoggingHelper;
 import com.aeongames.stegsolveplus.ui.tabcomponents.Tab;
 import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalist;
 import java.beans.PropertyChangeListener;
@@ -23,7 +24,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
@@ -105,7 +105,7 @@ public class InvestigationTab extends Tab {
             //TODO: move this to be done in Parallel.
             var list = Analist.RunTrasFormations(true);
             //jImageTabPane1.addTab("Unedited", new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/color.png")),new ImagePanel(Analist.getUnedited()));
-            PanenPlanes.add(new ImagePreviewPanel("Original", Analist.getUnedited()));
+            PanenPlanes.add(new ImagePreviewPanel("Original", Analist.getUnEditedCopy()));
             if (list != null) {
                 for (var pair : list) {
                     var preview = new ImagePreviewPanel(pair.getLeft(), pair.getRight());
@@ -113,7 +113,7 @@ public class InvestigationTab extends Tab {
                 }
             }
         } catch (IOException ex) {
-            Logger.getLogger(InvestigationTab.class.getName()).log(Level.SEVERE, null, ex);
+            LoggingHelper.getLogger(InvestigationTab.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
