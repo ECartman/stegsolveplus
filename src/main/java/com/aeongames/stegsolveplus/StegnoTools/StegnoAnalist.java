@@ -88,7 +88,7 @@ public class StegnoAnalist {
         list.add(new Pair<>("Grey Scale", getGrayScaleCopy()));
         loger.log(Level.INFO, "Getting HSV inverted image");
         getHSVInversions(list);  //-->TODO: make this one faster. 
-        list.add(new Pair<>("inverted Hue", HueInversionHSV()));
+        //list.add(new Pair<>("inverted Hue", HueInversionHSV()));
         loger.log(Level.INFO, "Getting inverted image");
         list.add(new Pair<>("inverted Xor", inversionRGB()));
         loger.log(Level.INFO, "Blue channel");
