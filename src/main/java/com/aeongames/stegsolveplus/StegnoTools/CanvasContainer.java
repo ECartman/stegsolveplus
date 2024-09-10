@@ -28,6 +28,23 @@ import java.util.function.Function;
 import javax.imageio.ImageIO;
 
 /**
+ * a Class that holds the Image from a file,url,Stream or a provided original
+ * image this class will hold the image and will not modify, but will not
+ * provide a reference to it. because otherwise the image is easily editable and
+ * we desire to hold unedited as much as possible for our forensic analysis if
+ * you ask this class for the original image the best we do is provide a copy of
+ * the original image. any morph or transformation we do is done into a new
+ * image where we copy the data of the original image (Dependent on which
+ * transformation or math is as to do) this class also has functions for those
+ * transformations or analysis.
+ *
+ *
+ * interesting
+ * reads:http://www.eyemaginary.com/Compositing/EG06-Presentation.pdf
+ * http://www.eyemaginary.com/Portfolio/index.html
+ * https://cadik.posvete.cz/color_to_gray_evaluation/cadik08perceptualEvaluation-slides.pdf
+ * <a href="https://stackoverflow.com/questions/6524196/java-get-pixel-array-from-image">StackOverflow
+ * question on similar scene we used</a>
  *
  * @author Eduardo Vindas
  */
@@ -133,9 +150,7 @@ public class CanvasContainer {
      * <br>
      * <br>
      * NOT supported: TODO: add dictionaries for this translations.
-     * <br> null null null null null null null null null null null null null
-     * null null null null null null null null null null null null null null
-     * null null null null null null null     {@link BufferedImage#TYPE_BYTE_GRAY}
+     * <br> null null null     {@link BufferedImage#TYPE_BYTE_GRAY}
      * {@link BufferedImage#TYPE_BYTE_BINARY}
      * {@link BufferedImage#TYPE_BYTE_INDEXED}
      * {@link BufferedImage#TYPE_USHORT_GRAY}
@@ -188,7 +203,7 @@ public class CanvasContainer {
                         return 3;
                 }
             }
-            case BufferedImage.TYPE_3BYTE_BGR->{
+            case BufferedImage.TYPE_3BYTE_BGR -> {
                 switch (channel) {
                     default:
                     case BLUE:
@@ -268,40 +283,6 @@ public class CanvasContainer {
     public static int convertToUnsigned(byte value) {
         //return ((value) & MAXSINGLEVALUE);//this is the same basically
         return Byte.toUnsignedInt(value);
-    }
-
-    /**
-     * process the DataBufferByte that contains the pseudo raw data from the
-     * image into a Buffer image. and moves into the color maps provided
-     *
-     * @param type the type of image it was loaded. this is important to
-     * Understand the order of the bytes (if they are little or big endian and
-     * or know if it is RGB or BGR order.
-     * <br> also look at
-     * <a href="https://stackoverflow.com/questions/6524196/java-get-pixel-array-from-image">StackOverflow
-     * question on similar scene we used</a>
-     * @param hasAlpha whenever or not the image has alpha byte. (ARGB, ABGR)
-     * @param bytesData the DataBuffer that contains the Image data (bytes)
-     * @param Colormaps the Destination of the read and process data.
-     */
-    private static void processByteData(int type, final boolean hasAlpha, final DataBufferByte bytesData, byte[][] Colormaps) {
-        var order = getOrder(type);//this will crash if not found. that is desireable as we want to fix that problem. see the To do's on getOrder
-        var byteData = bytesData.getData();//alternative we can use bytesData.getSize() instead of the lenght and call .getElem to get the value. but note this taxes on byte to int convertion
-        final int BytesPerPixel = hasAlpha ? 4 : 3;
-        final int jumpPerPixel = BytesPerPixel - 1;
-        for (int dataIndex = 0, DestIndex = 0; dataIndex + jumpPerPixel < byteData.length; dataIndex += BytesPerPixel) {
-            /* 
-            Colormaps[order[0]][DestIndex] = hasAlpha ?(byte) bytesData.getElem(dataIndex) : (byte) MAXSINGLEVALUE;//full alpha (opaque) if has not alpha
-            Colormaps[order[1]][DestIndex] =(byte) bytesData.getElem(dataIndex + jumpPerPixel - 2);
-            Colormaps[order[2]][DestIndex] = (byte) bytesData.getElem(dataIndex + jumpPerPixel - 1);
-            Colormaps[order[3]][DestIndex] = (byte) bytesData.getElem(dataIndex + jumpPerPixel);
-             */
-            Colormaps[order[0]][DestIndex] = hasAlpha ? byteData[dataIndex] : (byte) MAXUBYTE;//full alpha (opaque) if has not alpha
-            Colormaps[order[1]][DestIndex] = byteData[dataIndex + jumpPerPixel - 2];
-            Colormaps[order[2]][DestIndex] = byteData[dataIndex + jumpPerPixel - 1];
-            Colormaps[order[3]][DestIndex] = byteData[dataIndex + jumpPerPixel];
-            DestIndex++;
-        }
     }
 
     /**
@@ -385,9 +366,9 @@ public class CanvasContainer {
                     && SourceData[srcIndex + jumpPerPixel - 1] == SourceData[srcIndex + jumpPerPixel - 2];
             if (same) {
                 //put this pixel as color 
-                destData[SecondIndex + SecondBytesPerPixel - 3] = RGBfill[SecondTranslationOrder[1] - 1];//we -1 as this does not have alpha index thus 'red'is 0 instead of 1 
-                destData[SecondIndex + SecondBytesPerPixel - 2] = RGBfill[SecondTranslationOrder[2] - 1];
-                destData[SecondIndex + SecondBytesPerPixel - 1] = RGBfill[SecondTranslationOrder[3] - 1];
+                destData[SecondIndex + SecondBytesPerPixel - 3] = RGBfill[SecondTranslationOrder[RED] - 1];//we -1 as this does not have alpha index thus 'red'is 0 instead of 1 
+                destData[SecondIndex + SecondBytesPerPixel - 2] = RGBfill[SecondTranslationOrder[GREEN] - 1];
+                destData[SecondIndex + SecondBytesPerPixel - 1] = RGBfill[SecondTranslationOrder[BLUE] - 1];
             }
         }
     }
@@ -526,6 +507,11 @@ public class CanvasContainer {
      * example. "1f1f1f" and so on. Highlights just the pixels for which r=g=b
      * (this is also known as "gray bits" because all R G B are the same value)
      *
+     * @param Fill the color to fill for those pixel that match the Symetry.
+     * @return a BufferImage that contains the RGB data (we don't guarantee the
+     * type of image the image could be {@link BufferedImage#TYPE_3BYTE_BGR} or
+     * {@link BufferedImage#TYPE_INT_RGB} or any other.) that match that
+     * criteria.
      * @see
      * {@link https://web.stanford.edu/class/cs101/image-6-grayscale-adva.html}
      *
@@ -534,8 +520,8 @@ public class CanvasContainer {
         var image = createBIemptyCopy(BufferedImage.TYPE_3BYTE_BGR);//note We could just return a binary image
         var Destinationdatabuffer = (DataBufferByte) image.getRaster().getDataBuffer();
         var databuffer = originalImage.getRaster().getDataBuffer();
-        /*should we fill the image with "white" pixels prior*/
-        Arrays.fill(Destinationdatabuffer.getData(),(byte)0xFF);
+        /*fill the image with empty "canvas color" */
+        Arrays.fill(Destinationdatabuffer.getData(), (byte) 0xFF);
         switch (databuffer) {
             case DataBufferByte bytesData -> {
                 var hasAlphaChannel = originalImage.getAlphaRaster() != null;
@@ -566,12 +552,109 @@ public class CanvasContainer {
         return image;
     }
 
-    public void MathOnPixels(BufferedImage image, Function<Short[], Integer> MathFunction) {
+    /**
+     * this function execute the provided "math" functionality into the pixel
+     * data for the image. and returns a image with the resulting data from the
+     * function. for each pixel.
+     *
+     * @param TypeRequred the type of image is desired as results. thus function
+     * supports: <pre>
+     * {@link BufferedImage#TYPE_3BYTE_BGR}
+     * {@link BufferedImage#TYPE_4BYTE_ABGR}
+     * {@link BufferedImage#TYPE_4BYTE_ABGR_PRE}
+     * {@link BufferedImage#TYPE_INT_RGB}
+     * {@link BufferedImage#TYPE_INT_ARGB}
+     * {@link BufferedImage#TYPE_INT_ARGB_PRE}
+     * {@link BufferedImage#TYPE_INT_BGR}
+     * {@link BufferedImage#TYPE_BYTE_GRAY}
+     * </pre>
+     *
+     * @param MathFunction a {@link Function} that accepts and returns an array
+     * of shorts values. the input array is an array of {@link Short} type
+     * values of size {@code 4} in the order this class works with. (see: null
+     * null null null null null null     {@link CanvasContainer#ALPHA},
+     * {@link CanvasContainer#RED},
+     * {@link CanvasContainer#GREEN},
+     * {@link CanvasContainer#BLUE}. the resulting array is also Expected that
+     * return a array in the same Order and size. with the resulting data with a
+     * Single Exception: {@link BufferedImage#TYPE_BYTE_GRAY} that will accept
+     * an single value array.
+     */
+    public BufferedImage MathOnPixels(int TypeRequred, Function<Short[], Short[]> MathFunction) {
+        //note if provided a unsupported type we could use whatever we want... or throw a error.
+        BufferedImage ResultImage = null;
+        switch (TypeRequred) {
+            default ->
+                throw new UnsupportedOperationException(String.format("%s: %d", "the specific Type of image is not Supported", TypeRequred));
+            case BufferedImage.TYPE_3BYTE_BGR, BufferedImage.TYPE_4BYTE_ABGR, BufferedImage.TYPE_4BYTE_ABGR_PRE, BufferedImage.TYPE_INT_RGB, BufferedImage.TYPE_INT_ARGB, BufferedImage.TYPE_INT_ARGB_PRE, BufferedImage.TYPE_INT_BGR, BufferedImage.TYPE_BYTE_GRAY ->
+                ResultImage = new BufferedImage(originalImage.getWidth(), originalImage.getHeight(), TypeRequred);
+        }
+        var Destinationdatabuffer = ResultImage.getRaster().getDataBuffer();
+        //todo: move the for and add this inside the byte buffer case 
+        var Translation = getOrder(TypeRequred);
+        var hasAlpha = ResultImage.getAlphaRaster() != null;
         for (int i = 0; i < getTotalPixels(); i++) {
             var CalculatedPixel = MathFunction.apply(ToWrapperArray(getRGB(i)));
-            var point = RelativiseLinearIndexToXY(image.getWidth(), i);
-            image.setRGB(point.x, point.y, CalculatedPixel);
+            switch (Destinationdatabuffer) {
+                case DataBufferByte bytesData -> {
+                    var byteData = bytesData.getData();//alternative we can use bytesData.getSize() instead of the lenght and call .getElem to get the value. but note this taxes on byte to int convertion
+                    if (TypeRequred == BufferedImage.TYPE_BYTE_GRAY) {
+                        if (CalculatedPixel.length == 1) {
+                            byteData[i] = CalculatedPixel[0].byteValue();
+                        } else {
+                            byteData[i] = CalculatedPixel[RED].byteValue();
+                        }
+                    } else {
+                        int BytesPerPixel = hasAlpha ? 4 : 3;
+                        var ConvertedIndex = getRawIndexForImageIndex(BytesPerPixel, i);
+                        final int jumpPerPixel = BytesPerPixel - 1;
+                        byteData[ConvertedIndex] = CalculatedPixel[Translation[ALPHA]].byteValue();
+                        byteData[ConvertedIndex + jumpPerPixel - 2] = CalculatedPixel[Translation[RED]].byteValue();
+                        byteData[ConvertedIndex + jumpPerPixel - 1] = CalculatedPixel[Translation[GREEN]].byteValue();
+                        byteData[ConvertedIndex + jumpPerPixel] = CalculatedPixel[Translation[BLUE]].byteValue();
+                    }
+                }
+                case DataBufferInt IntegerData -> {
+                    int resultvalue;
+                    if (CalculatedPixel.length == 1) {
+                        resultvalue
+                                = (hasAlpha ? CalculatedPixel[0] << 24 : 0)
+                                | CalculatedPixel[0] << 16
+                                | CalculatedPixel[0] << 8
+                                | CalculatedPixel[0];
+                    } else {
+                        resultvalue
+                                = (hasAlpha ? CalculatedPixel[ALPHA] << 24 : 0)
+                                | CalculatedPixel[RED] << 16
+                                | CalculatedPixel[GREEN] << 8
+                                | CalculatedPixel[BLUE];
+                    }
+                    //IntegerData.getData()[i]= resultvalue;
+                    IntegerData.setElem(i, resultvalue);
+                }
+                default -> {
+                    var point = RelativiseLinearIndexToXY(ResultImage.getWidth(), i);
+                    //slow but on this function should not happend. we will add this code mostly for example on how to do if this where the case.
+                    if (CalculatedPixel.length == 1) {
+                        ResultImage.setRGB(point.x, point.y,
+                                CalculatedPixel[0] << 24
+                                | CalculatedPixel[0] << 16
+                                | CalculatedPixel[0] << 8
+                                | CalculatedPixel[0]
+                        );
+                    } else {
+                        ResultImage.setRGB(point.x, point.y,
+                                CalculatedPixel[ALPHA] << 24
+                                | CalculatedPixel[RED] << 16
+                                | CalculatedPixel[GREEN] << 8
+                                | CalculatedPixel[BLUE]
+                        );
+                    }
+                }
+            }
         }
+        ResultImage.flush();
+        return ResultImage;
     }
 
     public void MathOnPixels(BiConsumer<Short[], Point> MathConsumer) {
@@ -579,12 +662,18 @@ public class CanvasContainer {
             MathConsumer.accept(ToWrapperArray(getRGB(i)), RelativiseLinearIndexToXY(originalImage.getWidth(), i));
         }
     }
+    
+    public void MathOnPixelsbyIndex(BiConsumer<Short[], Integer> MathConsumer) {
+        for (int i = 0; i < getTotalPixels(); i++) {
+            MathConsumer.accept(ToWrapperArray(getRGB(i)),i);
+        }
+    }
 
     //TODO change to NOT use RGB!!
     /**
-     * @deprecated this function requires upgrade to use read pixels faster. 
+     * @deprecated this function requires upgrade to use read pixels faster.
      * @param Destination
-     * @param MathFunction 
+     * @param MathFunction
      */
     public void MathOnPixelInt(BufferedImage Destination, Function<Integer, Integer> MathFunction) {
         for (int x = 0; x < originalImage.getWidth(); x++) {
@@ -595,6 +684,21 @@ public class CanvasContainer {
         }
     }
 
+    /**
+     * returns the ARGB data for the desired position. if the
+     * {@code LinearPosition} is not known. you can call {@link CanvasContainer#getRGB(int, int)
+     * }
+     * with the X,Y coordinates
+     *
+     * @param LinearPosition the linear position on the Image where to gather
+     * the color info.
+     * @return and array that contains the data for ARGB data (in the order
+     * define by this class (aRGB))
+     * @see CanvasContainer#ALPHA
+     * @see CanvasContainer#RED
+     * @see CanvasContainer#GREEN
+     * @see CanvasContainer#BLUE
+     */
     public short[] getRGB(int LinearPosition) {
         if (LinearPosition < 0 && LinearPosition > getTotalPixels()) {
             throw new ArrayIndexOutOfBoundsException("the index Specified is not present on the image");
@@ -605,6 +709,11 @@ public class CanvasContainer {
         result[RED] = (short) getRed(LinearPosition);
         result[ALPHA] = (short) getAlpha(LinearPosition);
         return result;
+    }
+
+    public short[] getRGB(int x, int y) {
+        var position = getIndexForPosition(originalImage.getWidth(), x, y);
+        return getRGB(position);
     }
 
     private Short[] ToWrapperArray(short[] b) {
@@ -629,13 +738,13 @@ public class CanvasContainer {
             case DataBufferInt IntegerData ->
                 readvalue = getColorPixelInt(originalImage.getType(), true, IntegerData, Channel, i);
             default -> {
-                readvalue = getColorDefaultMethod(Channel,x, y);
+                readvalue = getColorDefaultMethod(Channel, x, y);
             }
         }
         return readvalue;
     }
 
-    protected int getColorDefaultMethod(int Channel,int x, int y) {
+    protected int getColorDefaultMethod(int Channel, int x, int y) {
         int readvalue;
         var data = originalImage.getRaster().getDataElements(x, y, null);
         switch (Channel) {
@@ -670,7 +779,7 @@ public class CanvasContainer {
                 readvalue = getColorPixelInt(originalImage.getType(), originalImage.getAlphaRaster() != null, IntegerData, Channel, LinearPosition);
             default -> {
                 var pos = RelativiseLinearIndexToXY(originalImage.getWidth(), LinearPosition);
-                readvalue = getColorDefaultMethod(Channel,pos.x, pos.y);
+                readvalue = getColorDefaultMethod(Channel, pos.x, pos.y);
             }
         }
         return readvalue;
@@ -850,22 +959,26 @@ public class CanvasContainer {
                 cloneChannelInt(originalImage.getType(), image.getType(), hasAlphaChannel, image.getAlphaRaster() != null, IntegerData, Destinationdatabuffer, Channel);
             default -> {
                 //this is slow. but given that we dont know how to handle otheise nothing we can do
-                int singleChannelColor = 0b0;
+                var Destdata = Destinationdatabuffer.getData();
                 for (int i = 0; i < getTotalPixels(); i++) {
                     var pos = RelativiseLinearIndexToXY(originalImage.getWidth(), i);
                     var data = originalImage.getRaster().getDataElements(pos.x, pos.y, null);
+                    var baseindex = getRawIndexForImageIndex(3, i);
                     switch (Channel) {
-                        case ALPHA ->
-                            singleChannelColor = originalImage.getColorModel().getAlpha(data);
-                        case RED ->
-                            singleChannelColor = originalImage.getColorModel().getRed(data) << 16;
+                        case ALPHA -> {
+                            Destdata[baseindex + 2] = (byte) originalImage.getColorModel().getAlpha(data);
+                        }
+                        case RED -> {
+                            Destdata[baseindex + 2] = (byte) originalImage.getColorModel().getRed(data);
+                        }
                         case GREEN ->
-                            singleChannelColor = originalImage.getColorModel().getGreen(data) << 8;
-                        case BLUE ->
-                            singleChannelColor = originalImage.getColorModel().getBlue(data);
+                            Destdata[baseindex + 1] = (byte) originalImage.getColorModel().getGreen(data);
+                        case BLUE -> {
+                            Destdata[baseindex] = (byte) originalImage.getColorModel().getBlue(data);
+                        }
                     }
-                    var p = RelativiseLinearIndexToXY(image.getWidth(), i);
-                    image.setRGB(p.x, p.y, singleChannelColor);
+                    //var p = RelativiseLinearIndexToXY(image.getWidth(), i);
+                    //image.setRGB(p.x, p.y, singleChannelColor);
                 }
             }
         }

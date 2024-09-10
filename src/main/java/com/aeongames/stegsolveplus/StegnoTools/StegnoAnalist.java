@@ -86,6 +86,16 @@ public class StegnoAnalist {
         list.add(new Pair<>("Grey Map", TranformSymetricPixels(Color.BLACK)));
         loger.log(Level.INFO, "Getting Grey Scale Version");
         list.add(new Pair<>("Grey Scale", getGrayScaleCopy()));
+        //list.add(new Pair<>("Grey Scale REC709 (gamma Corrected)", TranformGreyScaleSlow()));
+        //list.add(new Pair<>("Grey Scale REC709 fast", TranformGreyScaleSlow(true)));
+        loger.log(Level.INFO, "Getting bit 1&2 image");
+        list.add(new Pair<>("bit 0&1 image Image", Forthofbyte(0)));
+        loger.log(Level.INFO, "Getting bit 5&6 image");
+        list.add(new Pair<>("bit 2&3 image", Forthofbyte(1)));        
+        loger.log(Level.INFO, "Getting bit 7&8 image");
+        list.add(new Pair<>("bit 4&5 image", Forthofbyte(2)));
+        loger.log(Level.INFO, "Getting Half Lower bits image");
+        list.add(new Pair<>("bit 6&7 image", Forthofbyte(3)));
         loger.log(Level.INFO, "Getting HSV inverted image");
         getHSVInversions(list);  //-->TODO: make this one faster. 
         //list.add(new Pair<>("inverted Hue", HueInversionHSV()));
@@ -134,9 +144,25 @@ public class StegnoAnalist {
         return ImageCache.getCloneImage();
     }
 
-    private BufferedImage TranformGreyScaleSlow() {
-        var transform = ImageCache.createBIemptyCopy(BufferedImage.TYPE_BYTE_GRAY);
-        ImageCache.MathOnPixels(transform, RGB -> {
+    /**
+     * https://stackoverflow.com/questions/687261/converting-rgb-to-grayscale-intensity
+     * https://en.wikipedia.org/wiki/Grayscale
+     * http://www.w3.org/Graphics/Color/sRGB
+     * https://github.com/WinMerge/freeimage/blob/master/Source/Utilities.h#L478
+     * https://stackoverflow.com/questions/9131678/convert-a-rgb-image-to-grayscale-image-reducing-the-memory-in-java
+     *
+     * @return
+     */
+    private BufferedImage TranformGreyScaleSlow(boolean NoGamaCorrection) {
+        return ImageCache.MathOnPixels(BufferedImage.TYPE_BYTE_GRAY, RGB -> {
+            if (NoGamaCorrection) {
+                // Calculate luminance:
+                var lum = 0.2126f * RGB[CanvasContainer.RED]
+                        + 0.7152f * RGB[CanvasContainer.GREEN]
+                        + 0.0722f * RGB[CanvasContainer.BLUE];
+                return new Short[]{(short) (lum + 0.5F)};
+            }
+            // Normalize and gamma correct:Rec709 (HDTV)
             var rr = Math.pow(RGB[CanvasContainer.RED] / 255.0f, 2.2f);
             var gg = Math.pow(RGB[CanvasContainer.GREEN] / 255.0f, 2.2f);
             var bb = Math.pow(RGB[CanvasContainer.BLUE] / 255.0f, 2.2f);
@@ -144,10 +170,25 @@ public class StegnoAnalist {
             var lum = 0.2126f * rr + 0.7152f * gg + 0.0722f * bb;
 
             // Gamma compand and rescale to byte range:
-            int grayLevel = (int) (255.0 * Math.pow(lum, 1.0 / 2.2));
-            return (grayLevel << 16) + (grayLevel << 8) + grayLevel;
+            short grayLevel = (short) (255.0 * Math.pow(lum, 1.0 / 2.2));
+            return new Short[]{grayLevel};
         });
-        return transform;
+    }
+
+    private BufferedImage Forthofbyte(int part) {
+        var base= 0b11<< part*2;
+        var move= 6-2*part;
+        //i think MathOnPixels is a bit slow due loops. we could work on a better one
+        //that works on less loops the current one. is slow due several iterations 
+        //on changes to code that is itended to run once not on a loop
+        return ImageCache.MathOnPixels(BufferedImage.TYPE_4BYTE_ABGR, ARGB -> {
+            var results = new Short[4];
+             results[CanvasContainer.ALPHA] = CanvasContainer.MAXUBYTE; 
+            results[CanvasContainer.RED] = (short) ((ARGB[CanvasContainer.RED] & base)<<move);
+            results[CanvasContainer.GREEN] = (short) ((ARGB[CanvasContainer.GREEN] & base)<<move);
+            results[CanvasContainer.BLUE] = (short) ((ARGB[CanvasContainer.BLUE] & base)<<move);
+            return results;
+        });
     }
 
     /**
@@ -169,7 +210,7 @@ public class StegnoAnalist {
         //inverted brightness only.
         var transform4 = ImageCache.createBIemptyCopy();
 
-        ImageCache.MathOnPixels((RGB, PixelPoint) -> {
+        ImageCache.MathOnPixelsbyIndex((RGB, Index) -> {
             float[] HSV = new float[3];
             Color.RGBtoHSB(
                     RGB[CanvasContainer.RED],
@@ -179,13 +220,13 @@ public class StegnoAnalist {
             var invertedHue = (HSV[0] + 0.5f) % 1f;
             var invertedbright = 1f - HSV[2];
             var InvertedColor = Color.HSBtoRGB(invertedHue, HSV[1], HSV[2]);
-            transform.setRGB(PixelPoint.x, PixelPoint.y, InvertedColor);
+            transform.getRaster().getDataBuffer().setElem(Index, InvertedColor);
             InvertedColor = Color.HSBtoRGB(invertedHue, HSV[1], invertedbright);
-            transform2.setRGB(PixelPoint.x, PixelPoint.y, InvertedColor);
+            transform2.getRaster().getDataBuffer().setElem(Index, InvertedColor);
             InvertedColor = Color.HSBtoRGB(HSV[1], 1f - HSV[1], HSV[2]);
-            transform3.setRGB(PixelPoint.x, PixelPoint.y, InvertedColor);
+            transform3.getRaster().getDataBuffer().setElem(Index, InvertedColor);
             InvertedColor = Color.HSBtoRGB(HSV[1], HSV[1], invertedbright);
-            transform4.setRGB(PixelPoint.x, PixelPoint.y, InvertedColor);
+            transform4.getRaster().getDataBuffer().setElem(Index, InvertedColor);
         });
         storage.add(new Pair<>("Inverted Hue", transform));
         storage.add(new Pair<>("Inverted Hue and Brightness", transform2));
@@ -204,9 +245,7 @@ public class StegnoAnalist {
      */
     private BufferedImage HueInversionHSV() {
         //inverted hue 
-        var transform = ImageCache.createBIemptyCopy();
-
-        ImageCache.MathOnPixels(transform, RGB -> {
+        return ImageCache.MathOnPixels(BufferedImage.TYPE_INT_ARGB, RGB -> {
             float[] HSV = new float[3];
             Color.RGBtoHSB(
                     RGB[CanvasContainer.RED],
@@ -214,9 +253,13 @@ public class StegnoAnalist {
                     RGB[CanvasContainer.BLUE],
                     HSV);
             var InvertedColor = Color.HSBtoRGB((HSV[0] + 0.5f) % 1f, HSV[1], HSV[2]);
-            return InvertedColor;
+            var results = new Short[4];
+            results[CanvasContainer.ALPHA] = (short) ((InvertedColor >> 24) & CanvasContainer.MAXUBYTE);
+            results[CanvasContainer.RED] = (short) ((InvertedColor >> 16) & CanvasContainer.MAXUBYTE);
+            results[CanvasContainer.GREEN] = (short) ((InvertedColor >> 8) & CanvasContainer.MAXUBYTE);
+            results[CanvasContainer.BLUE] = (short) (InvertedColor & CanvasContainer.MAXUBYTE);
+            return results;
         });
-        return transform;
     }
 
     /**
