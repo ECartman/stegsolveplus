@@ -94,7 +94,7 @@ public class StegnoAnalist {
         list.add(new Pair<>("bit 2&3 image", Forthofbyte(1)));        
         loger.log(Level.INFO, "Getting bit 7&8 image");
         list.add(new Pair<>("bit 4&5 image", Forthofbyte(2)));
-        loger.log(Level.INFO, "Getting Half Lower bits image");
+        loger.log(Level.INFO, "Getting bit 6&7 image");
         list.add(new Pair<>("bit 6&7 image", Forthofbyte(3)));
         loger.log(Level.INFO, "Getting HSV inverted image");
         getHSVInversions(list);  //-->TODO: make this one faster. 
@@ -268,11 +268,20 @@ public class StegnoAnalist {
      * @return a instance of BufferImage with the inverted color data
      */
     private BufferedImage inversionRGB() {
-        var transform = ImageCache.createBIemptyCopy();
+                return ImageCache.MathOnPixels(BufferedImage.TYPE_4BYTE_ABGR, ARGB -> {
+            var results = new Short[4];
+             results[CanvasContainer.ALPHA] = CanvasContainer.MAXUBYTE; 
+             results[CanvasContainer.RED] = (short) (ARGB[CanvasContainer.RED] ^ CanvasContainer.RGBMASK);
+             results[CanvasContainer.GREEN] = (short) (ARGB[CanvasContainer.GREEN] ^ CanvasContainer.RGBMASK);
+             results[CanvasContainer.BLUE] = (short) (ARGB[CanvasContainer.BLUE] ^ CanvasContainer.RGBMASK);
+            return results;
+        });
+        /*var transform = ImageCache.createBIemptyCopy();
         ImageCache.MathOnPixelInt(transform, IntRGB -> {
             return IntRGB ^ CanvasContainer.RGBMASK;
         });
         return transform;
+        */
     }
 
     /**

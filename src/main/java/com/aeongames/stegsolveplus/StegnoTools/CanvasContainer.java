@@ -671,16 +671,25 @@ public class CanvasContainer {
 
     //TODO change to NOT use RGB!!
     /**
-     * @deprecated this function requires upgrade to use read pixels faster.
      * @param Destination
      * @param MathFunction
      */
-    public void MathOnPixelInt(BufferedImage Destination, Function<Integer, Integer> MathFunction) {
-        for (int x = 0; x < originalImage.getWidth(); x++) {
-            for (int y = 0; y < originalImage.getHeight(); y++) {
-                var CalculatedPixel = MathFunction.apply(originalImage.getRGB(x, y));
-                Destination.setRGB(x, y, CalculatedPixel);
-            }
+    public void MathOnPixelInt(int TypeRequred, Function<Integer, Integer> MathFunction) {
+       //note if provided a unsupported type we could use whatever we want... or throw a error.
+        BufferedImage ResultImage = null;
+        switch (TypeRequred) {
+            default ->
+                throw new UnsupportedOperationException(String.format("%s: %d", "the specific Type of image is not Supported", TypeRequred));
+            case BufferedImage.TYPE_INT_RGB, BufferedImage.TYPE_INT_ARGB, BufferedImage.TYPE_INT_ARGB_PRE, BufferedImage.TYPE_INT_BGR ->
+                ResultImage = new BufferedImage(originalImage.getWidth(), originalImage.getHeight(), TypeRequred);
+        }
+        var Destinationdatabuffer =(DataBufferInt) ResultImage.getRaster().getDataBuffer();
+        for (int i = 0; i <  getTotalPixels(); i++) {
+            var rgb=getRGB(i);
+            int rgbint= rgb[ALPHA] << 24| rgb[RED] << 16 | rgb[GREEN] << 8
+                      | rgb[BLUE];            
+            var CalculatedPixel = MathFunction.apply(rgbint);
+            Destinationdatabuffer.setElem(i,CalculatedPixel);
         }
     }
 
