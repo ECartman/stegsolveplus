@@ -14,7 +14,7 @@ package com.aeongames.stegsolveplus.ui;
 
 import com.aeongames.edi.utils.error.LoggingHelper;
 import com.aeongames.stegsolveplus.ui.tabcomponents.Tab;
-import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalist;
+import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalysis;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.FileNotFoundException;
@@ -31,14 +31,13 @@ import java.util.logging.Level;
  */
 public class InvestigationTab extends Tab {
 
-    final class ChangePropertys {
-
+    public final class ChangePropertys {
         public static final String BUSY = "BUSY";
         public static final String STATEINFO = "STATE_STRING";
     }
     private boolean isBusy = true;
 
-    private final StegnoAnalist Analist;
+    private final StegnoAnalysis Analist;
     /**
      * for now use a PropertyChangeListener, this Object is to be notified for
      * changes on the sate of this tab. (loads data, is done is idle, etc...)
@@ -47,6 +46,8 @@ public class InvestigationTab extends Tab {
 
     /**
      * Creates new form InvestigationTab
+     * the path might be a non working file for our needs we need to check its 
+     * CONTENT not the type or extension because the image can still be a image. 
      *
      * @param FilePath the filePath to investigate
      * @throws java.io.FileNotFoundException
@@ -59,7 +60,7 @@ public class InvestigationTab extends Tab {
         }
         initComponents();
         SetTitleInternal(FilePath);
-        Analist = new StegnoAnalist(FilePath);
+        Analist = new StegnoAnalysis(FilePath);
         pFooter.SetProgressIndeterminate();
     }
     
@@ -68,7 +69,7 @@ public class InvestigationTab extends Tab {
         propertySupport = new PropertyChangeSupport(this);
         initComponents();
         SetTitleInternal(Link);
-        Analist = new StegnoAnalist(Link);
+        Analist = new StegnoAnalysis(Link);
         pFooter.SetProgressIndeterminate();
     }
     
@@ -95,16 +96,16 @@ public class InvestigationTab extends Tab {
         return OtherFile.toString().equals(Analist.getAnalisisSource());
     }
 
-    public void RunAnalist(boolean NewThread) {
+    public void startAnalysis() {
         if (Objects.isNull(Analist)) {
             fireTabSpecificPropertyChange(ChangePropertys.STATEINFO, null, "analysis CANNOT be performed");
+            fireTabSpecificPropertyChange(ChangePropertys.BUSY,true,false);
             return;
         }
         fireTabSpecificPropertyChange(ChangePropertys.STATEINFO, null, "Starting analysis");
         try {
             //TODO: move this to be done in Parallel.
             var list = Analist.RunTrasFormations(true);
-            //jImageTabPane1.addTab("Unedited", new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/color.png")),new ImagePanel(Analist.getUnedited()));
             PanenPlanes.add(new ImagePreviewPanel("Original", Analist.getUnEditedCopy()));
             if (list != null) {
                 for (var pair : list) {
@@ -119,6 +120,14 @@ public class InvestigationTab extends Tab {
 
     public void addListener(PropertyChangeListener listener) {
         propertySupport.addPropertyChangeListener(listener);
+    }
+    
+    public void addBusyListener(PropertyChangeListener listener) {
+        propertySupport.addPropertyChangeListener(ChangePropertys.BUSY,listener);
+    }
+    
+    public void removeBusyListener(PropertyChangeListener listener) {
+        propertySupport.removePropertyChangeListener(ChangePropertys.BUSY,listener);
     }
 
     public void removeListener(PropertyChangeListener listener) {

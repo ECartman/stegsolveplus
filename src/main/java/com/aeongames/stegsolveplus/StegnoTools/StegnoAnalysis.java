@@ -36,7 +36,7 @@ import javax.imageio.ImageIO;
  *
  * @author Eduardo Vindas
  */
-public class StegnoAnalist {
+public class StegnoAnalysis {
 
     public static final String ValidImagesFiles[] = ImageIO.getReaderFormatNames();
     /**
@@ -45,17 +45,17 @@ public class StegnoAnalist {
     private Path File = null;
     private URL ImageAddress = null;
     private CanvasContainer ImageCache;
-    private static final Logger loger = LoggingHelper.getLogger(StegnoAnalist.class.getName());
+    private static final Logger loger = LoggingHelper.getLogger(StegnoAnalysis.class.getName());
 
-    public StegnoAnalist(Path File) {
+    public StegnoAnalysis(Path File) {
         this.File = File;
     }
 
-    public StegnoAnalist(File file) {
+    public StegnoAnalysis(File file) {
         this.File = file.toPath();
     }
 
-    public StegnoAnalist(URL Address) {
+    public StegnoAnalysis(URL Address) {
         this.ImageAddress = Address;
     }
 

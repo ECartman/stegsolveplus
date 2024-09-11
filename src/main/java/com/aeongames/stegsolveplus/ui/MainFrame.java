@@ -14,7 +14,7 @@ package com.aeongames.stegsolveplus.ui;
 import com.aeongames.edi.utils.error.LoggingHelper;
 import com.aeongames.edi.utils.visual.ImageScaleComponents;
 import com.aeongames.edi.utils.visual.Panels.JAeonTabPane;
-import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalist;
+import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalysis;
 import com.aeongames.stegsolveplus.ui.tabcomponents.JStegnoTabbedPane;
 import java.awt.IllegalComponentStateException;
 import java.awt.Image;
@@ -178,7 +178,7 @@ public class MainFrame extends javax.swing.JFrame {
     private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
         var currentTab = MainTabPane.getSelectedComponent();
         if (currentTab instanceof InvestigationTab ITab) {
-            ITab.RunAnalist(true);
+            ITab.startAnalysis();
         }
     }//GEN-LAST:event_jMenuItem1ActionPerformed
 
@@ -193,7 +193,7 @@ public class MainFrame extends javax.swing.JFrame {
             SetDefOSUI();
         }
         JFileChooser fileChooser = new JFileChooser(System.getProperty("user.dir"));
-        var list2 = StegnoAnalist.ValidImagesFiles;
+        var list2 = StegnoAnalysis.ValidImagesFiles;
         fileChooser.setFileFilter(new FileNameExtensionFilter(ValidFileTypes(list2), list2));
         fileChooser.setMultiSelectionEnabled(true);
         int rVal = fileChooser.showOpenDialog(this);

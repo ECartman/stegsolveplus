@@ -50,27 +50,28 @@ import javax.imageio.ImageIO;
  */
 public class CanvasContainer {
 
+    // <editor-fold defaultstate="collapsed" desc="static Vars">             
     /**
      * the max value for a single color Channel 0xFF or (255) the max value of
      * an unsigned Byte.
      */
     static final int MAXUBYTE = 0xFF;
     /**
-     * a hex mask to gather the Alpha level.
-     */
-    static final int ALPHA_MASK = 0xFF000000;
-    /**
-     * a mask to gather the RGB composed value.
+     * a mask to gather the RGB composed value. (no ALPHA channel) from a
+     * Integer
      */
     static final int RGBMASK = 0x00FFFFFF;
 
     /**
-     * Constants to read from the ARGB data
+     * Constants to read from the ARGB data from Byte or Short array.
+     *
      */
     static final int ALPHA = 0,
             RED = 1,
             GREEN = 2,
             BLUE = 3;
+    // </editor-fold>
+
     /**
      * The Base Image for all combinations or calculations. this image is prone
      * to be changed. due the nature of {@link BufferedImage} thus to avoid
@@ -79,6 +80,7 @@ public class CanvasContainer {
      */
     private final BufferedImage originalImage;
 
+    // <editor-fold defaultstate="collapsed" desc="Constructors">
     /**
      * Package Private constructor. creates a new instance of CanvasContainer
      * loading the Image from the Source.
@@ -126,7 +128,60 @@ public class CanvasContainer {
         Objects.requireNonNull(SourceToClone, "the Source Image is null");
         originalImage = getCloneofImage(SourceToClone);
     }
+    // </editor-fold>
 
+    // <editor-fold defaultstate="collapsed" desc="create empty image"> 
+    /**
+     * creates a new BufferedImage that support ARGB wit the same dimensions as
+     * the original image. but <strong>NO CONTENT</strong>
+     *
+     * @return a new instance of BufferedImage that support ARGB (rgb+alpha)
+     */
+    public BufferedImage createBIemptyCopy() {
+        return createBIemptyCopy(BufferedImage.TYPE_INT_ARGB);
+    }
+
+    /**
+     * creates a new BufferedImage that support RGB (rgb NOT ALPHA) wit the same
+     * dimensions as the original image.
+     *
+     * @return a new instance of BufferedImage that support RGB but no Alpha
+     * Channel
+     */
+    public BufferedImage createBINoAlphaemptyCopy() {
+        return createBIemptyCopy(BufferedImage.TYPE_INT_RGB);
+    }
+
+    /**
+     * creates a new BufferedImage for the provided type (i.e: RGB,
+     * TYPE_BYTE_GRAY (gray scale)) with the same dimensions than the original
+     * but with no content.
+     *
+     * @param type the type to use.
+     * @return a new instance of BufferedImage with the same dimensions as the
+     * original
+     * @throws NullPointerException if the original image is null (fail to load)
+     * @see ColorSpace
+     * @see #TYPE_INT_RGB
+     * @see #TYPE_INT_ARGB
+     * @see #TYPE_INT_ARGB_PRE
+     * @see #TYPE_INT_BGR
+     * @see #TYPE_3BYTE_BGR
+     * @see #TYPE_4BYTE_ABGR
+     * @see #TYPE_4BYTE_ABGR_PRE
+     * @see #TYPE_BYTE_GRAY
+     * @see #TYPE_USHORT_GRAY
+     * @see #TYPE_BYTE_BINARY
+     * @see #TYPE_BYTE_INDEXED
+     * @see #TYPE_USHORT_565_RGB
+     * @see #TYPE_USHORT_555_RGB
+     */
+    public BufferedImage createBIemptyCopy(int type) {
+        return new BufferedImage(originalImage.getWidth(), originalImage.getHeight(), type);
+    }
+    // </editor-fold>
+
+    // <editor-fold defaultstate="collapsed" desc="imageInfo">
     /**
      * returns true if the image is valid.
      *
@@ -136,6 +191,18 @@ public class CanvasContainer {
         return Objects.nonNull(originalImage);
     }
 
+    /**
+     * get the total number of Pixels (combination of colors (A)RBG) on this
+     * image.
+     *
+     * @return the total of pixels on the Original image.
+     */
+    public int getTotalPixels() {
+        return originalImage.getWidth() * originalImage.getHeight();
+    }
+    // </editor-fold>
+
+    // <editor-fold defaultstate="collapsed" desc="static info Function"> 
     /**
      * this functions returns the ordered indexes for the ARGB channels
      * depending on the type of image. example:
@@ -150,7 +217,7 @@ public class CanvasContainer {
      * <br>
      * <br>
      * NOT supported: TODO: add dictionaries for this translations.
-     * <br> null null null     {@link BufferedImage#TYPE_BYTE_GRAY}
+     * <br> {@link BufferedImage#TYPE_BYTE_GRAY}
      * {@link BufferedImage#TYPE_BYTE_BINARY}
      * {@link BufferedImage#TYPE_BYTE_INDEXED}
      * {@link BufferedImage#TYPE_USHORT_GRAY}
@@ -218,16 +285,6 @@ public class CanvasContainer {
     }
 
     /**
-     * get the total number of Pixels (combination of colors (A)RBG) on this
-     * image.
-     *
-     * @return the total of pixels on the Original image.
-     */
-    public int getTotalPixels() {
-        return originalImage.getWidth() * originalImage.getHeight();
-    }
-
-    /**
      * Calculates the {@link Point} (the X and Y) position of the provided index
      * given the provided Image Width. the calculation is done as follows:<br>
      * <pre>
@@ -247,16 +304,21 @@ public class CanvasContainer {
      * @param index the current index where the point is located at.
      * @return
      */
-    private static Point RelativiseLinearIndexToXY(final int Width, final int index) {
+    private static Point getPointForIndex(final int Width, final int index) {
         return new Point(index % Width, index / Width);
     }
 
+    /**
+     * Calculates the index for the given coordinates on a image. the returned
+     * value is the index of a particular pixel on the image graph
+     *
+     * @param Width the Width of the image.
+     * @param x the x axis to locate a particular pixel
+     * @param y the y axis to locate a particular pixel
+     * @return the index of the pixel on a linear order.
+     */
     private static int getIndexForPosition(final int Width, int x, int y) {
         return y * Width + x;
-    }
-
-    private static int getIndexForPosition(final int Width, Point p) {
-        return p.y * Width + p.x;
     }
 
     private static int getRawIndexForImageIndex(int RawIndexPerImgIndex, int Index) {
@@ -284,53 +346,7 @@ public class CanvasContainer {
         //return ((value) & MAXSINGLEVALUE);//this is the same basically
         return Byte.toUnsignedInt(value);
     }
-
-    /**
-     * gather the information from the image at the desired {@code Index} from
-     * the {@code bytesData} for the desired Color Channel {@code channel}
-     *
-     * @param type the type of image it was loaded. this is important to
-     * Understand the order of the bytes (if they are little or big edian and or
-     * know if it is RGB or BGR order.
-     * <br> also look at
-     * <a href="https://stackoverflow.com/questions/6524196/java-get-pixel-array-from-image">StackOverflow
-     * question on similar scene we used</a>
-     * @param hasAlpha whenever or not the image has alpha byte. (ARGB, ABGR)
-     * @param bytesData the DataBuffer that contains the Image data (bytes)
-     * @param channel the Color channel that is desired to be returned one of
-     * the following:      <pre>
-     * {@link CanvasContainer#ALPHA}
-     * {@link CanvasContainer#RED}
-     * {@link CanvasContainer#GREEN}
-     * {@link CanvasContainer#BLUE}
-     * <pre>
-     * @param Index the index from which look the color data at the {@code DataBufferByte}
-     * @return the byte value of the desired index. for the specified channel. a
-     * value between 0 and 266 (you need to call
-     * {@link CanvasContainer#convertToUnsigned(byte)}
-     */
-    private static byte getColorPixelByte(int type, final boolean hasAlpha, final DataBufferByte bytesData, int channel, int Index) {
-        var order = getOrder(type);//this will crash if not found. that is desireable as we want to fix that problem. see the To do's on getOrder
-        var byteData = bytesData.getData();//alternative we can use bytesData.getSize() instead of the lenght and call .getElem to get the value. but note this taxes on byte to int convertion
-        final int BytesPerPixel = hasAlpha ? 4 : 3;
-        final int jumpPerPixel = BytesPerPixel - 1;
-        //on this case we are not looping the data rather we know the index we want. 
-        //HOWEVER the index provided is the index for the pixel. not the raw data. 
-        //and thus we need to do some math to conver the index from a image position
-        //into the raw bytes array
-        var ConvertedIndex = getRawIndexForImageIndex(BytesPerPixel, Index);
-        if (channel == order[0]) {
-            return hasAlpha ? byteData[ConvertedIndex] : (byte) MAXUBYTE;//full alpha (opaque) if has not alpha
-        } else if (channel == order[1]) {
-            return byteData[ConvertedIndex + jumpPerPixel - 2];
-        } else if (channel == order[2]) {
-            return byteData[ConvertedIndex + jumpPerPixel - 1];
-        } else if (channel == order[3]) {
-            return byteData[ConvertedIndex + jumpPerPixel];
-        } else {
-            return 0;
-        }
-    }
+    // </editor-fold>
 
     private static void cloneChannelBytes(int SourceType, int DestinationType, boolean hasAlpha, boolean destHasAlpha, DataBufferByte bytesData, DataBufferByte Destinationdatabuffer, int Channel) {
         final int srcBytesPerPixel = hasAlpha ? 4 : 3;
@@ -395,7 +411,7 @@ public class CanvasContainer {
         }
     }
 
-    private void cloneChannelInt(int SourceType, int DestinationType, boolean hasAlpha, boolean destHasAlpha, DataBufferInt IntegersData, DataBufferByte Destinationdatabuffer, int Channel) {
+    private static void cloneChannelInt(int SourceType, int DestinationType, boolean hasAlpha, boolean destHasAlpha, DataBufferInt IntegersData, DataBufferByte Destinationdatabuffer, int Channel) {
         final int destBytesPerPixel = destHasAlpha ? 4 : 3;
         var SrcData = IntegersData.getData();
         var DestbyteData = Destinationdatabuffer.getData();
@@ -412,94 +428,113 @@ public class CanvasContainer {
         }
     }
 
-    private static int getColorPixelInt(int type, final boolean hasAlpha, final DataBufferInt intData, int channel, int Index) {
-        var order = getOrder(type);//this will crash if not found. that is desireable as we want to fix that problem. see the To do's on getOrder
-        var pixels = intData.getData();//alternative we can use intData.getSize() instead of the lenght and call .getElem to get the value. but note this taxes on byte to int convertion
-        if (channel == order[0]) {
-            return hasAlpha ? ((pixels[Index] & ALPHA_MASK) >>> 24) : (byte) MAXUBYTE;//full alpha (opaque) if has not alpha
-        } else if (channel == order[1]) {
-            return ((pixels[Index] >>> 16) & MAXUBYTE);
-        } else if (channel == order[2]) {
-            return ((pixels[Index] >>> 8) & MAXUBYTE);
-        } else if (channel == order[3]) {
-            return (pixels[Index] & MAXUBYTE);
-        } else {
-            return 0;
-        }
-    }
-
+    // <editor-fold defaultstate="collapsed" desc="get Color for Pixel at index"> 
     /**
-     * process the DataBufferInt that contains the pseudo raw data from the
-     * image into a Buffer image. and moves into the color maps provided
+     * gather the information from the image at the desired {@code Index} from
+     * the linear position on the image. this function translate the Index into
+     * the index that the {@code bytesData} locates the pixel data for the
+     * desired index and for the desired Color Channel {@code channel}
      *
      * @param type the type of image it was loaded. this is important to
-     * Understand the order of the bytes (if they are little or big endian and
-     * or know if it is RGB or BGR order.
+     * Understand the order of the bytes (if they are little or big edian and or
+     * know if it is RGB or BGR order.
      * <br> also look at
-     * <a href="https://stackoverflow.com/questions/59007942/how-to-optimize-this-bufferedimage-loop/59055178#59055178">StackOverflow
+     * <a href="https://stackoverflow.com/questions/6524196/java-get-pixel-array-from-image">StackOverflow
      * question on similar scene we used</a>
      * @param hasAlpha whenever or not the image has alpha byte. (ARGB, ABGR)
-     * @param intData the DataBufferInt that contains the Image data (Integers)
-     * NOTE: this is really similar than using get rbg.
-     * @param Colormaps the Destination of the read and process data.
+     * @param bytesData the DataBuffer that contains the Image data (bytes)
+     * @param channel the Color channel that is desired to be returned one of
+     * the following:
+     * <pre>
+     * {@link CanvasContainer#ALPHA}
+     * {@link CanvasContainer#RED}
+     * {@link CanvasContainer#GREEN}
+     * {@link CanvasContainer#BLUE}
+     * </pre>
+     *
+     * @param Index the index from which we should locate the pixel on a linear
+     * lookup
+     * @return a value between 0 and 0xFF(255) (unsigned) with the intensity for the particular
+     * channel on the provided index (you need to call 
+     * {@link CanvasContainer#convertToUnsigned(byte)} or {@link Byte#toUnsignedInt(byte)}
+     * @throws IndexOutOfBoundsException if the channel is not 
+     * <pre>
+     * {@link CanvasContainer#ALPHA}
+     * {@link CanvasContainer#RED}
+     * {@link CanvasContainer#GREEN}
+     * {@link CanvasContainer#BLUE}
+     * </pre>
      */
-    private static void processIntData(int type, final boolean hasAlpha, final DataBufferInt intData, byte[][] Colormaps) {
+    private static byte getColorPixelByte(int type, final boolean hasAlpha, final DataBufferByte bytesData, int channel, int Index) {
         var order = getOrder(type);//this will crash if not found. that is desireable as we want to fix that problem. see the To do's on getOrder
-        var pixels = intData.getData();//alternative we can use intData.getSize() instead of the lenght and call .getElem to get the value. but note this taxes on byte to int convertion
-        for (int pixel = 0; pixel < pixels.length; pixel++) {
-            //Colormaps[order[0]][pixel] = hasAlpha ? (byte) (( intData.getElem(pixel) & ALPHA_MASK) >>> 24) : (byte) MAXSINGLEVALUE;//full alpha (opaque) if has not alpha
-            Colormaps[order[0]][pixel] = hasAlpha ? (byte) ((pixels[pixel] & ALPHA_MASK) >>> 24) : (byte) MAXUBYTE;//full alpha (opaque) if has not alpha
-            Colormaps[order[1]][pixel] = (byte) ((pixels[pixel] >>> 16) & MAXUBYTE);
-            Colormaps[order[2]][pixel] = (byte) ((pixels[pixel] >>> 8) & MAXUBYTE);
-            Colormaps[order[3]][pixel] = (byte) (pixels[pixel] & MAXUBYTE);
+        var byteData = bytesData.getData();//alternative we can use bytesData.getSize() instead of the lenght and call .getElem to get the value. but note this taxes on byte to int convertion
+        final int BytesPerPixel = hasAlpha ? 4 : 3;
+        var ConvertedIndex = getRawIndexForImageIndex(BytesPerPixel, Index);
+        if (channel == order[ALPHA]) {
+            return hasAlpha ? byteData[ConvertedIndex] : (byte) MAXUBYTE;//full alpha (opaque) if has not alpha
+        } else if (channel == order[RED]) {
+            return byteData[ConvertedIndex + BytesPerPixel - 3];
+        } else if (channel == order[GREEN]) {
+            return byteData[ConvertedIndex + BytesPerPixel - 2];
+        } else if (channel == order[BLUE]) {
+            return byteData[ConvertedIndex + BytesPerPixel - 1];
+        } else {
+            throw new IndexOutOfBoundsException(String.format("Invalid Channel %d", channel));
         }
     }
 
     /**
-     * creates a new BufferedImage that support ARGB (rgb+alpha) wit the same
-     * dimensions as the original image.
+     * gather the information from the image at the desired {@code Index} from
+     * the linear position on the image. this function translate the Index into
+     * the index that the {@code bytesData} locates the pixel data for the
+     * desired index and for the desired Color Channel {@code channel}
+     * 
+     * @param type the type of image it was loaded. this is important to
+     * Understand the order of the bytes (if they are little or big edian and or
+     * know if it is RGB or BGR order.
+     * <br> also look at
+     * <a href="https://stackoverflow.com/questions/6524196/java-get-pixel-array-from-image">StackOverflow
+     * question on similar scene we used</a>
+     * @param hasAlpha whenever or not the image has alpha byte. (ARGB, ABGR)
+     * @param bytesData the DataBuffer that contains the Image data (bytes)
+     * @param channel the Color channel that is desired to be returned one of
+     * the following:
+     * <pre>
+     * {@link CanvasContainer#ALPHA}
+     * {@link CanvasContainer#RED}
+     * {@link CanvasContainer#GREEN}
+     * {@link CanvasContainer#BLUE}
+     * </pre>
      *
-     * @return a new instance of BufferedImage that support ARGB (rgb+alpha)
+     * @param Index the index from which we should locate the pixel on a linear
+     * lookup
+     * @return a value between 0 and 0xFF(255) with the intensity for the particular
+     * channel on the provided index. 
+     * @throws IndexOutOfBoundsException if the channel is not 
+     * <pre>
+     * {@link CanvasContainer#ALPHA}
+     * {@link CanvasContainer#RED}
+     * {@link CanvasContainer#GREEN}
+     * {@link CanvasContainer#BLUE}
+     * </pre>
      */
-    public BufferedImage createBIemptyCopy() {
-        return createBIemptyCopy(BufferedImage.TYPE_INT_ARGB);
+    private static int getColorPixelInt(int type, final boolean hasAlpha, final DataBufferInt intData, int channel, int Index) {
+        var Translate = getOrder(type);//this will crash if not found. that is desireable as we want to fix that problem. see the To do's on getOrder
+        var pixels = intData.getData();//alternative we can use intData.getSize() instead of the lenght and call .getElem to get the value. but note this taxes on byte to int convertion
+        if (channel == Translate[ALPHA]) {
+            return hasAlpha ? ((pixels[Index] >>> 24) & MAXUBYTE) : (byte) MAXUBYTE;//full alpha (opaque) if has not alpha
+        } else if (channel == Translate[RED]) {
+            return ((pixels[Index] >>> 16) & MAXUBYTE);
+        } else if (channel == Translate[GREEN]) {
+            return ((pixels[Index] >>> 8) & MAXUBYTE);
+        } else if (channel == Translate[BLUE]) {
+            return (pixels[Index] & MAXUBYTE);
+        } else {
+            throw new IndexOutOfBoundsException(String.format("Invalid Channel %d", channel));
+        }
     }
-
-    /**
-     * creates a new BufferedImage that support RGB (rgb NOT ALPHA) wit the same
-     * dimensions as the original image.
-     *
-     * @return a new instance of BufferedImage that support ARGB (rgb+alpha)
-     */
-    public BufferedImage createBINoAlphaemptyCopy() {
-        return createBIemptyCopy(BufferedImage.TYPE_INT_RGB);
-    }
-
-    /**
-     * creates a new BufferedImage for the provided type (i.e: RGB,
-     * TYPE_BYTE_GRAY (gray scale))
-     *
-     * @param type the type to use.
-     * @return a new instance of BufferedImage
-     * @see ColorSpace
-     * @see #TYPE_INT_RGB
-     * @see #TYPE_INT_ARGB
-     * @see #TYPE_INT_ARGB_PRE
-     * @see #TYPE_INT_BGR
-     * @see #TYPE_3BYTE_BGR
-     * @see #TYPE_4BYTE_ABGR
-     * @see #TYPE_4BYTE_ABGR_PRE
-     * @see #TYPE_BYTE_GRAY
-     * @see #TYPE_USHORT_GRAY
-     * @see #TYPE_BYTE_BINARY
-     * @see #TYPE_BYTE_INDEXED
-     * @see #TYPE_USHORT_565_RGB
-     * @see #TYPE_USHORT_555_RGB
-     */
-    public BufferedImage createBIemptyCopy(int type) {
-        return new BufferedImage(originalImage.getWidth(), originalImage.getHeight(), type);
-    }
-
+    // </editor-fold>
+    
     /**
      * Create a Buffer Image that contains pixels with the FillColor where the
      * specific pixel data r=g=b. for example. if a pixel color is all 0 (black)
@@ -533,7 +568,7 @@ public class CanvasContainer {
                 var rgbfill = getRGBArray(Fill);
                 var Destdata = Destinationdatabuffer.getData();
                 for (int i = 0; i < getTotalPixels(); i++) {//Should we do the loop once we know the type of buffer and avoid 1 computation?
-                    var pos = RelativiseLinearIndexToXY(originalImage.getWidth(), i);
+                    var pos = getPointForIndex(originalImage.getWidth(), i);
                     var data = originalImage.getRaster().getDataElements(pos.x, pos.y, null);
                     var green = originalImage.getColorModel().getGreen(data);
                     var same
@@ -547,6 +582,7 @@ public class CanvasContainer {
                     }
                 }
             }
+
         }
         image.flush();
         return image;
@@ -571,14 +607,18 @@ public class CanvasContainer {
      *
      * @param MathFunction a {@link Function} that accepts and returns an array
      * of shorts values. the input array is an array of {@link Short} type
-     * values of size {@code 4} in the order this class works with. (see: null
-     * null null null null null null     {@link CanvasContainer#ALPHA},
+     * values of size {@code 4} in the order this class works with. see: null     {@link CanvasContainer#ALPHA},
      * {@link CanvasContainer#RED},
      * {@link CanvasContainer#GREEN},
      * {@link CanvasContainer#BLUE}. the resulting array is also Expected that
-     * return a array in the same Order and size. with the resulting data with a
-     * Single Exception: {@link BufferedImage#TYPE_BYTE_GRAY} that will accept
-     * an single value array.
+     * return a array in the same Order (ARGB) and size. with the resulting data
+     * with a Single Exception: {@link BufferedImage#TYPE_BYTE_GRAY} that will
+     * accept an single value array.<br>
+     * <strong>NOTE:</strong>no matter the type of image provided this function
+     * expects and uses arrays with the ARGB order. no matter if the type is BGR
+     * as this function handles the translations.
+     * @return a image that contain the changes to the pixels done via the
+     * provided function.
      */
     public BufferedImage MathOnPixels(int TypeRequred, Function<Short[], Short[]> MathFunction) {
         //note if provided a unsupported type we could use whatever we want... or throw a error.
@@ -616,24 +656,27 @@ public class CanvasContainer {
                 }
                 case DataBufferInt IntegerData -> {
                     int resultvalue;
+                    //greyscape. for non grey type. just put the same value on the try channels.
                     if (CalculatedPixel.length == 1) {
                         resultvalue
-                                = (hasAlpha ? CalculatedPixel[0] << 24 : 0)
+                                = (hasAlpha ? 0xFF : 0)
                                 | CalculatedPixel[0] << 16
                                 | CalculatedPixel[0] << 8
                                 | CalculatedPixel[0];
                     } else {
+                        //ensure we put the data in the right order for the type
+                        //using the translation
                         resultvalue
-                                = (hasAlpha ? CalculatedPixel[ALPHA] << 24 : 0)
-                                | CalculatedPixel[RED] << 16
-                                | CalculatedPixel[GREEN] << 8
-                                | CalculatedPixel[BLUE];
+                                = (hasAlpha ? CalculatedPixel[Translation[ALPHA]] << 24 : 0)
+                                | CalculatedPixel[Translation[RED]] << 16
+                                | CalculatedPixel[Translation[GREEN]] << 8
+                                | CalculatedPixel[Translation[BLUE]];
                     }
                     //IntegerData.getData()[i]= resultvalue;
                     IntegerData.setElem(i, resultvalue);
                 }
                 default -> {
-                    var point = RelativiseLinearIndexToXY(ResultImage.getWidth(), i);
+                    var point = getPointForIndex(ResultImage.getWidth(), i);
                     //slow but on this function should not happend. we will add this code mostly for example on how to do if this where the case.
                     if (CalculatedPixel.length == 1) {
                         ResultImage.setRGB(point.x, point.y,
@@ -651,31 +694,49 @@ public class CanvasContainer {
                         );
                     }
                 }
+
             }
         }
         ResultImage.flush();
         return ResultImage;
     }
 
-    public void MathOnPixels(BiConsumer<Short[], Point> MathConsumer) {
-        for (int i = 0; i < getTotalPixels(); i++) {
-            MathConsumer.accept(ToWrapperArray(getRGB(i)), RelativiseLinearIndexToXY(originalImage.getWidth(), i));
-        }
-    }
-    
     public void MathOnPixelsbyIndex(BiConsumer<Short[], Integer> MathConsumer) {
         for (int i = 0; i < getTotalPixels(); i++) {
-            MathConsumer.accept(ToWrapperArray(getRGB(i)),i);
+            MathConsumer.accept(ToWrapperArray(getRGB(i)), i);
         }
     }
 
-    //TODO change to NOT use RGB!!
     /**
-     * @param Destination
-     * @param MathFunction
+     * this function execute the provided "math" functionality into the pixel
+     * data for the image. and returns a image with the resulting data from the
+     * function. for each pixel.
+     *
+     * @param TypeRequred the type of image is desired as results. thus function
+     * supports: <pre>
+     * {@link BufferedImage#TYPE_INT_RGB}
+     * {@link BufferedImage#TYPE_INT_ARGB}
+     * {@link BufferedImage#TYPE_INT_ARGB_PRE}
+     * {@link BufferedImage#TYPE_INT_BGR}
+     * </pre>
+     *
+     * @param MathFunction a {@link Function} that accepts and returns an array
+     * of shorts values. the input array is an array of {@link Short} type
+     * values of size {@code 4} in the order this class works with. see: null     {@link CanvasContainer#ALPHA},
+     * {@link CanvasContainer#RED},
+     * {@link CanvasContainer#GREEN},
+     * {@link CanvasContainer#BLUE}. the resulting array is also Expected that
+     * return a array in the same Order (ARGB) and size. with the resulting data
+     * with a Single Exception: {@link BufferedImage#TYPE_BYTE_GRAY} that will
+     * accept an single value array.<br>
+     * <strong>NOTE:</strong>no matter the type of image provided this function
+     * expects and uses arrays with the ARGB order. no matter if the type is BGR
+     * as this function handles the translations.
+     * @return a image that contain the changes to the pixels done via the
+     * provided function.
      */
-    public void MathOnPixelInt(int TypeRequred, Function<Integer, Integer> MathFunction) {
-       //note if provided a unsupported type we could use whatever we want... or throw a error.
+    public BufferedImage MathOnPixelInt(int TypeRequred, Function<Integer, Integer> MathFunction) {
+        //note if provided a unsupported type we could use whatever we want... or throw a error.
         BufferedImage ResultImage = null;
         switch (TypeRequred) {
             default ->
@@ -683,14 +744,21 @@ public class CanvasContainer {
             case BufferedImage.TYPE_INT_RGB, BufferedImage.TYPE_INT_ARGB, BufferedImage.TYPE_INT_ARGB_PRE, BufferedImage.TYPE_INT_BGR ->
                 ResultImage = new BufferedImage(originalImage.getWidth(), originalImage.getHeight(), TypeRequred);
         }
-        var Destinationdatabuffer =(DataBufferInt) ResultImage.getRaster().getDataBuffer();
-        for (int i = 0; i <  getTotalPixels(); i++) {
-            var rgb=getRGB(i);
-            int rgbint= rgb[ALPHA] << 24| rgb[RED] << 16 | rgb[GREEN] << 8
-                      | rgb[BLUE];            
+        var Destinationdatabuffer = (DataBufferInt) ResultImage.getRaster().getDataBuffer();
+        for (int i = 0; i < getTotalPixels(); i++) {
+            var rgb = getRGB(i);
+            int rgbint = rgb[ALPHA] << 24 | rgb[RED] << 16 | rgb[GREEN] << 8
+                    | rgb[BLUE];
             var CalculatedPixel = MathFunction.apply(rgbint);
-            Destinationdatabuffer.setElem(i,CalculatedPixel);
+            if (TypeRequred == BufferedImage.TYPE_INT_BGR) {
+                var reversed = CalculatedPixel & 0xFF00FF00;//ALPHA AND GREEN ARE ON THE SAME PLACE
+                reversed |= (CalculatedPixel >>> 16) & 0xFF;
+                reversed |= (CalculatedPixel & 0xFF) << 16;
+                CalculatedPixel = reversed;
+            }
+            Destinationdatabuffer.setElem(i, CalculatedPixel);
         }
+        return ResultImage;
     }
 
     /**
@@ -731,21 +799,32 @@ public class CanvasContainer {
         return result;
     }
 
-    protected int getColor(int Channel, int x, int y) {
-        if (Channel < ALPHA && Channel > BLUE) {
-            return -1;//invalid
-        }
-        if (originalImage.getAlphaRaster() == null) {
-            return MAXUBYTE;//the image is fully opaque. 
+    /**
+     * gathers the Color information for the specified position
+     * @param Channel the color channel that most be one of the following: 
+     * <pre>
+     * {@link CanvasContainer#ALPHA}
+     * {@link CanvasContainer#RED}
+     * {@link CanvasContainer#GREEN}
+     * {@link CanvasContainer#BLUE}
+     * </pre>
+     * @param x the X axis. 
+     * @param y the Y axis. 
+     * @return the color information as a integer value that is 
+     * between 0 and 0xFF(255);
+     */
+    private int getColor(int Channel, int x, int y) {
+        if (Channel == ALPHA && originalImage.getAlphaRaster() == null) {
+            return MAXUBYTE;//we will not check or compute. is a waste. if no alpha is fully opaque.
         }
         var databuffer = originalImage.getRaster().getDataBuffer();
         var i = getIndexForPosition(originalImage.getWidth(), x, y);
         int readvalue;
         switch (databuffer) {
             case DataBufferByte bytesData ->
-                readvalue = convertToUnsigned(getColorPixelByte(originalImage.getType(), true, bytesData, Channel, i));
+                readvalue = Byte.toUnsignedInt(getColorPixelByte(originalImage.getType(),  originalImage.getAlphaRaster() != null, bytesData, Channel, i));
             case DataBufferInt IntegerData ->
-                readvalue = getColorPixelInt(originalImage.getType(), true, IntegerData, Channel, i);
+                readvalue = getColorPixelInt(originalImage.getType(), originalImage.getAlphaRaster() != null, IntegerData, Channel, i);
             default -> {
                 readvalue = getColorDefaultMethod(Channel, x, y);
             }
@@ -753,7 +832,27 @@ public class CanvasContainer {
         return readvalue;
     }
 
-    protected int getColorDefaultMethod(int Channel, int x, int y) {
+    private int getColor(int Channel, int LinearPosition) {
+        if (Channel == ALPHA && originalImage.getAlphaRaster() == null) {
+            return MAXUBYTE;//the image is fully opaque. 
+        }
+        var databuffer = originalImage.getRaster().getDataBuffer();
+        int readvalue;
+        switch (databuffer) {
+            case DataBufferByte bytesData ->
+                readvalue = convertToUnsigned(getColorPixelByte(originalImage.getType(), originalImage.getAlphaRaster() != null, bytesData, Channel, LinearPosition));
+            case DataBufferInt IntegerData ->
+                readvalue = getColorPixelInt(originalImage.getType(), originalImage.getAlphaRaster() != null, IntegerData, Channel, LinearPosition);
+            default -> {
+                var pos = getPointForIndex(originalImage.getWidth(), LinearPosition);
+                readvalue = getColorDefaultMethod(Channel, pos.x, pos.y);
+            }
+
+        }
+        return readvalue;
+    }
+       
+    private int getColorDefaultMethod(int Channel, int x, int y) {
         int readvalue;
         var data = originalImage.getRaster().getDataElements(x, y, null);
         switch (Channel) {
@@ -767,29 +866,7 @@ public class CanvasContainer {
                 readvalue = originalImage.getColorModel().getBlue(data);
             //not posible. due the first if.
             default ->
-                readvalue = originalImage.getColorModel().getBlue(data);
-        }
-        return readvalue;
-    }
-
-    protected int getColor(int Channel, int LinearPosition) {
-        if (Channel < ALPHA && Channel > BLUE) {
-            return -1;//invalid
-        }
-        if (Channel == ALPHA && originalImage.getAlphaRaster() == null) {
-            return MAXUBYTE;//the image is fully opaque. 
-        }
-        var databuffer = originalImage.getRaster().getDataBuffer();
-        int readvalue;
-        switch (databuffer) {
-            case DataBufferByte bytesData ->
-                readvalue = convertToUnsigned(getColorPixelByte(originalImage.getType(), originalImage.getAlphaRaster() != null, bytesData, Channel, LinearPosition));
-            case DataBufferInt IntegerData ->
-                readvalue = getColorPixelInt(originalImage.getType(), originalImage.getAlphaRaster() != null, IntegerData, Channel, LinearPosition);
-            default -> {
-                var pos = RelativiseLinearIndexToXY(originalImage.getWidth(), LinearPosition);
-                readvalue = getColorDefaultMethod(Channel, pos.x, pos.y);
-            }
+                throw new IndexOutOfBoundsException(String.format("Invalid Channel %d", Channel));
         }
         return readvalue;
     }
@@ -907,7 +984,7 @@ public class CanvasContainer {
                 case DataBufferInt IntegerData ->
                     readvalue = getColorPixelInt(originalImage.getType(), hasAlphaChannel, IntegerData, Channel, i);
                 default -> {
-                    var pos = RelativiseLinearIndexToXY(originalImage.getWidth(), i);
+                    var pos = getPointForIndex(originalImage.getWidth(), i);
                     var data = originalImage.getRaster().getDataElements(pos.x, pos.y, null);
                     switch (Channel) {
                         case ALPHA ->
@@ -920,6 +997,7 @@ public class CanvasContainer {
                             readvalue = originalImage.getColorModel().getBlue(data);
                     }
                 }
+
             }
             //To consider. maybe dont set any color if not found. allow whatever is default on the provided image. 
             var CalculatedPixel = ((readvalue >>> Index) & 0b1) == 0b0 ? RGBMASK : FillColor.getRGB();
@@ -970,7 +1048,7 @@ public class CanvasContainer {
                 //this is slow. but given that we dont know how to handle otheise nothing we can do
                 var Destdata = Destinationdatabuffer.getData();
                 for (int i = 0; i < getTotalPixels(); i++) {
-                    var pos = RelativiseLinearIndexToXY(originalImage.getWidth(), i);
+                    var pos = getPointForIndex(originalImage.getWidth(), i);
                     var data = originalImage.getRaster().getDataElements(pos.x, pos.y, null);
                     var baseindex = getRawIndexForImageIndex(3, i);
                     switch (Channel) {
@@ -990,6 +1068,7 @@ public class CanvasContainer {
                     //image.setRGB(p.x, p.y, singleChannelColor);
                 }
             }
+
         }
         return image;
     }
