@@ -23,9 +23,15 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Stack;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.RecursiveTask;
+import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
+import javax.swing.SwingWorker;
 
 /**
  * this class is a Holder for the information and access to the stegnography
@@ -36,27 +42,36 @@ import javax.imageio.ImageIO;
  *
  * @author Eduardo Vindas
  */
-public class StegnoAnalysis {
+public class StegnoAnalysis extends SwingWorker<List<Pair<String, BufferedImage>>, Pair<String, BufferedImage>> {
 
+    public static final String STATE_STAGE = "STATE_STAGE";
+    public static final String STAGE_ERROR = "STAGE_ERROR";
     public static final String ValidImagesFiles[] = ImageIO.getReaderFormatNames();
+
     /**
      * the source file to read and or check data from.
      */
-    private Path File = null;
-    private URL ImageAddress = null;
+    private final Path File;
+    private final URL ImageAddress;
     private CanvasContainer ImageCache;
     private static final Logger loger = LoggingHelper.getLogger(StegnoAnalysis.class.getName());
+    private final BiConsumer<Boolean,List<Pair<String, BufferedImage>>> callBack;
+    
 
-    public StegnoAnalysis(Path File) {
+    public StegnoAnalysis(BiConsumer<Boolean,List<Pair<String, BufferedImage>>>callback ,Path File) {
         this.File = File;
+        callBack=callback;
+        ImageAddress = null;
     }
 
-    public StegnoAnalysis(File file) {
-        this.File = file.toPath();
+    public StegnoAnalysis(BiConsumer<Boolean,List<Pair<String, BufferedImage>>>callback ,File file) {
+        this(callback,file.toPath());
     }
 
-    public StegnoAnalysis(URL Address) {
+    public StegnoAnalysis(BiConsumer<Boolean,List<Pair<String, BufferedImage>>>callback ,URL Address) {
         this.ImageAddress = Address;
+        callBack=callback;
+        File = null;
     }
 
     public Path getFilePath() {
@@ -69,56 +84,6 @@ public class StegnoAnalysis {
         } else {
             return ImageAddress.toString();
         }
-    }
-
-    public List<Pair<String, BufferedImage>> RunTrasFormations(boolean forced) throws IOException {
-        loger.log(Level.INFO, "start RunTrasFormations");
-        LoadImage(forced);
-        if (ImageCache == null && ImageCache.ImageIsValid()) {
-            //notify error.
-            //fail to load the image we might throw a error instead? 
-            return null;
-        }
-        loger.log(Level.INFO, "Image has been loaded");
-        var list = new ArrayList<Pair<String, BufferedImage>>(20);
-        //TODO:notify image is on memory
-        loger.log(Level.INFO, "Getting Grey map");
-        list.add(new Pair<>("Grey Map", TranformSymetricPixels(Color.BLACK)));
-        loger.log(Level.INFO, "Getting Grey Scale Version");
-        list.add(new Pair<>("Grey Scale", getGrayScaleCopy()));
-        //list.add(new Pair<>("Grey Scale REC709 (gamma Corrected)", TranformGreyScaleSlow()));
-        //list.add(new Pair<>("Grey Scale REC709 fast", TranformGreyScaleSlow(true)));
-        loger.log(Level.INFO, "Getting bit 1&2 image");
-        list.add(new Pair<>("bit 0&1 image Image", Forthofbyte(0)));
-        loger.log(Level.INFO, "Getting bit 5&6 image");
-        list.add(new Pair<>("bit 2&3 image", Forthofbyte(1)));        
-        loger.log(Level.INFO, "Getting bit 7&8 image");
-        list.add(new Pair<>("bit 4&5 image", Forthofbyte(2)));
-        loger.log(Level.INFO, "Getting bit 6&7 image");
-        list.add(new Pair<>("bit 6&7 image", Forthofbyte(3)));
-        loger.log(Level.INFO, "Getting HSV inverted image");
-        getHSVInversions(list);  //-->TODO: make this one faster. 
-        //list.add(new Pair<>("inverted Hue", HueInversionHSV()));
-        loger.log(Level.INFO, "Getting inverted image");
-        list.add(new Pair<>("inverted Xor", inversionRGB()));
-        loger.log(Level.INFO, "Blue channel");
-        list.add(new Pair<>("only Blue Pixels", getBlueImage()));
-        loger.log(Level.INFO, "Blue bits");
-        getImagePerBitOnBlueChannel(list);
-        loger.log(Level.INFO, "Green channel");
-        list.add(new Pair<>("only Green Pixels", getImageGreenimage()));
-        loger.log(Level.INFO, "Green bits");
-        getImagePerBitOnGreenChannel(list);
-        loger.log(Level.INFO, "Red channel");
-        list.add(new Pair<>("only Red Pixels", getImageRedimage()));
-        loger.log(Level.INFO, "Red bits");
-        getImagePerBitOnRedChannel(list);
-        loger.log(Level.INFO, "Alpha image");
-        list.add(new Pair<>("only ALPHA Pixels", getImageAlphaimage()));
-        loger.log(Level.INFO, "Alpha bits");
-        getImagePerBitOnAlphaChannel(list);
-        loger.log(Level.INFO, "done");
-        return list;
     }
 
     /**
@@ -140,7 +105,7 @@ public class StegnoAnalysis {
         return ImageCache.getGrayScale();
     }
 
-    public BufferedImage getUnEditedCopy() {
+    protected BufferedImage getUnEditedCopy() {
         return ImageCache.getCloneImage();
     }
 
@@ -176,17 +141,17 @@ public class StegnoAnalysis {
     }
 
     private BufferedImage Forthofbyte(int part) {
-        var base= 0b11<< part*2;
-        var move= 6-2*part;
+        var base = 0b11 << part * 2;
+        var move = 6 - 2 * part;
         //i think MathOnPixels is a bit slow due loops. we could work on a better one
         //that works on less loops the current one. is slow due several iterations 
         //on changes to code that is itended to run once not on a loop
         return ImageCache.MathOnPixels(BufferedImage.TYPE_4BYTE_ABGR, ARGB -> {
             var results = new Short[4];
-             results[CanvasContainer.ALPHA] = CanvasContainer.MAXUBYTE; 
-            results[CanvasContainer.RED] = (short) ((ARGB[CanvasContainer.RED] & base)<<move);
-            results[CanvasContainer.GREEN] = (short) ((ARGB[CanvasContainer.GREEN] & base)<<move);
-            results[CanvasContainer.BLUE] = (short) ((ARGB[CanvasContainer.BLUE] & base)<<move);
+            results[CanvasContainer.ALPHA] = CanvasContainer.MAXUBYTE;
+            results[CanvasContainer.RED] = (short) ((ARGB[CanvasContainer.RED] & base) << move);
+            results[CanvasContainer.GREEN] = (short) ((ARGB[CanvasContainer.GREEN] & base) << move);
+            results[CanvasContainer.BLUE] = (short) ((ARGB[CanvasContainer.BLUE] & base) << move);
             return results;
         });
     }
@@ -268,12 +233,12 @@ public class StegnoAnalysis {
      * @return a instance of BufferImage with the inverted color data
      */
     private BufferedImage inversionRGB() {
-                return ImageCache.MathOnPixels(BufferedImage.TYPE_4BYTE_ABGR, ARGB -> {
+        return ImageCache.MathOnPixels(BufferedImage.TYPE_4BYTE_ABGR, ARGB -> {
             var results = new Short[4];
-             results[CanvasContainer.ALPHA] = CanvasContainer.MAXUBYTE; 
-             results[CanvasContainer.RED] = (short) (ARGB[CanvasContainer.RED] ^ CanvasContainer.RGBMASK);
-             results[CanvasContainer.GREEN] = (short) (ARGB[CanvasContainer.GREEN] ^ CanvasContainer.RGBMASK);
-             results[CanvasContainer.BLUE] = (short) (ARGB[CanvasContainer.BLUE] ^ CanvasContainer.RGBMASK);
+            results[CanvasContainer.ALPHA] = CanvasContainer.MAXUBYTE;
+            results[CanvasContainer.RED] = (short) (ARGB[CanvasContainer.RED] ^ CanvasContainer.RGBMASK);
+            results[CanvasContainer.GREEN] = (short) (ARGB[CanvasContainer.GREEN] ^ CanvasContainer.RGBMASK);
+            results[CanvasContainer.BLUE] = (short) (ARGB[CanvasContainer.BLUE] ^ CanvasContainer.RGBMASK);
             return results;
         });
         /*var transform = ImageCache.createBIemptyCopy();
@@ -281,7 +246,7 @@ public class StegnoAnalysis {
             return IntRGB ^ CanvasContainer.RGBMASK;
         });
         return transform;
-        */
+         */
     }
 
     /**
@@ -315,70 +280,298 @@ public class StegnoAnalysis {
         return ImageCache.getAlphaForIndex(Index & 8, FillColor);
     }
 
-    private BufferedImage[] getImagePerBitOnBlueChannel(List<Pair<String, BufferedImage>> storage) {
-        var BitsImages = new BufferedImage[8];
-        for (int index = 0; index < BitsImages.length; index++) {
-            BitsImages[index] = ImageCache.getBlueForIndex(index, Color.BLUE);
-            storage.add(new Pair<>(String.format("Blue bit Index %d", index), BitsImages[index]));
+    private List<Pair<String, BufferedImage>> getImagePerBitOnBlueChannel(List<Pair<String, BufferedImage>> storage) {
+        storage = storage == null ? new ArrayList<>(8) : storage;
+        for (int index = 0; index < 8; index++) {
+            storage.add(new Pair<>(String.format("Blue Bit at the %d bit", index + 1), ImageCache.getBlueForIndex(index, Color.BLUE)));
         }
-        return BitsImages;
+        return storage;
     }
 
-    private BufferedImage getBlueImage() {
-        return ImageCache.getBlueImage();
-    }
-
-    private BufferedImage[] getImagePerBitOnGreenChannel(List<Pair<String, BufferedImage>> storage) {
-        var BitsImages = new BufferedImage[8];
-        for (int index = 0; index < BitsImages.length; index++) {
-            BitsImages[index] = ImageCache.getGreenForIndex(index, Color.GREEN);
-            storage.add(new Pair<>(String.format("Green bit Index %d", index), BitsImages[index]));
+    private List<Pair<String, BufferedImage>> getImagePerBitOnGreenChannel(List<Pair<String, BufferedImage>> storage) {
+        storage = storage == null ? new ArrayList<>(8) : storage;
+        for (int index = 0; index < 8; index++) {
+            storage.add(new Pair<>(String.format("Green Bit at the %d bit", index), ImageCache.getGreenForIndex(index, Color.GREEN)));
         }
-        return BitsImages;
+        return storage;
     }
 
-    private BufferedImage getImageGreenimage() {
-        return ImageCache.getGreenImage();
-    }
-
-    private BufferedImage[] getImagePerBitOnRedChannel(List<Pair<String, BufferedImage>> storage) {
-        var BitsImages = new BufferedImage[8];
-        for (int index = 0; index < BitsImages.length; index++) {
-            BitsImages[index] = ImageCache.getRedForIndex(index, Color.RED);
-            storage.add(new Pair<>(String.format("Red bit Index %d", index), BitsImages[index]));
+    private List<Pair<String, BufferedImage>> getImagePerBitOnRedChannel(List<Pair<String, BufferedImage>> storage) {
+        storage = storage == null ? new ArrayList<>(8) : storage;
+        for (int index = 0; index < 8; index++) {
+            storage.add(new Pair<>(String.format("Red Bit at the %d bit", index), ImageCache.getRedForIndex(index, Color.RED)));
         }
-        return BitsImages;
+        return storage;
     }
 
-    private BufferedImage getImageRedimage() {
-        return ImageCache.getRedImage();
-    }
-
-    private BufferedImage[] getImagePerBitOnAlphaChannel(List<Pair<String, BufferedImage>> storage) {
-        var BitsImages = new BufferedImage[8];
-        for (int index = 0; index < BitsImages.length; index++) {
-            BitsImages[index] = ImageCache.getAlphaForIndex(index, Color.BLACK);
-            storage.add(new Pair<>(String.format("Alpha bit Index %d", index), BitsImages[index]));
+    private List<Pair<String, BufferedImage>> getImagePerBitOnAlphaChannel(List<Pair<String, BufferedImage>> storage) {
+        storage = storage == null ? new ArrayList<>(8) : storage;
+        if (ImageCache.HasAlphaChannel()) {
+            for (int index = 0; index < 8; index++) {
+                storage.add(new Pair<>(String.format("Alpha Bit at the %d bit", index), ImageCache.getAlphaForIndex(index, Color.BLACK)));
+            }
         }
-        return BitsImages;
+        return storage;
     }
 
-    private BufferedImage getImageAlphaimage() {
-        return ImageCache.getAlphaImage();
+    @Override
+    protected List<Pair<String, BufferedImage>> doInBackground() throws Exception {
+        var Stage = "BootStrapping the Analysis";
+        loger.log(Level.INFO, Stage);
+        firePropertyChange(STATE_STAGE, null, Stage);
+        Stage = bootstrapImage(Stage);
+        var prev = Stage;
+        Stage = "Image is loaded. Starting Transformation Analysis.";
+        firePropertyChange(STATE_STAGE, prev, Stage);
+        loger.log(Level.INFO, Stage);
+        return RunTrasFormations(Stage);
     }
 
-    private void LoadImage(boolean forced) throws IOException {
-        //TODO: we might want to ensure only the supported files were provided
-        //and or if not. add code to handle formats that do not match the requirements from 
-        //ImageIO. 
-        if (ImageCache != null && !forced) {
-            return;
+    private String bootstrapImage(String Stage) throws IOException {
+        try {
+            if (File != null) {
+                var prev = Stage;
+                Stage = String.format("Loading the File %s", File.getFileName().toString());
+                firePropertyChange(STATE_STAGE, prev, Stage);
+                ImageCache = new CanvasContainer(File);
+            } else {
+                var prev = Stage;
+                Stage = String.format("Loading the URL %s", ImageAddress.getPath().toString());
+                firePropertyChange(STATE_STAGE, prev, Stage);
+                ImageCache = new CanvasContainer(ImageAddress);
+            }
+        } catch (IOException ex) {
+            var prev = Stage;
+            Stage = String.format("Unable to Load the Image for Analysis due a error: %s", ex.getMessage());
+            firePropertyChange(STAGE_ERROR, prev, Stage);
+            loger.getLogger(StegnoAnalysis.class.getName()).log(Level.SEVERE, "Error Loading the underline Image from the provided Source", ex);
+            throw ex;//rethow so the Future class traps the error at the setException
         }
-        if (File != null) {
-            ImageCache = new CanvasContainer(File);
-        } else {
-            ImageCache = new CanvasContainer(ImageAddress);
-        }
+        return Stage;
     }
 
+    protected List<Pair<String, BufferedImage>> RunTrasFormations(String Stage) {
+        //MAYBE: we fork the job here. but we could also set to fork within CanvasContainer
+        //to read the bits faster there instead of forking each file read.
+        var Pool = ForkJoinPool.commonPool();
+        var list = new ArrayList<Pair<String, BufferedImage>>(20);
+        var stack = new Stack<RecursiveTask<Pair<String, BufferedImage>>>();
+        var stackListResult = new Stack<RecursiveTask<List<Pair<String, BufferedImage>>>>();
+        /**
+         * *****************************************************
+         */
+        loger.log(Level.INFO, "Getting Grey map");
+        stack.add(new RecursiveTask<Pair<String, BufferedImage>>() {
+            @Override
+            protected Pair<String, BufferedImage> compute() {
+                var created = new Pair<>("Original", getUnEditedCopy());
+                publish(created);
+                return created;
+            }
+        });
+        Pool.submit(stack.peek());        
+        loger.log(Level.INFO, "Getting Grey map");
+        stack.add(new RecursiveTask<Pair<String, BufferedImage>>() {
+            @Override
+            protected Pair<String, BufferedImage> compute() {
+                var created = new Pair<>("Grey Map", TranformSymetricPixels(Color.BLACK));
+                publish(created);
+                return created;
+            }
+        });
+        Pool.submit(stack.peek());
+        loger.log(Level.INFO, "Getting Grey Scale Version");
+        stack.add(new RecursiveTask<Pair<String, BufferedImage>>() {
+            @Override
+            protected Pair<String, BufferedImage> compute() {
+                var created = new Pair<>("Grey Scale", getGrayScaleCopy());
+                publish(created);
+                return created;
+            }
+        });
+        Pool.submit(stack.peek());
+        //list.add(new Pair<>("Grey Scale REC709 (gamma Corrected)", TranformGreyScaleSlow()));
+        //list.add(new Pair<>("Grey Scale REC709 fast", TranformGreyScaleSlow(true)));
+        loger.log(Level.INFO, "Getting HSV inverted image");
+        stackListResult.add(new RecursiveTask<List<Pair<String, BufferedImage>>>() {
+            @Override
+            protected List<Pair<String, BufferedImage>> compute() {
+                var list = new ArrayList<Pair<String, BufferedImage>>(4);
+                getHSVInversions(list);
+                for (var e : list) {
+                    publish(e);
+                }
+                return list;
+            }
+        });
+        Pool.submit(stackListResult.peek());
+        loger.log(Level.INFO, "Getting bit 1&2 image");
+        stack.add(new RecursiveTask<Pair<String, BufferedImage>>() {
+            @Override
+            protected Pair<String, BufferedImage> compute() {
+                var created = new Pair<>("Image of the bit 1 and 2", Forthofbyte(0));
+                publish(created);
+                return created;
+            }
+        });
+        Pool.submit(stack.peek());
+        loger.log(Level.INFO, "Getting bit 2&3 image");
+        stack.add(new RecursiveTask<Pair<String, BufferedImage>>() {
+            @Override
+            protected Pair<String, BufferedImage> compute() {
+                var created = new Pair<>("Image of the bit 3 and 4", Forthofbyte(1));
+                publish(created);
+                return created;
+            }
+        });
+        Pool.submit(stack.peek());
+        loger.log(Level.INFO, "Getting bit 5&6 image");
+        stack.add(new RecursiveTask<Pair<String, BufferedImage>>() {
+            @Override
+            protected Pair<String, BufferedImage> compute() {
+                var created = new Pair<>("Image of the bit 5 and 6", Forthofbyte(2));
+                publish(created);
+                return created;
+            }
+        });
+        Pool.submit(stack.peek());
+        loger.log(Level.INFO, "Getting bit 7&8 image");
+        stack.add(new RecursiveTask<Pair<String, BufferedImage>>() {
+            @Override
+            protected Pair<String, BufferedImage> compute() {
+                var created = new Pair<>("Image of the bit 7 and 8", Forthofbyte(3));
+                publish(created);
+                return created;
+            }
+        });
+        Pool.submit(stack.peek());
+        loger.log(Level.INFO, "Getting inverted image");
+        stack.add(new RecursiveTask<Pair<String, BufferedImage>>() {
+            @Override
+            protected Pair<String, BufferedImage> compute() {
+                var created = new Pair<>("inverted Bits Image", inversionRGB());
+                publish(created);
+                return created;
+            }
+        });
+        Pool.submit(stack.peek());
+        loger.log(Level.INFO, "Blue channel");
+        stack.add(new RecursiveTask<Pair<String, BufferedImage>>() {
+            @Override
+            protected Pair<String, BufferedImage> compute() {
+                var created = new Pair<>("only Blue Pixels", ImageCache.getBlueImage());
+                publish(created);
+                return created;
+            }
+        });
+        Pool.submit(stack.peek());
+        loger.log(Level.INFO, "Green channel");
+        stack.add(new RecursiveTask<Pair<String, BufferedImage>>() {
+            @Override
+            protected Pair<String, BufferedImage> compute() {
+                var created = new Pair<>("only Green Pixels", ImageCache.getGreenImage());
+                publish(created);
+                return created;
+            }
+        });
+        Pool.submit(stack.peek());
+        loger.log(Level.INFO, "Red channel");
+        stack.add(new RecursiveTask<Pair<String, BufferedImage>>() {
+            @Override
+            protected Pair<String, BufferedImage> compute() {
+                var created = new Pair<>("only Red Pixels", ImageCache.getRedImage());
+                publish(created);
+                return created;
+            }
+        });
+        Pool.submit(stack.peek());
+        loger.log(Level.INFO, "Alpha image");
+        stack.add(new RecursiveTask<Pair<String, BufferedImage>>() {
+            @Override
+            protected Pair<String, BufferedImage> compute() {
+                var created = new Pair<>("only Alpha Pixels", ImageCache.getAlphaImage());
+                publish(created);
+                return created;
+            }
+        });
+        Pool.submit(stack.peek());
+        loger.log(Level.INFO, "Blue bits");
+        stackListResult.add(new RecursiveTask<List<Pair<String, BufferedImage>>>() {
+            @Override
+            protected List<Pair<String, BufferedImage>> compute() {
+                var list = getImagePerBitOnBlueChannel(null);
+                for (var e : list) {
+                    publish(e);
+                }
+                return list;
+            }
+        });
+        Pool.submit(stackListResult.peek());
+        loger.log(Level.INFO, "Green bits");
+        stackListResult.add(new RecursiveTask<List<Pair<String, BufferedImage>>>() {
+            @Override
+            protected List<Pair<String, BufferedImage>> compute() {
+                var list =  getImagePerBitOnGreenChannel(null);
+                for (var e : list) {
+                    publish(e);
+                }
+                return list;
+            }
+        });
+        Pool.submit(stackListResult.peek());
+        loger.log(Level.INFO, "Red bits");
+        stackListResult.add(new RecursiveTask<List<Pair<String, BufferedImage>>>() {
+            @Override
+            protected List<Pair<String, BufferedImage>> compute() {
+                var list =  getImagePerBitOnRedChannel(null);
+                for (var e : list) {
+                    publish(e);
+                }
+                return list;
+            }
+        });
+        Pool.submit(stackListResult.peek());
+        loger.log(Level.INFO, "Alpha bits");
+        stackListResult.add(new RecursiveTask<List<Pair<String, BufferedImage>>>() {
+            @Override
+            protected List<Pair<String, BufferedImage>> compute() {
+                var list =  getImagePerBitOnAlphaChannel(null);
+                for (var e : list) {
+                    publish(e);
+                }
+                return list;
+            }
+        });
+        Pool.submit(stackListResult.peek());
+        loger.log(Level.INFO, "Joining Tasks");
+        while (!stack.isEmpty()) {
+            list.add(stack.pop().join());
+        }
+        while (!stackListResult.isEmpty()) {
+            list.addAll(stackListResult.pop().join());
+        }
+        loger.log(Level.INFO, "done");
+        return list;
+    }
+
+    @Override
+    protected void process(List<Pair<String, BufferedImage>> chunks) {
+        callBack.accept(false, chunks);
+    }
+
+    @Override
+    protected void done() {
+        try {
+            callBack.accept(true, get());
+        } catch (InterruptedException ex) {
+            loger.log(Level.SEVERE, "this should not happend at Done", ex);
+        } catch (ExecutionException ex) {
+            //TODO add a callback if error.
+            loger.log(Level.SEVERE, "an error happend during execution", ex.getCause());
+        }
+    }
+    
+    
+
+    
 }

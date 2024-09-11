@@ -12,9 +12,10 @@
  */
 package com.aeongames.stegsolveplus.ui;
 
-import com.aeongames.edi.utils.error.LoggingHelper;
+import com.aeongames.edi.utils.data.Pair;
 import com.aeongames.stegsolveplus.ui.tabcomponents.Tab;
 import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalysis;
+import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.FileNotFoundException;
@@ -22,8 +23,11 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
-import java.util.logging.Level;
+import java.util.function.BiConsumer;
 
 /**
  *
@@ -31,7 +35,9 @@ import java.util.logging.Level;
  */
 public class InvestigationTab extends Tab {
 
+
     public final class ChangePropertys {
+
         public static final String BUSY = "BUSY";
         public static final String STATEINFO = "STATE_STRING";
     }
@@ -44,10 +50,12 @@ public class InvestigationTab extends Tab {
      */
     private final PropertyChangeSupport propertySupport;
 
+    private final BiConsumer<Boolean, List<Pair<String, BufferedImage>>> Callback;
+
     /**
-     * Creates new form InvestigationTab
-     * the path might be a non working file for our needs we need to check its 
-     * CONTENT not the type or extension because the image can still be a image. 
+     * Creates new form InvestigationTab the path might be a non working file
+     * for our needs we need to check its CONTENT not the type or extension
+     * because the image can still be a image.
      *
      * @param FilePath the filePath to investigate
      * @throws java.io.FileNotFoundException
@@ -60,19 +68,52 @@ public class InvestigationTab extends Tab {
         }
         initComponents();
         SetTitleInternal(FilePath);
-        Analist = new StegnoAnalysis(FilePath);
+        Callback= getCallback();
+        Analist = new StegnoAnalysis(Callback, FilePath);
         pFooter.SetProgressIndeterminate();
     }
-    
+
     public InvestigationTab(URL Link) {
         Link = Objects.requireNonNull(Link, "provided Link is null");
         propertySupport = new PropertyChangeSupport(this);
         initComponents();
         SetTitleInternal(Link);
-        Analist = new StegnoAnalysis(Link);
+        Callback= getCallback();
+        Analist = new StegnoAnalysis(Callback, Link);
         pFooter.SetProgressIndeterminate();
     }
     
+    
+    private BiConsumer<Boolean, List<Pair<String, BufferedImage>>> getCallback() {
+        return (Isfinish, List) -> {
+            if (!Isfinish) {
+                if (List != null) {
+                    for (var pair : List) {
+                        var preview = new ImagePreviewPanel(pair.getLeft(), pair.getRight());
+                        PanenPlanes.add(preview);
+                        PanenPlanes.invalidate();
+                        PanenPlanes.repaint();
+                        InvestigationTab.this.repaint();
+                    }
+                }
+                var images = new ArrayList<BufferedImage>();
+                Arrays.asList(PanenPlanes.getComponents()).stream().forEach((t) -> {
+                    if (t instanceof ImagePreviewPanel Imgp) {
+                           images.add(Imgp.getImage());
+                    }
+                });
+                for (var pair : List) {
+                    if(!images.contains(pair.getRight())){
+                        var preview = new ImagePreviewPanel(pair.getLeft(), pair.getRight());
+                        PanenPlanes.add(preview);
+                        PanenPlanes.repaint();
+                        InvestigationTab.this.repaint();
+                    }
+                }
+            }
+        };
+    }
+
     public boolean IsAnalizing(Path OtherFile) {
         if (OtherFile == null) {
             return false;
@@ -87,8 +128,8 @@ public class InvestigationTab extends Tab {
             } catch (IOException ex) {
             }
             return result;
-        }else{
-          return OtherFile.toAbsolutePath().toString().equals(Analist.getAnalisisSource());
+        } else {
+            return OtherFile.toAbsolutePath().toString().equals(Analist.getAnalisisSource());
         }
     }
 
@@ -97,37 +138,21 @@ public class InvestigationTab extends Tab {
     }
 
     public void startAnalysis() {
-        if (Objects.isNull(Analist)) {
-            fireTabSpecificPropertyChange(ChangePropertys.STATEINFO, null, "analysis CANNOT be performed");
-            fireTabSpecificPropertyChange(ChangePropertys.BUSY,true,false);
-            return;
-        }
-        fireTabSpecificPropertyChange(ChangePropertys.STATEINFO, null, "Starting analysis");
-        try {
-            //TODO: move this to be done in Parallel.
-            var list = Analist.RunTrasFormations(true);
-            PanenPlanes.add(new ImagePreviewPanel("Original", Analist.getUnEditedCopy()));
-            if (list != null) {
-                for (var pair : list) {
-                    var preview = new ImagePreviewPanel(pair.getLeft(), pair.getRight());
-                    PanenPlanes.add(preview);
-                }
-            }
-        } catch (IOException ex) {
-            LoggingHelper.getLogger(InvestigationTab.class.getName()).log(Level.SEVERE, null, ex);
+        if (!Analist.isDone()) {
+            Analist.execute();
         }
     }
 
     public void addListener(PropertyChangeListener listener) {
         propertySupport.addPropertyChangeListener(listener);
     }
-    
+
     public void addBusyListener(PropertyChangeListener listener) {
-        propertySupport.addPropertyChangeListener(ChangePropertys.BUSY,listener);
+        propertySupport.addPropertyChangeListener(ChangePropertys.BUSY, listener);
     }
-    
+
     public void removeBusyListener(PropertyChangeListener listener) {
-        propertySupport.removePropertyChangeListener(ChangePropertys.BUSY,listener);
+        propertySupport.removePropertyChangeListener(ChangePropertys.BUSY, listener);
     }
 
     public void removeListener(PropertyChangeListener listener) {
@@ -160,12 +185,12 @@ public class InvestigationTab extends Tab {
         }
         _InternalSetTitle(Filename);
     }
-    
+
     private void SetTitleInternal(URL Link) {
-      //assume the file is alredy non null. we are too deep if it is not a verification was missing before
+        //assume the file is alredy non null. we are too deep if it is not a verification was missing before
         var Filename = Link.getPath();//Link.getFile();
-        var index= Filename.lastIndexOf('/');
-        Filename = Filename.substring(index<0?0:index).strip();
+        var index = Filename.lastIndexOf('/');
+        Filename = Filename.substring(index < 0 ? 0 : index).strip();
         pFooter.setFooterText(String.format("analizing Link: %s", Link.toString()));
         var extension = Filename;
         if (Filename != null && Filename.length() > 20) {

@@ -34,6 +34,10 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
         initComponents();
     }
     
+    public BufferedImage getImage(){
+        return ImageToPreview;
+    }
+    
     public ImagePreviewPanel(String Title, BufferedImage Image){
         ImageToPreview = Objects.requireNonNull(Image, "The provided image is null");
         PreviewTitle = Title;

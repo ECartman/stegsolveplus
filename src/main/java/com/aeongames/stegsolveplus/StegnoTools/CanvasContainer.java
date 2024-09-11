@@ -183,15 +183,6 @@ public class CanvasContainer {
 
     // <editor-fold defaultstate="collapsed" desc="imageInfo">
     /**
-     * returns true if the image is valid.
-     *
-     * @return whenever the image is valid or not.
-     */
-    public boolean ImageIsValid() {
-        return Objects.nonNull(originalImage);
-    }
-
-    /**
      * get the total number of Pixels (combination of colors (A)RBG) on this
      * image.
      *
@@ -199,6 +190,10 @@ public class CanvasContainer {
      */
     public int getTotalPixels() {
         return originalImage.getWidth() * originalImage.getHeight();
+    }
+
+    public boolean HasAlphaChannel() {
+        return originalImage.getAlphaRaster() != null;
     }
     // </editor-fold>
 
@@ -444,8 +439,7 @@ public class CanvasContainer {
      * @param hasAlpha whenever or not the image has alpha byte. (ARGB, ABGR)
      * @param bytesData the DataBuffer that contains the Image data (bytes)
      * @param channel the Color channel that is desired to be returned one of
-     * the following:
-     * <pre>
+     * the following:      <pre>
      * {@link CanvasContainer#ALPHA}
      * {@link CanvasContainer#RED}
      * {@link CanvasContainer#GREEN}
@@ -454,11 +448,11 @@ public class CanvasContainer {
      *
      * @param Index the index from which we should locate the pixel on a linear
      * lookup
-     * @return a value between 0 and 0xFF(255) (unsigned) with the intensity for the particular
-     * channel on the provided index (you need to call 
-     * {@link CanvasContainer#convertToUnsigned(byte)} or {@link Byte#toUnsignedInt(byte)}
-     * @throws IndexOutOfBoundsException if the channel is not 
-     * <pre>
+     * @return a value between 0 and 0xFF(255) (unsigned) with the intensity for
+     * the particular channel on the provided index (you need to call
+     * {@link CanvasContainer#convertToUnsigned(byte)} or
+     * {@link Byte#toUnsignedInt(byte)}
+     * @throws IndexOutOfBoundsException if the channel is not      <pre>
      * {@link CanvasContainer#ALPHA}
      * {@link CanvasContainer#RED}
      * {@link CanvasContainer#GREEN}
@@ -488,7 +482,7 @@ public class CanvasContainer {
      * the linear position on the image. this function translate the Index into
      * the index that the {@code bytesData} locates the pixel data for the
      * desired index and for the desired Color Channel {@code channel}
-     * 
+     *
      * @param type the type of image it was loaded. this is important to
      * Understand the order of the bytes (if they are little or big edian and or
      * know if it is RGB or BGR order.
@@ -498,8 +492,7 @@ public class CanvasContainer {
      * @param hasAlpha whenever or not the image has alpha byte. (ARGB, ABGR)
      * @param bytesData the DataBuffer that contains the Image data (bytes)
      * @param channel the Color channel that is desired to be returned one of
-     * the following:
-     * <pre>
+     * the following:      <pre>
      * {@link CanvasContainer#ALPHA}
      * {@link CanvasContainer#RED}
      * {@link CanvasContainer#GREEN}
@@ -508,10 +501,9 @@ public class CanvasContainer {
      *
      * @param Index the index from which we should locate the pixel on a linear
      * lookup
-     * @return a value between 0 and 0xFF(255) with the intensity for the particular
-     * channel on the provided index. 
-     * @throws IndexOutOfBoundsException if the channel is not 
-     * <pre>
+     * @return a value between 0 and 0xFF(255) with the intensity for the
+     * particular channel on the provided index.
+     * @throws IndexOutOfBoundsException if the channel is not      <pre>
      * {@link CanvasContainer#ALPHA}
      * {@link CanvasContainer#RED}
      * {@link CanvasContainer#GREEN}
@@ -534,7 +526,7 @@ public class CanvasContainer {
         }
     }
     // </editor-fold>
-    
+
     /**
      * Create a Buffer Image that contains pixels with the FillColor where the
      * specific pixel data r=g=b. for example. if a pixel color is all 0 (black)
@@ -559,7 +551,7 @@ public class CanvasContainer {
         Arrays.fill(Destinationdatabuffer.getData(), (byte) 0xFF);
         switch (databuffer) {
             case DataBufferByte bytesData -> {
-                var hasAlphaChannel = originalImage.getAlphaRaster() != null;
+                var hasAlphaChannel = HasAlphaChannel();
                 DrawSymetricBytes(originalImage.getType(), image.getType(), hasAlphaChannel, image.getAlphaRaster() != null, bytesData, Destinationdatabuffer, Fill);
             }
             case DataBufferInt IntegerData ->
@@ -607,7 +599,7 @@ public class CanvasContainer {
      *
      * @param MathFunction a {@link Function} that accepts and returns an array
      * of shorts values. the input array is an array of {@link Short} type
-     * values of size {@code 4} in the order this class works with. see: null     {@link CanvasContainer#ALPHA},
+     * values of size {@code 4} in the order this class works with. see: null null     {@link CanvasContainer#ALPHA},
      * {@link CanvasContainer#RED},
      * {@link CanvasContainer#GREEN},
      * {@link CanvasContainer#BLUE}. the resulting array is also Expected that
@@ -722,7 +714,7 @@ public class CanvasContainer {
      *
      * @param MathFunction a {@link Function} that accepts and returns an array
      * of shorts values. the input array is an array of {@link Short} type
-     * values of size {@code 4} in the order this class works with. see: null     {@link CanvasContainer#ALPHA},
+     * values of size {@code 4} in the order this class works with. see: null null     {@link CanvasContainer#ALPHA},
      * {@link CanvasContainer#RED},
      * {@link CanvasContainer#GREEN},
      * {@link CanvasContainer#BLUE}. the resulting array is also Expected that
@@ -801,17 +793,18 @@ public class CanvasContainer {
 
     /**
      * gathers the Color information for the specified position
-     * @param Channel the color channel that most be one of the following: 
-     * <pre>
+     *
+     * @param Channel the color channel that most be one of the following:      <pre>
      * {@link CanvasContainer#ALPHA}
      * {@link CanvasContainer#RED}
      * {@link CanvasContainer#GREEN}
      * {@link CanvasContainer#BLUE}
      * </pre>
-     * @param x the X axis. 
-     * @param y the Y axis. 
-     * @return the color information as a integer value that is 
-     * between 0 and 0xFF(255);
+     *
+     * @param x the X axis.
+     * @param y the Y axis.
+     * @return the color information as a integer value that is between 0 and
+     * 0xFF(255);
      */
     private int getColor(int Channel, int x, int y) {
         if (Channel == ALPHA && originalImage.getAlphaRaster() == null) {
@@ -822,9 +815,9 @@ public class CanvasContainer {
         int readvalue;
         switch (databuffer) {
             case DataBufferByte bytesData ->
-                readvalue = Byte.toUnsignedInt(getColorPixelByte(originalImage.getType(),  originalImage.getAlphaRaster() != null, bytesData, Channel, i));
+                readvalue = Byte.toUnsignedInt(getColorPixelByte(originalImage.getType(), HasAlphaChannel(), bytesData, Channel, i));
             case DataBufferInt IntegerData ->
-                readvalue = getColorPixelInt(originalImage.getType(), originalImage.getAlphaRaster() != null, IntegerData, Channel, i);
+                readvalue = getColorPixelInt(originalImage.getType(), HasAlphaChannel(), IntegerData, Channel, i);
             default -> {
                 readvalue = getColorDefaultMethod(Channel, x, y);
             }
@@ -840,9 +833,9 @@ public class CanvasContainer {
         int readvalue;
         switch (databuffer) {
             case DataBufferByte bytesData ->
-                readvalue = convertToUnsigned(getColorPixelByte(originalImage.getType(), originalImage.getAlphaRaster() != null, bytesData, Channel, LinearPosition));
+                readvalue = convertToUnsigned(getColorPixelByte(originalImage.getType(), HasAlphaChannel(), bytesData, Channel, LinearPosition));
             case DataBufferInt IntegerData ->
-                readvalue = getColorPixelInt(originalImage.getType(), originalImage.getAlphaRaster() != null, IntegerData, Channel, LinearPosition);
+                readvalue = getColorPixelInt(originalImage.getType(), HasAlphaChannel(), IntegerData, Channel, LinearPosition);
             default -> {
                 var pos = getPointForIndex(originalImage.getWidth(), LinearPosition);
                 readvalue = getColorDefaultMethod(Channel, pos.x, pos.y);
@@ -851,7 +844,7 @@ public class CanvasContainer {
         }
         return readvalue;
     }
-       
+
     private int getColorDefaultMethod(int Channel, int x, int y) {
         int readvalue;
         var data = originalImage.getRaster().getDataElements(x, y, null);
@@ -964,7 +957,7 @@ public class CanvasContainer {
             throw new ArrayIndexOutOfBoundsException("the index(bit) Specified is not present on the image");
         }
         var image = createBINoAlphaemptyCopy();//and RGB image
-        var hasAlphaChannel = originalImage.getAlphaRaster() != null;
+        var hasAlphaChannel = HasAlphaChannel();
         if (Channel == ALPHA && !hasAlphaChannel) {
             //if this image has no alpha channel then it means if it were to add one it will be fully opaque
             //and thus for this specific case. it fills the data and thus a fully opaque image
@@ -1024,7 +1017,7 @@ public class CanvasContainer {
     }
 
     BufferedImage getImageForChannel(int Channel) {
-        var hasAlphaChannel = originalImage.getAlphaRaster() != null;
+        var hasAlphaChannel = HasAlphaChannel();
         if (Channel == ALPHA && !hasAlphaChannel) {
             //if this image has no alpha channel then it means if it were to add one it will be fully opaque
             var image = createBIemptyCopy(BufferedImage.TYPE_INT_RGB);//note We could just return a binary image
