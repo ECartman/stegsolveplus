@@ -626,7 +626,7 @@ public class CanvasContainer {
         var Translation = getOrder(TypeRequred);
         var hasAlpha = ResultImage.getAlphaRaster() != null;
         for (int i = 0; i < getTotalPixels(); i++) {
-            var CalculatedPixel = MathFunction.apply(ToWrapperArray(getRGB(i)));
+            var CalculatedPixel = MathFunction.apply(getRGB(i));
             switch (Destinationdatabuffer) {
                 case DataBufferByte bytesData -> {
                     var byteData = bytesData.getData();//alternative we can use bytesData.getSize() instead of the lenght and call .getElem to get the value. but note this taxes on byte to int convertion
@@ -695,7 +695,7 @@ public class CanvasContainer {
 
     public void MathOnPixelsbyIndex(BiConsumer<Short[], Integer> MathConsumer) {
         for (int i = 0; i < getTotalPixels(); i++) {
-            MathConsumer.accept(ToWrapperArray(getRGB(i)), i);
+            MathConsumer.accept(getRGB(i), i);
         }
     }
 
@@ -768,11 +768,11 @@ public class CanvasContainer {
      * @see CanvasContainer#GREEN
      * @see CanvasContainer#BLUE
      */
-    public short[] getRGB(int LinearPosition) {
+    public Short[] getRGB(int LinearPosition) {
         if (LinearPosition < 0 && LinearPosition > getTotalPixels()) {
             throw new ArrayIndexOutOfBoundsException("the index Specified is not present on the image");
         }
-        var result = new short[4];
+        var result = new Short[4];
         result[BLUE] = (short) getBlue(LinearPosition);
         result[GREEN] = (short) getGreen(LinearPosition);
         result[RED] = (short) getRed(LinearPosition);
@@ -780,21 +780,16 @@ public class CanvasContainer {
         return result;
     }
 
-    public short[] getRGB(int x, int y) {
+    public Short[] getRGB(int x, int y) {
         var position = getIndexForPosition(originalImage.getWidth(), x, y);
         return getRGB(position);
-    }
-
-    private Short[] ToWrapperArray(short[] b) {
-        var result = new Short[b.length];
-        Arrays.parallelSetAll(result, i -> b[i]);
-        return result;
     }
 
     /**
      * gathers the Color information for the specified position
      *
-     * @param Channel the color channel that most be one of the following:      <pre>
+     * @param Channel the color channel that most be one of the following:
+     * <pre>
      * {@link CanvasContainer#ALPHA}
      * {@link CanvasContainer#RED}
      * {@link CanvasContainer#GREEN}
@@ -1057,8 +1052,6 @@ public class CanvasContainer {
                             Destdata[baseindex] = (byte) originalImage.getColorModel().getBlue(data);
                         }
                     }
-                    //var p = RelativiseLinearIndexToXY(image.getWidth(), i);
-                    //image.setRGB(p.x, p.y, singleChannelColor);
                 }
             }
 

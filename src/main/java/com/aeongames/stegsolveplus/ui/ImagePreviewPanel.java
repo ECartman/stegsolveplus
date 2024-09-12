@@ -9,11 +9,12 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  * 
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JPanel.java to edit this template
  */
 package com.aeongames.stegsolveplus.ui;
 
+import com.aeongames.edi.utils.text.LabelText;
 import com.aeongames.edi.utils.visual.Panels.ImagePanel;
+import java.awt.CardLayout;
 import java.awt.image.BufferedImage;
 import java.util.Objects;
 
@@ -22,26 +23,47 @@ import java.util.Objects;
  * @author cartman
  */
 public class ImagePreviewPanel extends javax.swing.JPanel {
+    private static final String THUMBNAIL="ImageView";
     private final String PreviewTitle;
-    private final BufferedImage ImageToPreview;
-    
+    private BufferedImage ImageToPreview;
+    private final CardLayout Layout;
+
     /**
      * Creates new form ImagePreviewPanel
+     * @param Title the title to display
      */
-    public ImagePreviewPanel() {
-        PreviewTitle="Test";
-        ImageToPreview=null;
+    public ImagePreviewPanel(String Title) {
+        PreviewTitle = Objects.requireNonNull(Title, "The title for the thumb is required and cannot be null");
+        ImageToPreview = null;
         initComponents();
+        if (getLayout() instanceof CardLayout ly) {
+            Layout = ly;
+        } else {
+            Layout = null;
+        }
     }
-    
-    public BufferedImage getImage(){
-        return ImageToPreview;
-    }
-    
+
     public ImagePreviewPanel(String Title, BufferedImage Image){
         ImageToPreview = Objects.requireNonNull(Image, "The provided image is null");
-        PreviewTitle = Title;
+        PreviewTitle = Objects.requireNonNull(Title, "The title for the thumb is required and cannot be null");
         initComponents();
+        if (getLayout() instanceof CardLayout ly) {
+            Layout = ly;
+        } else {
+            Layout = null;
+        }
+        Layout.show(this,THUMBNAIL);
+    }    
+        
+    public void SetImage(BufferedImage img){
+        ImageToPreview = img;
+        ImagePreviewPanel.setImage(ImageToPreview);
+        Layout.show(this,THUMBNAIL);
+        repaint();
+    }
+
+    public BufferedImage getImage() {
+        return ImageToPreview;
     }
 
     /**
@@ -52,19 +74,67 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        translucentpanel1 = new com.aeongames.edi.utils.visual.Panels.TranslucentPanel();
+        LoadPanel = new com.aeongames.edi.utils.visual.Panels.TranslucentPanel();
+        txtloading = new javax.swing.JLabel();
+        jProgressBar1 = new javax.swing.JProgressBar();
+        jLabel1 = new javax.swing.JLabel();
+        ImagThumbpanel = new com.aeongames.edi.utils.visual.Panels.TranslucentPanel();
         jPanel1 = new javax.swing.JPanel();
         txtTitle = new javax.swing.JLabel();
         ImagePreviewPanel = ImageToPreview == null
         ? new ImagePanel()
         : new ImagePanel(ImageToPreview);
 
-        setMinimumSize(new java.awt.Dimension(200, 200));
+        setMinimumSize(new java.awt.Dimension(300, 270));
         setOpaque(false);
+        setPreferredSize(new java.awt.Dimension(300, 300));
+        setLayout(new java.awt.CardLayout());
 
-        translucentpanel1.setBackground(new java.awt.Color(255, 255, 255));
-        translucentpanel1.setArcHeight(20);
-        translucentpanel1.setArcWidth(20);
+        txtloading.setFont(new java.awt.Font(txtloading.getFont().getName(), 0, 15));
+        txtloading.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        txtloading.setText(LabelText.getTrimmedtoComponentsize(PreviewTitle,txtloading,200));
+        txtloading.setToolTipText("");
+        txtloading.addComponentListener(new java.awt.event.ComponentAdapter() {
+            public void componentResized(java.awt.event.ComponentEvent evt) {
+                txtloadingComponentResized(evt);
+            }
+        });
+
+        jProgressBar1.setIndeterminate(true);
+
+        jLabel1.setFont(new java.awt.Font(txtloading.getFont().getName(), 0, 15));
+        jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel1.setText("Loading");
+
+        javax.swing.GroupLayout LoadPanelLayout = new javax.swing.GroupLayout(LoadPanel);
+        LoadPanel.setLayout(LoadPanelLayout);
+        LoadPanelLayout.setHorizontalGroup(
+            LoadPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(LoadPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(LoadPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jProgressBar1, javax.swing.GroupLayout.DEFAULT_SIZE, 288, Short.MAX_VALUE)
+                    .addComponent(txtloading, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
+        );
+        LoadPanelLayout.setVerticalGroup(
+            LoadPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(LoadPanelLayout.createSequentialGroup()
+                .addContainerGap(53, Short.MAX_VALUE)
+                .addComponent(jLabel1)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(txtloading, javax.swing.GroupLayout.PREFERRED_SIZE, 44, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18)
+                .addComponent(jProgressBar1, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(95, Short.MAX_VALUE))
+        );
+
+        add(LoadPanel, "Loading");
+
+        ImagThumbpanel.setBackground(new java.awt.Color(255, 255, 255));
+        ImagThumbpanel.setArcHeight(20);
+        ImagThumbpanel.setArcWidth(20);
 
         jPanel1.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
 
@@ -75,7 +145,7 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(txtTitle, javax.swing.GroupLayout.DEFAULT_SIZE, 196, Short.MAX_VALUE)
+            .addComponent(txtTitle, javax.swing.GroupLayout.DEFAULT_SIZE, 296, Short.MAX_VALUE)
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -92,41 +162,40 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
         );
         ImagePreviewPanelLayout.setVerticalGroup(
             ImagePreviewPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 165, Short.MAX_VALUE)
+            .addGap(0, 235, Short.MAX_VALUE)
         );
 
-        javax.swing.GroupLayout translucentpanel1Layout = new javax.swing.GroupLayout(translucentpanel1);
-        translucentpanel1.setLayout(translucentpanel1Layout);
-        translucentpanel1Layout.setHorizontalGroup(
-            translucentpanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        javax.swing.GroupLayout ImagThumbpanelLayout = new javax.swing.GroupLayout(ImagThumbpanel);
+        ImagThumbpanel.setLayout(ImagThumbpanelLayout);
+        ImagThumbpanelLayout.setHorizontalGroup(
+            ImagThumbpanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addComponent(ImagePreviewPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
-        translucentpanel1Layout.setVerticalGroup(
-            translucentpanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(translucentpanel1Layout.createSequentialGroup()
+        ImagThumbpanelLayout.setVerticalGroup(
+            ImagThumbpanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(ImagThumbpanelLayout.createSequentialGroup()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(0, 0, 0)
                 .addComponent(ImagePreviewPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
-        this.setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(translucentpanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(translucentpanel1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-        );
+        add(ImagThumbpanel, "ImageView");
     }// </editor-fold>//GEN-END:initComponents
-    
-    
+
+    private void txtloadingComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_txtloadingComponentResized
+       txtloading.setText(LabelText.getTrimmedtoComponentsize(PreviewTitle,txtloading,200));
+    }//GEN-LAST:event_txtloadingComponentResized
+
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private com.aeongames.edi.utils.visual.Panels.TranslucentPanel ImagThumbpanel;
     private com.aeongames.edi.utils.visual.Panels.ImagePanel ImagePreviewPanel;
+    private com.aeongames.edi.utils.visual.Panels.TranslucentPanel LoadPanel;
+    private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel jPanel1;
-    private com.aeongames.edi.utils.visual.Panels.TranslucentPanel translucentpanel1;
+    private javax.swing.JProgressBar jProgressBar1;
     private javax.swing.JLabel txtTitle;
+    private javax.swing.JLabel txtloading;
     // End of variables declaration//GEN-END:variables
 }

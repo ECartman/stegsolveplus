@@ -34,8 +34,15 @@ import javax.imageio.ImageIO;
 import javax.swing.SwingWorker;
 
 /**
- * this class is a Holder for the information and access to the stegnography
- * tools that can be applied to an image.
+ * this class is a background worker that conducts and waits for the underline
+ * Color transformations are done. some of the underline transformations needs
+ * to be enhanced as some of them are a bit slow. also there are a few that work
+ * similar (for example. getting the blue pixels are pulled and showed. but at
+ * this same point the process could also pull the independent bits & so on.
+ *
+ * generally speaking this is fine for images that are less than 2k resolution
+ * but for big images takes several seconds to minutes..
+ *
  *
  * TODO: load image from URL should be easy to add. but require changes on the
  * UI to support it.
@@ -48,6 +55,31 @@ public class StegnoAnalysis extends SwingWorker<List<Pair<String, BufferedImage>
     public static final String STAGE_ERROR = "STAGE_ERROR";
     public static final String ValidImagesFiles[] = ImageIO.getReaderFormatNames();
 
+    public enum TransformAnalysis {
+        OriginalImage("Original"),
+        GreyMap("Grey Map"),
+        GreyScale("Grey Scale"),
+        BluePixels("Blue Pixels"),
+        GreenPixels("Green Pixels"),
+        RedPixels("Red Pixels"),
+        AlphaPixels("Alpha Pixels"),
+        FirstForthImage("Image of the bit 1 and 2"),
+        SecondForthImage("Image of the bit 3 and 4"),
+        ThirdForthImage("Image of the bit 5 and 6"),
+        ForthForthImage("Image of the bit 7 and 8"),
+        XorInversion("inverted Bits Image"),
+        InvertHue("Inverted Hue"),
+        InvertHueBright("Inverted Hue and Brightness"),
+        InvertSaturation("Inverted Saturation"),
+        InvertBright("Inverted Brightness");
+        public final String Name;
+
+        private TransformAnalysis(String name) {
+            this.Name = name;
+        }
+
+    }
+
     /**
      * the source file to read and or check data from.
      */
@@ -55,22 +87,21 @@ public class StegnoAnalysis extends SwingWorker<List<Pair<String, BufferedImage>
     private final URL ImageAddress;
     private CanvasContainer ImageCache;
     private static final Logger loger = LoggingHelper.getLogger(StegnoAnalysis.class.getName());
-    private final BiConsumer<Boolean,List<Pair<String, BufferedImage>>> callBack;
-    
+    private final BiConsumer<Boolean, List<Pair<String, BufferedImage>>> callBack;
 
-    public StegnoAnalysis(BiConsumer<Boolean,List<Pair<String, BufferedImage>>>callback ,Path File) {
+    public StegnoAnalysis(BiConsumer<Boolean, List<Pair<String, BufferedImage>>> callback, Path File) {
         this.File = File;
-        callBack=callback;
+        callBack = callback;
         ImageAddress = null;
     }
 
-    public StegnoAnalysis(BiConsumer<Boolean,List<Pair<String, BufferedImage>>>callback ,File file) {
-        this(callback,file.toPath());
+    public StegnoAnalysis(BiConsumer<Boolean, List<Pair<String, BufferedImage>>> callback, File file) {
+        this(callback, file.toPath());
     }
 
-    public StegnoAnalysis(BiConsumer<Boolean,List<Pair<String, BufferedImage>>>callback ,URL Address) {
+    public StegnoAnalysis(BiConsumer<Boolean, List<Pair<String, BufferedImage>>> callback, URL Address) {
         this.ImageAddress = Address;
-        callBack=callback;
+        callBack = callback;
         File = null;
     }
 
@@ -83,6 +114,14 @@ public class StegnoAnalysis extends SwingWorker<List<Pair<String, BufferedImage>
             return File.toString();
         } else {
             return ImageAddress.toString();
+        }
+    }
+
+    public String getSourceName() {
+        if (File != null) {
+            return File.getFileName().toString().strip();
+        } else {
+            return ImageAddress.getPath().toString();
         }
     }
 
@@ -193,10 +232,18 @@ public class StegnoAnalysis extends SwingWorker<List<Pair<String, BufferedImage>
             InvertedColor = Color.HSBtoRGB(HSV[1], HSV[1], invertedbright);
             transform4.getRaster().getDataBuffer().setElem(Index, InvertedColor);
         });
-        storage.add(new Pair<>("Inverted Hue", transform));
-        storage.add(new Pair<>("Inverted Hue and Brightness", transform2));
-        storage.add(new Pair<>("Inverted Saturation", transform3));
-        storage.add(new Pair<>("Inverted Brightness", transform4));
+        var e = new Pair<>(TransformAnalysis.InvertHue.Name, transform);
+        storage.add(e);
+        publish(e);
+        e = new Pair<>(TransformAnalysis.InvertHueBright.Name, transform2);
+        storage.add(e);
+        publish(e);
+        e = new Pair<>(TransformAnalysis.InvertSaturation.Name, transform3);
+        storage.add(e);
+        publish(e);
+        e = new Pair<>(TransformAnalysis.InvertBright.Name, transform4);
+        storage.add(e);
+        publish(e);
     }
 
     /**
@@ -241,12 +288,6 @@ public class StegnoAnalysis extends SwingWorker<List<Pair<String, BufferedImage>
             results[CanvasContainer.BLUE] = (short) (ARGB[CanvasContainer.BLUE] ^ CanvasContainer.RGBMASK);
             return results;
         });
-        /*var transform = ImageCache.createBIemptyCopy();
-        ImageCache.MathOnPixelInt(transform, IntRGB -> {
-            return IntRGB ^ CanvasContainer.RGBMASK;
-        });
-        return transform;
-         */
     }
 
     /**
@@ -351,198 +392,191 @@ public class StegnoAnalysis extends SwingWorker<List<Pair<String, BufferedImage>
     }
 
     protected List<Pair<String, BufferedImage>> RunTrasFormations(String Stage) {
-        //MAYBE: we fork the job here. but we could also set to fork within CanvasContainer
-        //to read the bits faster there instead of forking each file read.
-        var Pool = ForkJoinPool.commonPool();
         var list = new ArrayList<Pair<String, BufferedImage>>(20);
         var stack = new Stack<RecursiveTask<Pair<String, BufferedImage>>>();
         var stackListResult = new Stack<RecursiveTask<List<Pair<String, BufferedImage>>>>();
         /**
          * *****************************************************
          */
-        loger.log(Level.INFO, "Getting Grey map");
-        stack.add(new RecursiveTask<Pair<String, BufferedImage>>() {
-            @Override
-            protected Pair<String, BufferedImage> compute() {
-                var created = new Pair<>("Original", getUnEditedCopy());
-                publish(created);
-                return created;
-            }
-        });
-        Pool.submit(stack.peek());        
-        loger.log(Level.INFO, "Getting Grey map");
-        stack.add(new RecursiveTask<Pair<String, BufferedImage>>() {
-            @Override
-            protected Pair<String, BufferedImage> compute() {
-                var created = new Pair<>("Grey Map", TranformSymetricPixels(Color.BLACK));
-                publish(created);
-                return created;
-            }
-        });
-        Pool.submit(stack.peek());
-        loger.log(Level.INFO, "Getting Grey Scale Version");
-        stack.add(new RecursiveTask<Pair<String, BufferedImage>>() {
-            @Override
-            protected Pair<String, BufferedImage> compute() {
-                var created = new Pair<>("Grey Scale", getGrayScaleCopy());
-                publish(created);
-                return created;
-            }
-        });
-        Pool.submit(stack.peek());
-        //list.add(new Pair<>("Grey Scale REC709 (gamma Corrected)", TranformGreyScaleSlow()));
-        //list.add(new Pair<>("Grey Scale REC709 fast", TranformGreyScaleSlow(true)));
-        loger.log(Level.INFO, "Getting HSV inverted image");
-        stackListResult.add(new RecursiveTask<List<Pair<String, BufferedImage>>>() {
+        loger.log(Level.INFO, "Schelduling Tasks");
+        bookandStartListTask(stackListResult, new RecursiveTask<List<Pair<String, BufferedImage>>>() {
             @Override
             protected List<Pair<String, BufferedImage>> compute() {
+                loger.log(Level.INFO, "Start getHSVInversions Task");
                 var list = new ArrayList<Pair<String, BufferedImage>>(4);
                 getHSVInversions(list);
-                for (var e : list) {
-                    publish(e);
-                }
+                loger.log(Level.INFO, "Task: getHSVInversions, Done");
                 return list;
             }
         });
-        Pool.submit(stackListResult.peek());
-        loger.log(Level.INFO, "Getting bit 1&2 image");
-        stack.add(new RecursiveTask<Pair<String, BufferedImage>>() {
-            @Override
-            protected Pair<String, BufferedImage> compute() {
-                var created = new Pair<>("Image of the bit 1 and 2", Forthofbyte(0));
-                publish(created);
-                return created;
-            }
-        });
-        Pool.submit(stack.peek());
-        loger.log(Level.INFO, "Getting bit 2&3 image");
-        stack.add(new RecursiveTask<Pair<String, BufferedImage>>() {
-            @Override
-            protected Pair<String, BufferedImage> compute() {
-                var created = new Pair<>("Image of the bit 3 and 4", Forthofbyte(1));
-                publish(created);
-                return created;
-            }
-        });
-        Pool.submit(stack.peek());
-        loger.log(Level.INFO, "Getting bit 5&6 image");
-        stack.add(new RecursiveTask<Pair<String, BufferedImage>>() {
-            @Override
-            protected Pair<String, BufferedImage> compute() {
-                var created = new Pair<>("Image of the bit 5 and 6", Forthofbyte(2));
-                publish(created);
-                return created;
-            }
-        });
-        Pool.submit(stack.peek());
-        loger.log(Level.INFO, "Getting bit 7&8 image");
-        stack.add(new RecursiveTask<Pair<String, BufferedImage>>() {
-            @Override
-            protected Pair<String, BufferedImage> compute() {
-                var created = new Pair<>("Image of the bit 7 and 8", Forthofbyte(3));
-                publish(created);
-                return created;
-            }
-        });
-        Pool.submit(stack.peek());
-        loger.log(Level.INFO, "Getting inverted image");
-        stack.add(new RecursiveTask<Pair<String, BufferedImage>>() {
-            @Override
-            protected Pair<String, BufferedImage> compute() {
-                var created = new Pair<>("inverted Bits Image", inversionRGB());
-                publish(created);
-                return created;
-            }
-        });
-        Pool.submit(stack.peek());
-        loger.log(Level.INFO, "Blue channel");
-        stack.add(new RecursiveTask<Pair<String, BufferedImage>>() {
-            @Override
-            protected Pair<String, BufferedImage> compute() {
-                var created = new Pair<>("only Blue Pixels", ImageCache.getBlueImage());
-                publish(created);
-                return created;
-            }
-        });
-        Pool.submit(stack.peek());
-        loger.log(Level.INFO, "Green channel");
-        stack.add(new RecursiveTask<Pair<String, BufferedImage>>() {
-            @Override
-            protected Pair<String, BufferedImage> compute() {
-                var created = new Pair<>("only Green Pixels", ImageCache.getGreenImage());
-                publish(created);
-                return created;
-            }
-        });
-        Pool.submit(stack.peek());
-        loger.log(Level.INFO, "Red channel");
-        stack.add(new RecursiveTask<Pair<String, BufferedImage>>() {
-            @Override
-            protected Pair<String, BufferedImage> compute() {
-                var created = new Pair<>("only Red Pixels", ImageCache.getRedImage());
-                publish(created);
-                return created;
-            }
-        });
-        Pool.submit(stack.peek());
-        loger.log(Level.INFO, "Alpha image");
-        stack.add(new RecursiveTask<Pair<String, BufferedImage>>() {
-            @Override
-            protected Pair<String, BufferedImage> compute() {
-                var created = new Pair<>("only Alpha Pixels", ImageCache.getAlphaImage());
-                publish(created);
-                return created;
-            }
-        });
-        Pool.submit(stack.peek());
-        loger.log(Level.INFO, "Blue bits");
-        stackListResult.add(new RecursiveTask<List<Pair<String, BufferedImage>>>() {
+
+        bookandStartListTask(stackListResult, new RecursiveTask<List<Pair<String, BufferedImage>>>() {
             @Override
             protected List<Pair<String, BufferedImage>> compute() {
+                loger.log(Level.INFO, "Start getImagePerBitOnBlueChannel Task");
                 var list = getImagePerBitOnBlueChannel(null);
                 for (var e : list) {
                     publish(e);
                 }
+                loger.log(Level.INFO, "Task: getImagePerBitOnBlueChannel, Done");
                 return list;
             }
         });
-        Pool.submit(stackListResult.peek());
-        loger.log(Level.INFO, "Green bits");
-        stackListResult.add(new RecursiveTask<List<Pair<String, BufferedImage>>>() {
+        bookandStartListTask(stackListResult, new RecursiveTask<List<Pair<String, BufferedImage>>>() {
             @Override
             protected List<Pair<String, BufferedImage>> compute() {
-                var list =  getImagePerBitOnGreenChannel(null);
+                loger.log(Level.INFO, "Start getImagePerBitOnGreenChannel Task");
+                var list = getImagePerBitOnGreenChannel(null);
                 for (var e : list) {
                     publish(e);
                 }
+                loger.log(Level.INFO, "Task: getImagePerBitOnGreenChannel, Done");
                 return list;
             }
         });
-        Pool.submit(stackListResult.peek());
-        loger.log(Level.INFO, "Red bits");
-        stackListResult.add(new RecursiveTask<List<Pair<String, BufferedImage>>>() {
+        bookandStartListTask(stackListResult, new RecursiveTask<List<Pair<String, BufferedImage>>>() {
             @Override
             protected List<Pair<String, BufferedImage>> compute() {
-                var list =  getImagePerBitOnRedChannel(null);
+                loger.log(Level.INFO, "Start getImagePerBitOnRedChannel Task");
+                var list = getImagePerBitOnRedChannel(null);
                 for (var e : list) {
                     publish(e);
                 }
+                loger.log(Level.INFO, "Task: getImagePerBitOnRedChannel, Done");
                 return list;
             }
         });
-        Pool.submit(stackListResult.peek());
-        loger.log(Level.INFO, "Alpha bits");
-        stackListResult.add(new RecursiveTask<List<Pair<String, BufferedImage>>>() {
+        bookandStartListTask(stackListResult, new RecursiveTask<List<Pair<String, BufferedImage>>>() {
             @Override
             protected List<Pair<String, BufferedImage>> compute() {
-                var list =  getImagePerBitOnAlphaChannel(null);
+                loger.log(Level.INFO, "Start getImagePerBitOnAlphaChannel Task");
+                var list = getImagePerBitOnAlphaChannel(null);
                 for (var e : list) {
                     publish(e);
                 }
+                loger.log(Level.INFO, "Task: getImagePerBitOnAlphaChannel, Done");
                 return list;
             }
         });
-        Pool.submit(stackListResult.peek());
+        bookandStartTask(stack, new RecursiveTask<Pair<String, BufferedImage>>() {
+            @Override
+            protected Pair<String, BufferedImage> compute() {
+                var created = new Pair<>(TransformAnalysis.OriginalImage.Name, getUnEditedCopy());
+                publish(created);
+                loger.log(Level.INFO, "Task: Copy Original, Done");
+                return created;
+            }
+        });
+        bookandStartTask(stack, new RecursiveTask<Pair<String, BufferedImage>>() {
+            @Override
+            protected Pair<String, BufferedImage> compute() {
+                var created = new Pair<>(TransformAnalysis.GreyMap.Name, TranformSymetricPixels(Color.BLACK));
+                publish(created);
+                loger.log(Level.INFO, "Task: GreyMask, Done");
+                return created;
+            }
+        });
+        bookandStartTask(stack, new RecursiveTask<Pair<String, BufferedImage>>() {
+            @Override
+            protected Pair<String, BufferedImage> compute() {
+                var created = new Pair<>(TransformAnalysis.GreyScale.Name, getGrayScaleCopy());
+                publish(created);
+                loger.log(Level.INFO, "Task: GreyScale, Done");
+                return created;
+            }
+        });
+        bookandStartTask(stack, new RecursiveTask<Pair<String, BufferedImage>>() {
+            @Override
+            protected Pair<String, BufferedImage> compute() {
+                loger.log(Level.INFO, "Start FirstForthImage Task");
+                var created = new Pair<>(TransformAnalysis.FirstForthImage.Name, Forthofbyte(0));
+                publish(created);
+                loger.log(Level.INFO, "Task: FirstForthImage, Done");
+                return created;
+            }
+        });
+        bookandStartTask(stack, new RecursiveTask<Pair<String, BufferedImage>>() {
+            @Override
+            protected Pair<String, BufferedImage> compute() {
+                loger.log(Level.INFO, "Start SecondForthImage Task");
+                var created = new Pair<>(TransformAnalysis.SecondForthImage.Name, Forthofbyte(1));
+                publish(created);
+                loger.log(Level.INFO, "Task: SecondForthImage, Done");
+                return created;
+            }
+        });
+        bookandStartTask(stack, new RecursiveTask<Pair<String, BufferedImage>>() {
+            @Override
+            protected Pair<String, BufferedImage> compute() {
+                loger.log(Level.INFO, "Start ThirdForthImage Task");
+                var created = new Pair<>(TransformAnalysis.ThirdForthImage.Name, Forthofbyte(2));
+                loger.log(Level.INFO, "Task: ThirdForthImage, Done");
+                publish(created);
+                return created;
+            }
+        });
+        bookandStartTask(stack, new RecursiveTask<Pair<String, BufferedImage>>() {
+            @Override
+            protected Pair<String, BufferedImage> compute() {
+                loger.log(Level.INFO, "Start ForthForthImage Task");
+                var created = new Pair<>(TransformAnalysis.ForthForthImage.Name, Forthofbyte(3));
+                publish(created);
+                loger.log(Level.INFO, "Task: ForthForthImage, Done");
+                return created;
+            }
+        });
+        bookandStartTask(stack, new RecursiveTask<Pair<String, BufferedImage>>() {
+            @Override
+            protected Pair<String, BufferedImage> compute() {
+                loger.log(Level.INFO, "Start XorInversion Task");
+                var created = new Pair<>(TransformAnalysis.XorInversion.Name, inversionRGB());
+                publish(created);
+                loger.log(Level.INFO, "Task: XorInversion, Done");
+                return created;
+            }
+        });
+        bookandStartTask(stack, new RecursiveTask<Pair<String, BufferedImage>>() {
+            @Override
+            protected Pair<String, BufferedImage> compute() {
+                loger.log(Level.INFO, "Start BluePixels Task");
+                var created = new Pair<>(TransformAnalysis.BluePixels.Name, ImageCache.getBlueImage());
+                publish(created);
+                loger.log(Level.INFO, "Task: BluePixels, Done");
+                return created;
+            }
+        });
+        bookandStartTask(stack, new RecursiveTask<Pair<String, BufferedImage>>() {
+            @Override
+            protected Pair<String, BufferedImage> compute() {
+                loger.log(Level.INFO, "Start GreenPixels Task");
+                var created = new Pair<>(TransformAnalysis.GreenPixels.Name, ImageCache.getGreenImage());
+                publish(created);
+                loger.log(Level.INFO, "Task: GreenPixels, Done");
+                return created;
+            }
+        });
+        bookandStartTask(stack, new RecursiveTask<Pair<String, BufferedImage>>() {
+            @Override
+            protected Pair<String, BufferedImage> compute() {
+                loger.log(Level.INFO, "Start RedPixels Task");
+                var created = new Pair<>(TransformAnalysis.RedPixels.Name, ImageCache.getRedImage());
+                publish(created);
+                loger.log(Level.INFO, "Task: RedPixels, Done");
+                return created;
+            }
+        });
+        bookandStartTask(stack, new RecursiveTask<Pair<String, BufferedImage>>() {
+            @Override
+            protected Pair<String, BufferedImage> compute() {
+                loger.log(Level.INFO, "Start AlphaPixels Task");
+                var created = new Pair<>(TransformAnalysis.AlphaPixels.Name, ImageCache.getAlphaImage());
+                publish(created);
+                loger.log(Level.INFO, "Task: AlphaPixels, Done");
+                return created;
+            }
+        });
+        //list.add(new Pair<>("Grey Scale REC709 (gamma Corrected)", TranformGreyScaleSlow()));
+        //list.add(new Pair<>("Grey Scale REC709 fast", TranformGreyScaleSlow(true)));
         loger.log(Level.INFO, "Joining Tasks");
         while (!stack.isEmpty()) {
             list.add(stack.pop().join());
@@ -554,6 +588,20 @@ public class StegnoAnalysis extends SwingWorker<List<Pair<String, BufferedImage>
         return list;
     }
 
+    private void bookandStartTask(Stack<RecursiveTask<Pair<String, BufferedImage>>> stack, RecursiveTask<Pair<String, BufferedImage>> recursiveTask) {
+        var Pool = ForkJoinPool.commonPool();
+        stack.push(recursiveTask);
+        //recursiveTask.fork();
+        Pool.submit(recursiveTask);
+    }
+
+    private void bookandStartListTask(Stack<RecursiveTask<List<Pair<String, BufferedImage>>>> stack, RecursiveTask<List<Pair<String, BufferedImage>>> recursiveTask) {
+        var Pool = ForkJoinPool.commonPool();
+        stack.push(recursiveTask);
+        //recursiveTask.fork();
+        Pool.submit(recursiveTask);
+    }
+
     @Override
     protected void process(List<Pair<String, BufferedImage>> chunks) {
         callBack.accept(false, chunks);
@@ -562,6 +610,7 @@ public class StegnoAnalysis extends SwingWorker<List<Pair<String, BufferedImage>
     @Override
     protected void done() {
         try {
+            loger.log(Level.INFO, "StegnoAnalysis Done, Calling back");
             callBack.accept(true, get());
         } catch (InterruptedException ex) {
             loger.log(Level.SEVERE, "this should not happend at Done", ex);
@@ -570,8 +619,13 @@ public class StegnoAnalysis extends SwingWorker<List<Pair<String, BufferedImage>
             loger.log(Level.SEVERE, "an error happend during execution", ex.getCause());
         }
     }
-    
-    
 
-    
+    public static List<String> getAnalysisTransformationNames() {
+        var list = new ArrayList<String>(TransformAnalysis.values().length);
+        for (var ordered : TransformAnalysis.values()) {
+            list.add(ordered.Name);
+        }
+        return list;
+    }
+
 }

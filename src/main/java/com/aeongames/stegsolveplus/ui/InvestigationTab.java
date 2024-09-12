@@ -23,8 +23,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -35,7 +34,6 @@ import java.util.function.BiConsumer;
  */
 public class InvestigationTab extends Tab {
 
-
     public final class ChangePropertys {
 
         public static final String BUSY = "BUSY";
@@ -43,7 +41,8 @@ public class InvestigationTab extends Tab {
     }
     private boolean isBusy = true;
 
-    private final StegnoAnalysis Analist;
+    private final StegnoAnalysis Analyst;
+    private HashMap<String, ImagePreviewPanel> ThumbsReferences;
     /**
      * for now use a PropertyChangeListener, this Object is to be notified for
      * changes on the sate of this tab. (loads data, is done is idle, etc...)
@@ -68,9 +67,10 @@ public class InvestigationTab extends Tab {
         }
         initComponents();
         SetTitleInternal(FilePath);
-        Callback= getCallback();
-        Analist = new StegnoAnalysis(Callback, FilePath);
+        Callback = getCallback();
+        Analyst = new StegnoAnalysis(Callback, FilePath);
         pFooter.SetProgressIndeterminate();
+        startAnalysis();
     }
 
     public InvestigationTab(URL Link) {
@@ -78,38 +78,43 @@ public class InvestigationTab extends Tab {
         propertySupport = new PropertyChangeSupport(this);
         initComponents();
         SetTitleInternal(Link);
-        Callback= getCallback();
-        Analist = new StegnoAnalysis(Callback, Link);
+        Callback = getCallback();
+        Analyst = new StegnoAnalysis(Callback, Link);
         pFooter.SetProgressIndeterminate();
+        startAnalysis();
     }
-    
-    
+
     private BiConsumer<Boolean, List<Pair<String, BufferedImage>>> getCallback() {
         return (Isfinish, List) -> {
-            if (!Isfinish) {
-                if (List != null) {
-                    for (var pair : List) {
-                        var preview = new ImagePreviewPanel(pair.getLeft(), pair.getRight());
-                        PanenPlanes.add(preview);
-                        PanenPlanes.invalidate();
-                        PanenPlanes.repaint();
-                        InvestigationTab.this.repaint();
-                    }
+            if (List == null && Isfinish) {
+                //fail. TODO: add the means to read error from the process.
+            } else if (List == null || (List.isEmpty() && !Isfinish)) {
+                return;//null or empty is notified. nothing to do. 
+            }
+            for (var pair : List) {
+                var mapvalue = ThumbsReferences.get(pair.getLeft());
+                if (mapvalue == null) {
+                    //this is a thumb that does not require a specific order so
+                    //can be added at the end of the UI list
+                    mapvalue = new ImagePreviewPanel(pair.getLeft(), pair.getRight());
+                    ThumbsReferences.put(pair.getLeft(), mapvalue);
+                    PanenPlanes.add(mapvalue);
                 }
-                var images = new ArrayList<BufferedImage>();
-                Arrays.asList(PanenPlanes.getComponents()).stream().forEach((t) -> {
-                    if (t instanceof ImagePreviewPanel Imgp) {
-                           images.add(Imgp.getImage());
-                    }
-                });
-                for (var pair : List) {
-                    if(!images.contains(pair.getRight())){
-                        var preview = new ImagePreviewPanel(pair.getLeft(), pair.getRight());
-                        PanenPlanes.add(preview);
-                        PanenPlanes.repaint();
-                        InvestigationTab.this.repaint();
-                    }
+                //note after this point avoid using ThumbsReferences use the mapvalue
+                if (mapvalue.getImage() == null) {
+                    mapvalue.SetImage(pair.getRight());
                 }
+                //redundant
+                //mapvalue.repaint();
+            }
+
+            PanenPlanes.invalidate();
+            PanenPlanes.repaint();
+            InvestigationTab.this.repaint();
+            if (Isfinish) {
+                pFooter.setFooterText(String.format("analysis Finish for: %s", Analyst.getSourceName()));
+                //Notify the Parent our work is done. 
+                setAvailable();
             }
         };
     }
@@ -118,7 +123,7 @@ public class InvestigationTab extends Tab {
         if (OtherFile == null) {
             return false;
         }
-        var path = Analist.getFilePath();
+        var path = Analyst.getFilePath();
         if (path != null) {
             path = path.toAbsolutePath();
             OtherFile = OtherFile.toAbsolutePath();
@@ -129,17 +134,26 @@ public class InvestigationTab extends Tab {
             }
             return result;
         } else {
-            return OtherFile.toAbsolutePath().toString().equals(Analist.getAnalisisSource());
+            return OtherFile.toAbsolutePath().toString().equals(Analyst.getAnalisisSource());
         }
     }
 
     public boolean IsAnalizing(URL OtherFile) {
-        return OtherFile.toString().equals(Analist.getAnalisisSource());
+        return OtherFile.toString().equals(Analyst.getAnalisisSource());
     }
 
     public void startAnalysis() {
-        if (!Analist.isDone()) {
-            Analist.execute();
+        if (!Analyst.isDone()) {
+            List<String> names = StegnoAnalysis.getAnalysisTransformationNames();
+            ThumbsReferences = new HashMap<>(names.size());
+            for (String name : names) {
+                var preview = new ImagePreviewPanel(name);
+                ThumbsReferences.put(name, preview);
+                PanenPlanes.add(preview);
+            }
+            PanenPlanes.repaint();
+            this.repaint();
+            Analyst.execute();
         }
     }
 
@@ -162,7 +176,7 @@ public class InvestigationTab extends Tab {
     private void SetTitleInternal(Path FilePath) {
         //assume the file is alredy non null. we are too deep if it is not a verification was missing before
         var Filename = FilePath.getFileName().toString().strip();
-        pFooter.setFooterText(String.format("analizing File: %s", Filename));
+        pFooter.setFooterText(String.format("analyzing File: %s", Filename));
         var extension = Filename;
         if (Filename != null && Filename.length() > 20) {
             var StartExtensionIndex = Filename.lastIndexOf('.');//get the file type
@@ -292,6 +306,7 @@ public class InvestigationTab extends Tab {
         SetCursorBusy();
         var oldstate = isBusy;
         isBusy = true;
+        pFooter.SetProgressIndeterminate();
         propertySupport.firePropertyChange(ChangePropertys.BUSY, oldstate, isBusy);
     }
 
@@ -299,15 +314,9 @@ public class InvestigationTab extends Tab {
     protected void setAvailable() {
         var oldstate = isBusy;
         isBusy = false;
+        pFooter.SetProgress(0);
         propertySupport.firePropertyChange(ChangePropertys.BUSY, oldstate, isBusy);
         ClearCursor();
-    }
-
-    private synchronized void fireTabSpecificPropertyChange(String propertyName, Object oldValue, Object newValue) {
-        //trigger OUR own property support. 
-        propertySupport.firePropertyChange(propertyName, oldValue, newValue);
-        //trigger on the UI general listeners. 
-        firePropertyChange(propertyName, oldValue, newValue);
     }
 
 }

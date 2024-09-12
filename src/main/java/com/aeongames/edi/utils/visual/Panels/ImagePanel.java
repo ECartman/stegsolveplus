@@ -170,6 +170,10 @@ public class ImagePanel extends javax.swing.JPanel {
         Objects.requireNonNull(policy, "Invalid Policy");
         ScalePolicy = policy;
     }
+    
+    public final boolean setImage(Image img){
+        return changeImage(img);
+    }
 
     /**
      * this method changes the image of the panel.

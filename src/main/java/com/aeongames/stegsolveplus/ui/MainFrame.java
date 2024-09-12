@@ -21,6 +21,7 @@ import java.awt.Image;
 import java.awt.dnd.DropTargetDragEvent;
 import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DropTargetEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.lang.reflect.InvocationTargetException;
@@ -54,7 +55,7 @@ import org.pushingpixels.radiance.theming.api.skin.RadianceNightShadeLookAndFeel
 public class MainFrame extends javax.swing.JFrame {
 
     /**
-     * TODO: remove
+     * counts the ammount of "busy tabs" that are currently registered.
      */
     private int BusyTabs;
     /**
@@ -66,11 +67,14 @@ public class MainFrame extends javax.swing.JFrame {
      */
     private DragAndDrop DragAndDrophelper;
 
+    private final PropertyChangeListener BusyStateCallback;
+
     /**
      * Creates new form MainFrame
      */
     public MainFrame() {
         BusyTabs = 0;
+        BusyStateCallback = getBusyStateCallback();
         initComponents();
         var image = MainFrame.class.getResource("/com/aeongames/stegsolveplus/ui/OIG3.jpg") == null
                 ? null : new javax.swing.ImageIcon(
@@ -79,6 +83,18 @@ public class MainFrame extends javax.swing.JFrame {
             this.setIconImage(image.getImage());
         }
         EnableDragAndDrop();
+    }
+
+    private PropertyChangeListener getBusyStateCallback() {
+        return (evt) -> {
+            if (evt.getPropertyName().equals(InvestigationTab.ChangePropertys.BUSY) && evt.getSource() instanceof InvestigationTab && evt.getNewValue() instanceof Boolean newvalue) {
+                if (!newvalue) {//not busy
+                    SetMenuStatus(--BusyTabs == 0);
+                } else {
+                    SetMenuStatus(newvalue);
+                }
+            }
+        };
     }
 
     /**
@@ -178,7 +194,7 @@ public class MainFrame extends javax.swing.JFrame {
     private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
         var currentTab = MainTabPane.getSelectedComponent();
         if (currentTab instanceof InvestigationTab ITab) {
-            ITab.startAnalysis();
+            /*      ITab.startAnalysis();*/
         }
     }//GEN-LAST:event_jMenuItem1ActionPerformed
 
@@ -286,12 +302,14 @@ public class MainFrame extends javax.swing.JFrame {
                 InvestigationTab tab = null;
                 try {
                     tab = new InvestigationTab(pathFile);
+                    tab.addBusyListener(BusyStateCallback);
                     BusyTabs++;
                 } catch (FileNotFoundException ex) {
                     LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "File fail to load. while creating the Tab", ex);
                 }
                 if (tab != null) {
                     MainTabPane.add(tab);
+                    MainTabPane.setSelectedComponent(tab);
                     if (getRootPane().getGlassPane() instanceof GlassFileDnDPanel panel) {
                         DragAndDrophelper.UnRegisterTarget(panel);
                     }
@@ -315,12 +333,14 @@ public class MainFrame extends javax.swing.JFrame {
                 InvestigationTab tab = null;
                 try {
                     tab = new InvestigationTab(file);
+                    tab.addBusyListener(BusyStateCallback);
                     BusyTabs++;
                 } catch (FileNotFoundException ex) {
                     LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "File fail to load. while creating the Tab", ex);
                 }
                 if (tab != null) {
-                    MainTabPane.add(tab);
+                    MainTabPane.add(tab);                    
+                    MainTabPane.setSelectedComponent(tab);
                     if (getRootPane().getGlassPane() instanceof GlassFileDnDPanel panel) {
                         DragAndDrophelper.UnRegisterTarget(panel);
                     }
@@ -366,7 +386,7 @@ public class MainFrame extends javax.swing.JFrame {
             LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "Could not invoke the UI", ex);
         }
     }
-    
+
     private boolean loadUrl(URL Link) {
         boolean Tabcreated = false;
         int tabindx;
@@ -376,12 +396,14 @@ public class MainFrame extends javax.swing.JFrame {
         InvestigationTab tab = null;
         try {
             tab = new InvestigationTab(Link);
+            tab.addBusyListener(BusyStateCallback);
             BusyTabs++;
         } catch (Exception ex) {
             LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "Link fail to load. while creating the Tab", ex);
         }
         if (tab != null) {
-            MainTabPane.add(tab);
+            MainTabPane.add(tab);            
+            MainTabPane.setSelectedComponent(tab);
             if (getRootPane().getGlassPane() instanceof GlassFileDnDPanel panel) {
                 DragAndDrophelper.UnRegisterTarget(panel);
             }
@@ -452,11 +474,13 @@ public class MainFrame extends javax.swing.JFrame {
 
             @Override
             public void NotifyFoundPaths(List<Path> fileList) {
+                //maybe we should disable if Busy Tabs > 0
                 ProcessDropedFiles(fileList);
             }
 
             @Override
             public void NotifyFoundUrl(URL link) {
+                //maybe we should disable if Busy Tabs > 0
                 ProcessDropedLinks(link);
             }
 
@@ -591,6 +615,6 @@ public class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenuItem jMenuItem1;
     // End of variables declaration//GEN-END:variables
-    // </editor-fold>  
 
+    // </editor-fold>  
 }
