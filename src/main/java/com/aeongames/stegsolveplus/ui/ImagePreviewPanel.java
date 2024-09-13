@@ -155,7 +155,7 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
         ? new ImagePanel()
         : new ImagePanel(ImageToPreview);
 
-        setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         setMinimumSize(new java.awt.Dimension(300, 270));
         setOpaque(false);
         setPreferredSize(new java.awt.Dimension(300, 300));
@@ -288,13 +288,11 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
     }//GEN-LAST:event_ImagePreviewPanelComponentResized
 
     private void ImagePreviewPanelMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ImagePreviewPanelMouseEntered
-        ImagePreviewPanel.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));        
-         getRootPane().setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+       ImagePreviewPanel.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR)); 
     }//GEN-LAST:event_ImagePreviewPanelMouseEntered
 
     private void ImagePreviewPanelMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ImagePreviewPanelMouseExited
-        ImagePreviewPanel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));        
-        getRootPane().setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        ImagePreviewPanel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
     }//GEN-LAST:event_ImagePreviewPanelMouseExited
 
 

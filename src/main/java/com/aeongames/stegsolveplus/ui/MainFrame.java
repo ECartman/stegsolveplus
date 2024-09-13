@@ -196,8 +196,8 @@ public class MainFrame extends javax.swing.JFrame {
         if (currentTab instanceof InvestigationTab ITab) {
             /*      ITab.startAnalysis();*/
         }
-         SetDefOSUI();
-         this.setVisible(true);
+        SetDefOSUI();
+        this.setVisible(true);
     }//GEN-LAST:event_jMenuItem1ActionPerformed
 
     /**
@@ -309,14 +309,7 @@ public class MainFrame extends javax.swing.JFrame {
                 } catch (FileNotFoundException ex) {
                     LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "File fail to load. while creating the Tab", ex);
                 }
-                if (tab != null) {
-                    MainTabPane.add(tab);
-                    MainTabPane.setSelectedComponent(tab);
-                    if (getRootPane().getGlassPane() instanceof GlassFileDnDPanel panel) {
-                        DragAndDrophelper.UnRegisterTarget(panel);
-                    }
-                    loadedTabs = true;// we might want to do something extra here. but this will do for now. 
-                }
+                loadedTabs = addTab(tab);
             }
         }
         return loadedTabs;
@@ -340,14 +333,7 @@ public class MainFrame extends javax.swing.JFrame {
                 } catch (FileNotFoundException ex) {
                     LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "File fail to load. while creating the Tab", ex);
                 }
-                if (tab != null) {
-                    MainTabPane.add(tab);                    
-                    MainTabPane.setSelectedComponent(tab);
-                    if (getRootPane().getGlassPane() instanceof GlassFileDnDPanel panel) {
-                        DragAndDrophelper.UnRegisterTarget(panel);
-                    }
-                    loadedTabs = true;// we might want to do something extra here. but this will do for now. 
-                }
+                loadedTabs = addTab(tab);
             } else {
                 LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.WARNING, "the Path {0} Does not exist, is not a File. or Cannot be Read", file.toString());
             }
@@ -388,9 +374,22 @@ public class MainFrame extends javax.swing.JFrame {
             LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "Could not invoke the UI", ex);
         }
     }
+     
+    private boolean addTab(InvestigationTab tab) {
+        boolean Tabcreated = false;        
+        if (tab != null) {
+            MainTabPane.add(tab);
+            MainTabPane.setSelectedComponent(tab);
+            if (getRootPane().getGlassPane() instanceof GlassFileDnDPanel panel) {
+                DragAndDrophelper.UnRegisterTarget(panel);
+                panel.setVisible(false);
+            }
+            Tabcreated = true;// we might want to do something extra here. but this will do for now. 
+        }
+        return Tabcreated;
+    }
 
-    private boolean loadUrl(URL Link) {
-        boolean Tabcreated = false;
+    private boolean loadUrl(URL Link) {       
         int tabindx;
         if ((tabindx = hasTabforLink(Link)) >= 0) {
             MainTabPane.setSelectedIndex(tabindx);
@@ -403,15 +402,7 @@ public class MainFrame extends javax.swing.JFrame {
         } catch (Exception ex) {
             LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "Link fail to load. while creating the Tab", ex);
         }
-        if (tab != null) {
-            MainTabPane.add(tab);            
-            MainTabPane.setSelectedComponent(tab);
-            if (getRootPane().getGlassPane() instanceof GlassFileDnDPanel panel) {
-                DragAndDrophelper.UnRegisterTarget(panel);
-            }
-            Tabcreated = true;// we might want to do something extra here. but this will do for now. 
-        }
-        return Tabcreated;
+        return addTab(tab);
     }
 
     private void SetMenuStatus(boolean status) {
@@ -444,64 +435,55 @@ public class MainFrame extends javax.swing.JFrame {
     }
 
     private void EnableDragAndDrop() {
-        if (DragAndDrophelper != null) {
-            if (getRootPane().getGlassPane().getClass() != GlassFileDnDPanel.class) {
-                var glasspane = new GlassFileDnDPanel(DragAndDrophelper);
-                DragAndDrophelper.RegisterTarget(glasspane);
-                getRootPane().setGlassPane(glasspane);
-                glasspane.setVisible(true);
-                glasspane.setInvisible(true);
-            } else {
-                //maybe consider updating the reference at the glasspane. 
-                DragAndDrophelper.RegisterTarget(getRootPane().getGlassPane());
-            }
-            return;
+        if (DragAndDrophelper == null) {
+            DragAndDrophelper = new DragAndDrop(JAeonTabPane.J_AEON_TAB_FLAVOR) {
+                @Override
+                public void triggerDragdetectedImp(DropTargetDragEvent dtde) {
+                    var source = dtde.getDropTargetContext().getComponent();
+                    if (source instanceof GlassFileDnDPanel panel) {
+                        panel.setInvisible(false);
+                    }
+                }
+
+                @Override
+                public void triggerDragExitImp(DropTargetEvent dte) {
+                    var source = dte.getDropTargetContext().getComponent();
+                    if (source instanceof GlassFileDnDPanel panel) {
+                        panel.setInvisible(true);
+                    }
+                }
+
+                @Override
+                public void NotifyFoundPaths(List<Path> fileList) {
+                    //maybe we should disable if Busy Tabs > 0
+                    ProcessDropedFiles(fileList);
+                }
+
+                @Override
+                public void NotifyFoundUrl(URL link) {
+                    //maybe we should disable if Busy Tabs > 0
+                    ProcessDropedLinks(link);
+                }
+
+                @Override
+                public void DropComplete(DropTargetDropEvent dtde) {
+                    var source = dtde.getDropTargetContext().getComponent();
+                    if (source instanceof GlassFileDnDPanel panel) {
+                        panel.setInvisible(true);
+                    }
+                }
+            };
         }
-        DragAndDrophelper = new DragAndDrop(JAeonTabPane.J_AEON_TAB_FLAVOR) {
-            @Override
-            public void triggerDragdetectedImp(DropTargetDragEvent dtde) {
-                var source = dtde.getDropTargetContext().getComponent();
-                if (source instanceof GlassFileDnDPanel panel) {
-                    panel.setInvisible(false);
-                }
-            }
-
-            @Override
-            public void triggerDragExitImp(DropTargetEvent dte) {
-                var source = dte.getDropTargetContext().getComponent();
-                if (source instanceof GlassFileDnDPanel panel) {
-                    panel.setInvisible(true);
-                }
-            }
-
-            @Override
-            public void NotifyFoundPaths(List<Path> fileList) {
-                //maybe we should disable if Busy Tabs > 0
-                ProcessDropedFiles(fileList);
-            }
-
-            @Override
-            public void NotifyFoundUrl(URL link) {
-                //maybe we should disable if Busy Tabs > 0
-                ProcessDropedLinks(link);
-            }
-
-            @Override
-            public void DropComplete(DropTargetDropEvent dtde) {
-                var source = dtde.getDropTargetContext().getComponent();
-                if (source instanceof GlassFileDnDPanel panel) {
-                    panel.setInvisible(true);
-                }
-            }
-        };
-
-        if (getRootPane().getGlassPane().getClass() != GlassFileDnDPanel.class) {
-            var glasspane = new GlassFileDnDPanel(DragAndDrophelper);
-            DragAndDrophelper.RegisterTarget(glasspane);
+        GlassFileDnDPanel glasspane;
+        if (getRootPane().getGlassPane() instanceof GlassFileDnDPanel glass) {
+            glasspane = glass;
+        } else {
+            glasspane = new GlassFileDnDPanel(DragAndDrophelper);
             getRootPane().setGlassPane(glasspane);
-            glasspane.setVisible(true);
-            glasspane.setInvisible(true);
         }
+        DragAndDrophelper.RegisterTarget(glasspane);
+        glasspane.setVisible(true);
+        glasspane.setInvisible(true);
         //also register *the Window so we can trigger DnD events from toolbar
         DragAndDrophelper.RegisterTarget(this);
     }
