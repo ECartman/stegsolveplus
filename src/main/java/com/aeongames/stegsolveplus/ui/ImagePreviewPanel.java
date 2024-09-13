@@ -15,21 +15,31 @@ package com.aeongames.stegsolveplus.ui;
 import com.aeongames.edi.utils.text.LabelText;
 import com.aeongames.edi.utils.visual.Panels.ImagePanel;
 import java.awt.CardLayout;
+import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.SwingUtilities;
+import javax.swing.event.AncestorEvent;
 
 /**
  *
  * @author cartman
  */
 public class ImagePreviewPanel extends javax.swing.JPanel {
-    private static final String THUMBNAIL="ImageView";
+
+    public static final String ThumbClickEvent = "ThumbClicked";
+    private static final String THUMBNAIL = "ImageView";
     private final String PreviewTitle;
     private BufferedImage ImageToPreview;
     private final CardLayout Layout;
 
     /**
      * Creates new form ImagePreviewPanel
+     *
      * @param Title the title to display
      */
     public ImagePreviewPanel(String Title) {
@@ -43,23 +53,83 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
         }
     }
 
-    public ImagePreviewPanel(String Title, BufferedImage Image){
-        ImageToPreview = Objects.requireNonNull(Image, "The provided image is null");
+    public ImagePreviewPanel(String Title, BufferedImage Image) {
+        final var img = Objects.requireNonNull(Image, "The provided image is null");
         PreviewTitle = Objects.requireNonNull(Title, "The title for the thumb is required and cannot be null");
+        var totalpix = img.getWidth() * img.getHeight();
+        if (totalpix >= 4000000) {
+            addAncestorListener(new javax.swing.event.AncestorListener() {
+                @Override
+                public void ancestorAdded(AncestorEvent event) {
+                }
+
+                @Override
+                public void ancestorRemoved(AncestorEvent event) {
+                }
+
+                @Override
+                public void ancestorMoved(AncestorEvent event) {
+                    SetImage(ImageToPreview);
+                    //we no longer need to listen to events. remove this listener
+                    removeAncestorListener(this);
+                }
+            });
+        } else {
+            ImageToPreview = img;
+        }
         initComponents();
         if (getLayout() instanceof CardLayout ly) {
             Layout = ly;
         } else {
             Layout = null;
         }
-        Layout.show(this,THUMBNAIL);
-    }    
-        
-    public void SetImage(BufferedImage img){
+        if (ImageToPreview != null) {
+            Layout.show(this, THUMBNAIL);
+        } else {
+            ImageToPreview = img;
+        }
+    }
+
+    public final void SetImage(BufferedImage img) {
         ImageToPreview = img;
-        ImagePreviewPanel.setImage(ImageToPreview);
-        Layout.show(this,THUMBNAIL);
-        repaint();
+        var totalpix = ImageToPreview.getWidth() * ImageToPreview.getHeight();
+        var acceptable = this.getWidth() * this.getHeight() * 1.50;
+        if (totalpix >= acceptable) {
+            new Thread(() -> {
+                double scalex = (double) (this.getWidth() * 1.50) / ImageToPreview.getWidth();
+                double scaley = (double) (this.getHeight() * 1.50) / ImageToPreview.getHeight();
+                BufferedImage tmp = scale(ImageToPreview, Math.min(scalex, scaley), AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
+                try {
+                    SwingUtilities.invokeAndWait(() -> {
+                        ImagePreviewPanel.setImage(tmp);
+                        Layout.show(this, THUMBNAIL);
+                        repaint();
+                    });
+                } catch (InterruptedException | InvocationTargetException ex) {
+                    Logger.getLogger(ImagePreviewPanel.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }, "Thumbnail Resize").start();
+            //if the image is  50%  or more than the size of this panel 
+            //for sake of performance lets Scale the image down to our acceptable region
+            //this also helps as the image will have its Raster untouch to be render.
+
+        } else {
+            ImagePreviewPanel.setImage(ImageToPreview);
+            Layout.show(this, THUMBNAIL);
+            repaint();
+        }
+    }
+
+    private static BufferedImage scale(final BufferedImage before, final double scale, final int type) {
+        int w = before.getWidth();
+        int h = before.getHeight();
+        int w2 = (int) (w * scale);
+        int h2 = (int) (h * scale);
+        BufferedImage after = new BufferedImage(w2, h2, before.getType());
+        AffineTransform scaleInstance = AffineTransform.getScaleInstance(scale, scale);
+        AffineTransformOp scaleOp = new AffineTransformOp(scaleInstance, type);
+        scaleOp.filter(before, after);
+        return after;
     }
 
     public BufferedImage getImage() {
@@ -85,6 +155,7 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
         ? new ImagePanel()
         : new ImagePanel(ImageToPreview);
 
+        setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
         setMinimumSize(new java.awt.Dimension(300, 270));
         setOpaque(false);
         setPreferredSize(new java.awt.Dimension(300, 300));
@@ -140,6 +211,7 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
 
         txtTitle.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         txtTitle.setText(PreviewTitle);
+        txtTitle.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -153,6 +225,23 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
         );
 
         ImagePreviewPanel.setOpaque(false);
+        ImagePreviewPanel.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                ImagePreviewPanelMouseClicked(evt);
+            }
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                ImagePreviewPanelMouseEntered(evt);
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                ImagePreviewPanelMouseExited(evt);
+            }
+        });
+        ImagePreviewPanel.addComponentListener(new java.awt.event.ComponentAdapter() {
+            public void componentResized(java.awt.event.ComponentEvent evt) {
+                ImagePreviewPanelComponentResized(evt);
+            }
+        });
+        ImagePreviewPanel.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
 
         javax.swing.GroupLayout ImagePreviewPanelLayout = new javax.swing.GroupLayout(ImagePreviewPanel);
         ImagePreviewPanel.setLayout(ImagePreviewPanelLayout);
@@ -184,8 +273,29 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void txtloadingComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_txtloadingComponentResized
-       txtloading.setText(LabelText.getTrimmedtoComponentsize(PreviewTitle,txtloading,200));
+        txtloading.setText(LabelText.getTrimmedtoComponentsize(PreviewTitle, txtloading, 200));
     }//GEN-LAST:event_txtloadingComponentResized
+
+    private void ImagePreviewPanelMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ImagePreviewPanelMouseClicked
+        if (evt.getClickCount() >= 2) {
+            evt.consume();
+            firePropertyChange(ThumbClickEvent, PreviewTitle, ImageToPreview);
+        }
+    }//GEN-LAST:event_ImagePreviewPanelMouseClicked
+
+    private void ImagePreviewPanelComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_ImagePreviewPanelComponentResized
+        //TO CONSIDER if the Resize is Major. Recalculate or create a new copy of the thumbnail for the ImagePanel
+    }//GEN-LAST:event_ImagePreviewPanelComponentResized
+
+    private void ImagePreviewPanelMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ImagePreviewPanelMouseEntered
+        ImagePreviewPanel.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));        
+         getRootPane().setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+    }//GEN-LAST:event_ImagePreviewPanelMouseEntered
+
+    private void ImagePreviewPanelMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ImagePreviewPanelMouseExited
+        ImagePreviewPanel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));        
+        getRootPane().setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+    }//GEN-LAST:event_ImagePreviewPanelMouseExited
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

@@ -55,7 +55,7 @@ import org.pushingpixels.radiance.theming.api.skin.RadianceNightShadeLookAndFeel
 public class MainFrame extends javax.swing.JFrame {
 
     /**
-     * counts the ammount of "busy tabs" that are currently registered.
+     * counts the amount of "busy tabs" that are currently registered.
      */
     private int BusyTabs;
     /**
@@ -196,6 +196,8 @@ public class MainFrame extends javax.swing.JFrame {
         if (currentTab instanceof InvestigationTab ITab) {
             /*      ITab.startAnalysis();*/
         }
+         SetDefOSUI();
+         this.setVisible(true);
     }//GEN-LAST:event_jMenuItem1ActionPerformed
 
     /**
@@ -520,7 +522,7 @@ public class MainFrame extends javax.swing.JFrame {
             }
         }
         this.revalidate();
-        // this.setVisible(true);
+        //this.setVisible(true);
     }
 
     private void setRadianceUI() {

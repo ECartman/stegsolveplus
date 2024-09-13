@@ -16,14 +16,14 @@
   <Layout>
     <DimensionLayout dim="0">
       <Group type="103" groupAlignment="0" attributes="0">
-          <Component id="jImageTabPane1" max="32767" attributes="0"/>
+          <Component id="AnalysisTabs" max="32767" attributes="0"/>
           <Component id="pFooter" alignment="0" pref="0" max="32767" attributes="0"/>
       </Group>
     </DimensionLayout>
     <DimensionLayout dim="1">
       <Group type="103" groupAlignment="0" attributes="0">
           <Group type="102" alignment="0" attributes="0">
-              <Component id="jImageTabPane1" max="32767" attributes="0"/>
+              <Component id="AnalysisTabs" max="32767" attributes="0"/>
               <EmptySpace min="-2" pref="0" max="-2" attributes="0"/>
               <Component id="pFooter" min="-2" max="-2" attributes="0"/>
           </Group>
@@ -31,12 +31,12 @@
     </DimensionLayout>
   </Layout>
   <SubComponents>
-    <Container class="com.aeongames.edi.utils.visual.Panels.JImageTabPane" name="jImageTabPane1">
+    <Container class="com.aeongames.edi.utils.visual.Panels.JImageTabPane" name="AnalysisTabs">
       <Properties>
         <Property name="tabPlacement" type="int" value="3"/>
       </Properties>
       <AccessibilityProperties>
-        <Property name="AccessibleContext.accessibleName" type="java.lang.String" value="Tabs for image analisis."/>
+        <Property name="AccessibleContext.accessibleName" type="java.lang.String" value=""/>
         <Property name="AccessibleContext.accessibleDescription" type="java.lang.String" value=""/>
       </AccessibilityProperties>
 
@@ -80,7 +80,7 @@
 
               <Layout class="org.netbeans.modules.form.compat2.layouts.support.JScrollPaneSupportLayout"/>
               <SubComponents>
-                <Container class="javax.swing.JPanel" name="PanenPlanes">
+                <Container class="javax.swing.JPanel" name="ThumbGridPanel">
 
                   <Layout class="org.netbeans.modules.form.compat2.layouts.DesignGridLayout">
                     <Property name="columns" type="int" value="3"/>

@@ -37,6 +37,8 @@ public class ImagePanel extends javax.swing.JPanel {
      * provided.
      */
     static final String DEF_LOGO = "/com/aeongames/stegsolveplus/ui/pexels-photo-7319068.jpeg";
+    
+    private static Image DefaultImageLoaded;
     /**
      * the image to be show or process.
      */
@@ -148,11 +150,15 @@ public class ImagePanel extends javax.swing.JPanel {
      * read and sets the default image for the panel.
      */
     private void readDefault() {
+        if(DefaultImageLoaded!=null){
+            this.RenderImage = DefaultImageLoaded;
+            return;
+        }
         try {
-            this.RenderImage = ImageIO.read(this.getClass().getResource(DEF_LOGO));
+            RenderImage = DefaultImageLoaded = ImageIO.read(this.getClass().getResource(DEF_LOGO));
         } catch (IOException ex) {
             try {
-                this.RenderImage = java.awt.Toolkit.getDefaultToolkit().getImage(this.getClass().getResource(DEF_LOGO));
+                this.RenderImage = DefaultImageLoaded = java.awt.Toolkit.getDefaultToolkit().getImage(this.getClass().getResource(DEF_LOGO));
             } catch (Exception sub) {
                 //we should print error if debug build. here. 
             }
