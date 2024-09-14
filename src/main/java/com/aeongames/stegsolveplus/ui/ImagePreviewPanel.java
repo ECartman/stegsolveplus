@@ -288,11 +288,9 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
     }//GEN-LAST:event_ImagePreviewPanelComponentResized
 
     private void ImagePreviewPanelMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ImagePreviewPanelMouseEntered
-       ImagePreviewPanel.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR)); 
     }//GEN-LAST:event_ImagePreviewPanelMouseEntered
 
     private void ImagePreviewPanelMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ImagePreviewPanelMouseExited
-        ImagePreviewPanel.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
     }//GEN-LAST:event_ImagePreviewPanelMouseExited
 
 

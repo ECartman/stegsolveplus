@@ -553,8 +553,15 @@ public abstract class DragAndDrop implements DropTargetListener {
      * prepares a file to be used. 
      * if the file exist and can be read. we will check if this file is a Temporal
      * file. if so we made a copy because the Source that Started the drag 
-     * of the image MAY OR MIGHTNOT Delete the file or overwrite. to avoid this
+     * of the image MAY OR MIGHT NOT Delete the file or overwrite. to avoid this
      * we will check if the image dragged is on the TMP folder. if so we make a copy
+     * <br>
+     * Performance Considerations: 
+     * this Function. unfortunately. requires to check if the File Exist and if it can be 
+     * read. this check can be slow due the need to check on the FileSystem.
+     * also given that the source Could remove the file upon return from the Drag
+     * and Drop action. it might be needed for us to held the Thread hostage.
+     * <br>
      * @param Potentialfile the file to analyze 
      * @return a Path that target the original file OR if the file is at the 
      * temporal folder a copy of that that we can use securely.

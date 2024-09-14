@@ -11,11 +11,13 @@
  */
 package com.aeongames.stegsolveplus.ui;
 
+import com.aeongames.edi.utils.data.Pair;
 import com.aeongames.edi.utils.error.LoggingHelper;
 import com.aeongames.edi.utils.visual.ImageScaleComponents;
 import com.aeongames.edi.utils.visual.Panels.JAeonTabPane;
 import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalysis;
 import com.aeongames.stegsolveplus.ui.tabcomponents.JStegnoTabbedPane;
+import java.awt.Color;
 import java.awt.IllegalComponentStateException;
 import java.awt.Image;
 import java.awt.dnd.DropTargetDragEvent;
@@ -23,15 +25,16 @@ import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DropTargetEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
+import java.util.concurrent.RecursiveTask;
 import java.util.logging.Level;
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
@@ -196,7 +199,8 @@ public class MainFrame extends javax.swing.JFrame {
         if (currentTab instanceof InvestigationTab ITab) {
             /*      ITab.startAnalysis();*/
         }
-        SetDefOSUI();
+        //SetDefOSUI();
+        SetNimbusUI();
         this.setVisible(true);
     }//GEN-LAST:event_jMenuItem1ActionPerformed
 
@@ -232,7 +236,11 @@ public class MainFrame extends javax.swing.JFrame {
 
     private void MOpenLinkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MOpenLinkActionPerformed
         SetMenuStatus(false);
-        var UIresponse = JOptionPane.showInputDialog(this, "Please Provide a Image Url to Load", "URL Request", JOptionPane.QUESTION_MESSAGE, new ImageIcon(this.getIconImage().getScaledInstance(50, 50, Image.SCALE_FAST), "AppIcon"), null, null);
+        var UIresponse = JOptionPane.showInputDialog(this,
+                "Please Provide a Image Url to Load",
+                "URL Request", JOptionPane.QUESTION_MESSAGE,
+                new ImageIcon(this.getIconImage().getScaledInstance(50, 50, Image.SCALE_FAST),
+                        "AppIcon"), null, null);
         var responce = UIresponse == null ? null : UIresponse.toString().strip();
         if (responce != null) {
             var matcher = DragAndDrop.URL_PATTERN.matcher(responce);
@@ -240,19 +248,16 @@ public class MainFrame extends javax.swing.JFrame {
                 URI uri = URI.create(responce);
                 var scheme = uri.getScheme();
                 if (scheme != null ? scheme.equalsIgnoreCase("file") : false) {
-                    //the URL is a File we should be able to open it with the 
-                    //filesystem 
-                    var list = new LinkedList<Path>();
+                    var list = new ArrayList<Path>();
                     list.add(Path.of(uri));
                     if (loadImages(list)) {
                         return;
                     }
                 } else {
                     try {
-                        if (!loadUrl(uri.toURL())) {
-                            SetMenuStatus(true);
+                        if (loadUrl(uri.toURL())) {
+                            return;
                         }
-                        return;
                     } catch (MalformedURLException ex) {
                         LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "unable to transform the URI to URL", ex);
                     }
@@ -292,53 +297,100 @@ public class MainFrame extends javax.swing.JFrame {
      * particular file
      */
     private boolean loadImages(File[] selecteddata) {
-        var loadedTabs = false;
+        var pathList= new ArrayList<Path>(selecteddata.length);
         for (var file : selecteddata) {
-            if (file.exists() && file.isFile() && file.canRead()) {
-                var pathFile = file.toPath();
-                int tabindx;
-                if ((tabindx = hasTabforFile(pathFile)) >= 0) {
-                    MainTabPane.setSelectedIndex(tabindx);
-                    continue;
-                }
-                InvestigationTab tab = null;
-                try {
-                    tab = new InvestigationTab(pathFile);
-                    tab.addBusyListener(BusyStateCallback);
-                    BusyTabs++;
-                } catch (FileNotFoundException ex) {
-                    LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "File fail to load. while creating the Tab", ex);
-                }
-                loadedTabs = addTab(tab);
-            }
+            pathList.add(file.toPath());
         }
-        return loadedTabs;
+        return loadImages(pathList);
     }
 
     private boolean loadImages(List<Path> FileList) {
-        var loadedTabs = false;
-        for (var file : FileList) {
-            //TODO: this check COULD take some time IF the file is on Network or slow HDD... maybe we should consider doing this in parallel
-            if (Files.exists(file) && Files.isRegularFile(file) && Files.isReadable(file)) {
-                int tabindx;
-                if ((tabindx = hasTabforFile(file)) >= 0) {
-                    MainTabPane.setSelectedIndex(tabindx);
-                    continue;
-                }
-                InvestigationTab tab = null;
-                try {
-                    tab = new InvestigationTab(file);
-                    tab.addBusyListener(BusyStateCallback);
-                    BusyTabs++;
-                } catch (FileNotFoundException ex) {
-                    LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "File fail to load. while creating the Tab", ex);
-                }
-                loadedTabs = addTab(tab);
-            } else {
-                LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.WARNING, "the Path {0} Does not exist, is not a File. or Cannot be Read", file.toString());
+        //do the fast check if already has a tab avail 
+        for (var iterator = FileList.iterator(); iterator.hasNext();) {
+            Path next = iterator.next();
+            if (CheckIfTabForPathExist(next)) {
+                iterator.remove();
             }
         }
-        return loadedTabs;
+        if (FileList.isEmpty()) {
+            return false;
+        }
+        final var taskStack = new Stack<RecursiveTask<Pair<Path, Boolean>>>();
+        for (final var file : FileList) {
+            taskStack.push(new RecursiveTask<Pair<Path, Boolean>>() {
+                @Override
+                protected Pair<Path, Boolean> compute() {
+                    var created = new Pair<>(file,
+                            Files.exists(file)
+                            && Files.isRegularFile(file)
+                            && Files.isReadable(file));
+                    return created;
+                }
+            }).fork();
+        }
+        if (taskStack.isEmpty()) {
+            return false;
+        }
+        new Thread(() -> {
+            while (!taskStack.isEmpty()) {
+                final var Checkresult = taskStack.pop().join();
+                if (Checkresult.getRight()) {
+                    try {
+                        SwingUtilities.invokeAndWait(() -> {
+                            newFileTab(Checkresult.getLeft());
+                        });
+                    } catch (InterruptedException | InvocationTargetException ex) {
+                        LoggingHelper.getLogger(MainFrame.class.getName())
+                                .log(Level.INFO, "UI interrupted or error on call", ex);
+                    }
+                }
+            }
+            SwingUtilities.invokeLater(() -> {
+                SetMenuStatus(BusyTabs == 0);
+            });
+        }).start();
+        return true;
+    }
+
+    /**
+     * checks if there is already a Tab for the provided Path. if there is
+     * changes the focus to that Tab.
+     *
+     * @param file the path to check
+     * @return true if found false otherwise.
+     */
+    private boolean CheckIfTabForPathExist(final Path file) {
+        int tabindx;
+        if ((tabindx = hasTabforFile(file)) >= 0) {
+            MainTabPane.setSelectedIndex(tabindx);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Creates a new Tab for the specified Path. we assume the path:
+     * <pre>
+     * is not null.
+     * is valid path
+     * the underline file exist
+     * the underline file can be read
+     * </pre>
+     *
+     * @param file the path to use on analysis.
+     * @return true if the tab was sucessfully created false otherwise.
+     */
+    private boolean newFileTab(final Path file) {
+        var success = false;
+        if (Files.exists(file) && Files.isRegularFile(file) && Files.isReadable(file)) {
+            InvestigationTab tab = new InvestigationTab(file);
+            tab.addBusyListener(BusyStateCallback);
+            BusyTabs++;
+            success = addTab(tab);
+        } else {
+            LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.WARNING, "the Path {0} Does not exist, is not a File. or Cannot be Read", file.toString());
+        }
+        return success;
     }
 
     private void ProcessDropedFiles(final List<Path> FileList) {
@@ -374,9 +426,9 @@ public class MainFrame extends javax.swing.JFrame {
             LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "Could not invoke the UI", ex);
         }
     }
-     
+
     private boolean addTab(InvestigationTab tab) {
-        boolean Tabcreated = false;        
+        boolean Tabcreated = false;
         if (tab != null) {
             MainTabPane.add(tab);
             MainTabPane.setSelectedComponent(tab);
@@ -389,19 +441,16 @@ public class MainFrame extends javax.swing.JFrame {
         return Tabcreated;
     }
 
-    private boolean loadUrl(URL Link) {       
+    private boolean loadUrl(URL Link) {
         int tabindx;
         if ((tabindx = hasTabforLink(Link)) >= 0) {
             MainTabPane.setSelectedIndex(tabindx);
+            return false;
         }
         InvestigationTab tab = null;
-        try {
-            tab = new InvestigationTab(Link);
-            tab.addBusyListener(BusyStateCallback);
-            BusyTabs++;
-        } catch (Exception ex) {
-            LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "Link fail to load. while creating the Tab", ex);
-        }
+        tab = new InvestigationTab(Link);
+        tab.addBusyListener(BusyStateCallback);
+        BusyTabs++;
         return addTab(tab);
     }
 
@@ -488,45 +537,56 @@ public class MainFrame extends javax.swing.JFrame {
         DragAndDrophelper.RegisterTarget(this);
     }
 
-    private void SetDefOSUI() {
-        this.setVisible(false);
-        dispose();
-        trySetLaFByName(UIManager.getSystemLookAndFeelClassName());
-        javax.swing.SwingUtilities.updateComponentTreeUI(this);
-        if (!UIManager.getLookAndFeel().getSupportsWindowDecorations()) {
-            try {
-                setUndecorated(false);
-            } catch (IllegalComponentStateException err) {
-            }
-            try {
-                getRootPane().setWindowDecorationStyle(JRootPane.NONE);
-            } catch (IllegalComponentStateException err) {
+    private void SetNimbusUI() {
+        for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+            if ("Nimbus".equals(info.getName())) {
+                //nimbus dark mode.
+                UIManager.put("control", new Color(128, 128, 128));
+                UIManager.put("info", new Color(128, 128, 128));
+                UIManager.put("nimbusBase", new Color(18, 30, 49));
+                UIManager.put("nimbusAlertYellow", new Color(248, 187, 0));
+                UIManager.put("nimbusDisabledText", new Color(128, 128, 128));
+                UIManager.put("nimbusFocus", new Color(115, 164, 209));
+                UIManager.put("nimbusGreen", new Color(176, 179, 50));
+                UIManager.put("nimbusInfoBlue", new Color(66, 139, 221));
+                UIManager.put("nimbusLightBackground", new Color(18, 30, 49));
+                UIManager.put("nimbusOrange", new Color(191, 98, 4));
+                UIManager.put("nimbusRed", new Color(169, 46, 34));
+                UIManager.put("nimbusSelectedText", new Color(255, 255, 255));
+                UIManager.put("nimbusSelectionBackground", new Color(104, 93, 156));
+                UIManager.put("text", new Color(230, 230, 230));
+                SetUIClass(info.getClassName());
+                break;
             }
         }
-        this.revalidate();
+    }
+
+    private void SetDefOSUI() {
+        this.setVisible(false);
+        SetUIClass(UIManager.getSystemLookAndFeelClassName());
         //this.setVisible(true);
     }
 
     private void setRadianceUI() {
         this.setVisible(false);
+        SetUIClass(RadianceNightShadeLookAndFeel.class.getName());
+        this.setVisible(true);
+    }
+
+    private void SetUIClass(String Name) {
         dispose();
-        trySetLaFByName(RadianceNightShadeLookAndFeel.class.getName());
+        trySetLaFByName(Name);
         javax.swing.SwingUtilities.updateComponentTreeUI(this);
-        if (!UIManager.getLookAndFeel().getSupportsWindowDecorations()) {
-            try {
-                setUndecorated(false);
-            } catch (IllegalComponentStateException err) {
-            }
-            try {
-                getRootPane().setWindowDecorationStyle(JRootPane.NONE);
-            } catch (IllegalComponentStateException err) {
-            }
-        } else {
-            setUndecorated(true);
-            getRootPane().setWindowDecorationStyle(JRootPane.FRAME);
+        var supdeco = UIManager.getLookAndFeel().getSupportsWindowDecorations();
+        try {
+            setUndecorated(supdeco);
+        } catch (IllegalComponentStateException err) {
+        }
+        try {
+            getRootPane().setWindowDecorationStyle(supdeco ? JRootPane.FRAME : JRootPane.NONE);
+        } catch (IllegalComponentStateException err) {
         }
         this.revalidate();
-        this.setVisible(true);
     }
 
     // <editor-fold defaultstate="collapsed" desc="Start Up Functions">

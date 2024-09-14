@@ -109,7 +109,7 @@ public class StegnoAnalysis extends SwingWorker<List<Pair<String, BufferedImage>
         return File;
     }
 
-    public String getAnalisisSource() {
+    public String getAnalysisSource() {
         if (File != null) {
             return File.toString();
         } else {
@@ -585,6 +585,7 @@ public class StegnoAnalysis extends SwingWorker<List<Pair<String, BufferedImage>
             list.addAll(stackListResult.pop().join());
         }
         loger.log(Level.INFO, "done");
+        System.gc();
         return list;
     }
 
@@ -613,7 +614,7 @@ public class StegnoAnalysis extends SwingWorker<List<Pair<String, BufferedImage>
             loger.log(Level.INFO, "StegnoAnalysis Done, Calling back");
             callBack.accept(true, get());
         } catch (InterruptedException ex) {
-            loger.log(Level.SEVERE, "this should not happend at Done", ex);
+            loger.log(Level.SEVERE, "Task was Cancelled. or interrupted.", ex);
         } catch (ExecutionException ex) {
             //TODO add a callback if error.
             loger.log(Level.SEVERE, "an error happend during execution", ex.getCause());

@@ -20,8 +20,6 @@ import com.aeongames.stegsolveplus.ui.tabcomponents.TabClose;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -38,38 +36,31 @@ import java.util.function.BiConsumer;
 public class InvestigationTab extends Tab {
 
     public final class ChangePropertys {
+
         public static final String BUSY = "BUSY";
         public static final String STATEINFO = "STATE_STRING";
     }
     private boolean isBusy = true;
     private final StegnoAnalysis Analyst;
     private HashMap<String, ImagePreviewPanel> ThumbsReferences;
-    /**
-     * for now use a PropertyChangeListener, this Object is to be notified for
-     * changes on the sate of this tab. (loads data, is done is idle, etc...)
-     */
-    private final PropertyChangeSupport propertySupport; 
     private final PropertyChangeListener ThumbClickListener;
     private final BiConsumer<Boolean, List<Pair<String, BufferedImage>>> Callback;
 
     /**
-     * Creates new form InvestigationTab the path might be a non working file
-     * for our needs we need to check its CONTENT not the type or extension
-     * because the image can still be a image.
+     * Creates new form InvestigationTab
+     * <strong> we Assume that the {@code FilePath} is NOT null and can be read
+     * </strong>
+     * thus the Caller need to make the check prior calling this constructor.
+     * otherwise the Analysis might Fail
      *
-     * @param FilePath the filePath to investigate
-     * @throws java.io.FileNotFoundException
+     * @param FilePath the filePath to investigate we assume it is not null
      */
-    public InvestigationTab(Path FilePath) throws FileNotFoundException {
+    public InvestigationTab(Path FilePath) {
         FilePath = Objects.requireNonNull(FilePath, "provided path is null");
-        propertySupport = new PropertyChangeSupport(this);
-        if (!Files.exists(FilePath)) {
-            throw new FileNotFoundException("the provided path is invalid");
-        }
         initComponents();
         SetTitleInternal(FilePath);
         Callback = getCallback();
-        ThumbClickListener= generateThumbReader();
+        ThumbClickListener = generateThumbReader();
         Analyst = new StegnoAnalysis(Callback, FilePath);
         pFooter.SetProgressIndeterminate();
         startAnalysis();
@@ -77,27 +68,25 @@ public class InvestigationTab extends Tab {
 
     public InvestigationTab(URL Link) {
         Link = Objects.requireNonNull(Link, "provided Link is null");
-        propertySupport = new PropertyChangeSupport(this);
         initComponents();
         SetTitleInternal(Link);
         Callback = getCallback();
-        ThumbClickListener= generateThumbReader();
+        ThumbClickListener = generateThumbReader();
         Analyst = new StegnoAnalysis(Callback, Link);
         pFooter.SetProgressIndeterminate();
         startAnalysis();
     }
-    
-        
-    private PropertyChangeListener generateThumbReader(){
+
+    private PropertyChangeListener generateThumbReader() {
         return (evt) -> {
-            if(evt.getPropertyName().equals( ImagePreviewPanel.ThumbClickEvent)){
-                if(evt.getSource() instanceof ImagePreviewPanel source){
+            if (evt.getPropertyName().equals(ImagePreviewPanel.ThumbClickEvent)) {
+                if (evt.getSource() instanceof ImagePreviewPanel) {
                     var closeComponent = new TabClose(AnalysisTabs);
-                    AnalysisTabs.addTab(evt.getOldValue().toString(),new ImagePanel((Image) evt.getNewValue()));
-                    AnalysisTabs.setTabComponentAt(AnalysisTabs.getTabCount()-1, closeComponent);
-                    AnalysisTabs.setSelectedIndex(AnalysisTabs.getTabCount()-1);
+                    AnalysisTabs.addTab(evt.getOldValue().toString(), new ImagePanel((Image) evt.getNewValue()));
+                    AnalysisTabs.setTabComponentAt(AnalysisTabs.getTabCount() - 1, closeComponent);
+                    AnalysisTabs.setSelectedIndex(AnalysisTabs.getTabCount() - 1);
                     //update the information on the component.
-                    closeComponent.Update(AnalysisTabs.getTabCount()-1);
+                    closeComponent.Update(AnalysisTabs.getTabCount() - 1);
                 }
             }
         };
@@ -116,7 +105,7 @@ public class InvestigationTab extends Tab {
                     //this is a thumb that does not require a specific order so
                     //can be added at the end of the UI list
                     mapvalue = new ImagePreviewPanel(pair.getLeft(), pair.getRight());
-                    mapvalue.addPropertyChangeListener(ImagePreviewPanel.ThumbClickEvent,ThumbClickListener);
+                    mapvalue.addPropertyChangeListener(ImagePreviewPanel.ThumbClickEvent, ThumbClickListener);
                     ThumbsReferences.put(pair.getLeft(), mapvalue);
                     ThumbGridPanel.add(mapvalue);
                 }
@@ -127,7 +116,7 @@ public class InvestigationTab extends Tab {
                 //redundant
                 //mapvalue.repaint();
             }
-
+            List.clear();
             ThumbGridPanel.invalidate();
             ThumbGridPanel.repaint();
             InvestigationTab.this.repaint();
@@ -154,12 +143,12 @@ public class InvestigationTab extends Tab {
             }
             return result;
         } else {
-            return OtherFile.toAbsolutePath().toString().equals(Analyst.getAnalisisSource());
+            return OtherFile.toAbsolutePath().toString().equals(Analyst.getAnalysisSource());
         }
     }
 
     public boolean IsAnalizing(URL OtherFile) {
-        return OtherFile.toString().equals(Analyst.getAnalisisSource());
+        return OtherFile.toString().equals(Analyst.getAnalysisSource());
     }
 
     public void startAnalysis() {
@@ -168,7 +157,7 @@ public class InvestigationTab extends Tab {
             ThumbsReferences = new HashMap<>(names.size());
             for (String name : names) {
                 var preview = new ImagePreviewPanel(name);
-                preview.addPropertyChangeListener(ImagePreviewPanel.ThumbClickEvent,ThumbClickListener);
+                preview.addPropertyChangeListener(ImagePreviewPanel.ThumbClickEvent, ThumbClickListener);
                 ThumbsReferences.put(name, preview);
                 ThumbGridPanel.add(preview);
             }
@@ -178,22 +167,14 @@ public class InvestigationTab extends Tab {
         }
     }
 
-    public void addListener(PropertyChangeListener listener) {
-        propertySupport.addPropertyChangeListener(listener);
-    }
-
     public void addBusyListener(PropertyChangeListener listener) {
-        propertySupport.addPropertyChangeListener(ChangePropertys.BUSY, listener);
+        addPropertyChangeListener(ChangePropertys.BUSY, listener);
     }
 
     public void removeBusyListener(PropertyChangeListener listener) {
-        propertySupport.removePropertyChangeListener(ChangePropertys.BUSY, listener);
+        removePropertyChangeListener(ChangePropertys.BUSY, listener);
     }
-
-    public void removeListener(PropertyChangeListener listener) {
-        propertySupport.removePropertyChangeListener(listener);
-    }
-
+    
     private void SetTitleInternal(Path FilePath) {
         //assume the file is alredy non null. we are too deep if it is not a verification was missing before
         var Filename = FilePath.getFileName().toString().strip();
@@ -316,7 +297,17 @@ public class InvestigationTab extends Tab {
     //TODO::do the actual cleanup. pop if wants to keep work open?
     @Override
     public boolean Close(boolean force) {
-        // Analist.clear? ;
+        if (!Analyst.isDone() && !Analyst.isCancelled()) {
+            Analyst.cancel(true);
+        }
+        /*
+        try {
+            Analyst.get();
+        } catch (InterruptedException | ExecutionException ex) {
+            LoggingHelper.getLogger(InvestigationTab.class.getName())
+                    .log(Level.INFO, "Exception on Results, This might be expected", ex);
+        }*/
+        System.gc();
         return true;
     }
 
@@ -326,7 +317,7 @@ public class InvestigationTab extends Tab {
         var oldstate = isBusy;
         isBusy = true;
         pFooter.SetProgressIndeterminate();
-        propertySupport.firePropertyChange(ChangePropertys.BUSY, oldstate, isBusy);
+        firePropertyChange(ChangePropertys.BUSY, oldstate, isBusy);
     }
 
     @Override
@@ -334,8 +325,8 @@ public class InvestigationTab extends Tab {
         var oldstate = isBusy;
         isBusy = false;
         pFooter.SetProgress(0);
-        propertySupport.firePropertyChange(ChangePropertys.BUSY, oldstate, isBusy);
+        firePropertyChange(ChangePropertys.BUSY, oldstate, isBusy);
         ClearCursor();
     }
-    
+
 }
