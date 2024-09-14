@@ -13,6 +13,8 @@
 package com.aeongames.stegsolveplus.ui;
 
 import com.aeongames.edi.utils.data.Pair;
+import com.aeongames.edi.utils.error.ErrorData;
+import com.aeongames.edi.utils.visual.Panels.ErrorGlassPane;
 import com.aeongames.edi.utils.visual.Panels.ImagePanel;
 import com.aeongames.stegsolveplus.ui.tabcomponents.Tab;
 import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalysis;
@@ -63,7 +65,7 @@ public class InvestigationTab extends Tab {
         ThumbClickListener = generateThumbReader();
         Analyst = new StegnoAnalysis(Callback, FilePath);
         pFooter.SetProgressIndeterminate();
-        startAnalysis();
+        prepareAnalysis();
     }
 
     public InvestigationTab(URL Link) {
@@ -74,7 +76,7 @@ public class InvestigationTab extends Tab {
         ThumbClickListener = generateThumbReader();
         Analyst = new StegnoAnalysis(Callback, Link);
         pFooter.SetProgressIndeterminate();
-        startAnalysis();
+        prepareAnalysis();
     }
 
     private PropertyChangeListener generateThumbReader() {
@@ -96,6 +98,17 @@ public class InvestigationTab extends Tab {
         return (Isfinish, List) -> {
             if (List == null && Isfinish) {
                 //fail. TODO: add the means to read error from the process.
+                ThumbGridPanel.removeAll();                
+                var err = new ErrorGlassPane(new ErrorData("Error Loading file.", Analyst.exceptionNow().getMessage(), Analyst.exceptionNow()));                
+                ThumbGridPanel.add(err);
+                ThumbGridPanel.setLayout(new javax.swing.BoxLayout(ThumbGridPanel, javax.swing.BoxLayout.PAGE_AXIS));
+                err.setVisible(true);
+                ThumbGridPanel.invalidate();
+                ThumbGridPanel.repaint();
+                pFooter.setFooterText(String.format("analysis Finish with errors for: %s", Analyst.getSourceName()));
+                //Notify the Parent our work is done. 
+                setAvailable();
+                return;
             } else if (List == null || (List.isEmpty() && !Isfinish)) {
                 return;//null or empty is notified. nothing to do. 
             }
@@ -151,18 +164,19 @@ public class InvestigationTab extends Tab {
         return OtherFile.toString().equals(Analyst.getAnalysisSource());
     }
 
+    private void prepareAnalysis() {
+        List<String> names = StegnoAnalysis.getAnalysisTransformationNames();
+        ThumbsReferences = new HashMap<>(names.size());
+        for (String name : names) {
+            var preview = new ImagePreviewPanel(name);
+            preview.addPropertyChangeListener(ImagePreviewPanel.ThumbClickEvent, ThumbClickListener);
+            ThumbsReferences.put(name, preview);
+            ThumbGridPanel.add(preview);
+        }
+    }
+
     public void startAnalysis() {
         if (!Analyst.isDone()) {
-            List<String> names = StegnoAnalysis.getAnalysisTransformationNames();
-            ThumbsReferences = new HashMap<>(names.size());
-            for (String name : names) {
-                var preview = new ImagePreviewPanel(name);
-                preview.addPropertyChangeListener(ImagePreviewPanel.ThumbClickEvent, ThumbClickListener);
-                ThumbsReferences.put(name, preview);
-                ThumbGridPanel.add(preview);
-            }
-            ThumbGridPanel.repaint();
-            this.repaint();
             Analyst.execute();
         }
     }
@@ -174,7 +188,7 @@ public class InvestigationTab extends Tab {
     public void removeBusyListener(PropertyChangeListener listener) {
         removePropertyChangeListener(ChangePropertys.BUSY, listener);
     }
-    
+
     private void SetTitleInternal(Path FilePath) {
         //assume the file is alredy non null. we are too deep if it is not a verification was missing before
         var Filename = FilePath.getFileName().toString().strip();
@@ -245,6 +259,12 @@ public class InvestigationTab extends Tab {
         ThumbGridPanel = new javax.swing.JPanel();
         pFooter = new com.aeongames.stegsolveplus.ui.Footer();
 
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            public void componentShown(java.awt.event.ComponentEvent evt) {
+                formComponentShown(evt);
+            }
+        });
+
         AnalysisTabs.setTabPlacement(javax.swing.JTabbedPane.BOTTOM);
 
         jPanel1.setOpaque(false);
@@ -286,6 +306,11 @@ public class InvestigationTab extends Tab {
         AnalysisTabs.getAccessibleContext().setAccessibleName("");
         AnalysisTabs.getAccessibleContext().setAccessibleDescription("");
     }// </editor-fold>//GEN-END:initComponents
+
+    private void formComponentShown(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentShown
+        startAnalysis();
+    }//GEN-LAST:event_formComponentShown
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private com.aeongames.edi.utils.visual.Panels.JImageTabPane AnalysisTabs;
     private javax.swing.JPanel ThumbGridPanel;

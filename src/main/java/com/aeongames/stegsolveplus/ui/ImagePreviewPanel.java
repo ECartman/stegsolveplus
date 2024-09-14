@@ -229,12 +229,6 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 ImagePreviewPanelMouseClicked(evt);
             }
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                ImagePreviewPanelMouseEntered(evt);
-            }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                ImagePreviewPanelMouseExited(evt);
-            }
         });
         ImagePreviewPanel.addComponentListener(new java.awt.event.ComponentAdapter() {
             public void componentResized(java.awt.event.ComponentEvent evt) {
@@ -286,12 +280,6 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
     private void ImagePreviewPanelComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_ImagePreviewPanelComponentResized
         //TO CONSIDER if the Resize is Major. Recalculate or create a new copy of the thumbnail for the ImagePanel
     }//GEN-LAST:event_ImagePreviewPanelComponentResized
-
-    private void ImagePreviewPanelMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ImagePreviewPanelMouseEntered
-    }//GEN-LAST:event_ImagePreviewPanelMouseEntered
-
-    private void ImagePreviewPanelMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ImagePreviewPanelMouseExited
-    }//GEN-LAST:event_ImagePreviewPanelMouseExited
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

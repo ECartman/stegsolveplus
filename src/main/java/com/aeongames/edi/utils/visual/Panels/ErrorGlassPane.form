@@ -23,7 +23,7 @@
   <Layout>
     <DimensionLayout dim="0">
       <Group type="103" groupAlignment="0" attributes="0">
-          <Component id="translucentpanel1" alignment="0" pref="483" max="32767" attributes="0"/>
+          <Component id="translucentpanel1" alignment="0" max="32767" attributes="0"/>
       </Group>
     </DimensionLayout>
     <DimensionLayout dim="1">
@@ -164,7 +164,7 @@
                         </Property>
                         <Property name="horizontalAlignment" type="int" value="0"/>
                         <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-                          <Image iconType="3" name="/com/aeongames/hp/descriptor/Resources/Images/no.png"/>
+                          <Image iconType="3" name="/com/aeongames/stegsolveplus/ui/reporterr.png"/>
                         </Property>
                         <Property name="text" type="java.lang.String" value="Error"/>
                         <Property name="toolTipText" type="java.lang.String" value="Error on Execution"/>
@@ -185,7 +185,7 @@
                     <Component class="javax.swing.JLabel" name="jLabel2">
                       <Properties>
                         <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-                          <Image iconType="3" name="/com/aeongames/hp/descriptor/Resources/Images/error.png"/>
+                          <Image iconType="3" name="/com/aeongames/stegsolveplus/ui/error.png"/>
                         </Property>
                       </Properties>
                     </Component>
@@ -203,7 +203,7 @@
                               <Group type="102" alignment="0" attributes="0">
                                   <EmptySpace max="-2" attributes="0"/>
                                   <Component id="jLabel1" min="-2" max="-2" attributes="0"/>
-                                  <EmptySpace pref="243" max="32767" attributes="0"/>
+                                  <EmptySpace pref="236" max="32767" attributes="0"/>
                               </Group>
                           </Group>
                         </DimensionLayout>
@@ -217,7 +217,7 @@
                         <Component class="javax.swing.JLabel" name="jLabel1">
                           <Properties>
                             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-                              <Image iconType="3" name="/com/aeongames/hp/descriptor/Resources/Images/rightarrow.png"/>
+                              <Image iconType="3" name="/com/aeongames/stegsolveplus/ui/rightarrow.png"/>
                             </Property>
                             <Property name="text" type="java.lang.String" value="Click Here To Show Error Stack"/>
                           </Properties>

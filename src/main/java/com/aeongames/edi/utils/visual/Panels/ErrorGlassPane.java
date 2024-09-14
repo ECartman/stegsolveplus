@@ -114,7 +114,7 @@ public class ErrorGlassPane extends javax.swing.JPanel {
 
         LbErrorTittle.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
         LbErrorTittle.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        LbErrorTittle.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/hp/descriptor/Resources/Images/no.png"))); // NOI18N
+        LbErrorTittle.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/reporterr.png"))); // NOI18N
         LbErrorTittle.setText("Error");
         LbErrorTittle.setToolTipText("Error on Execution");
         if(errdata!=null&&errdata.getErrorTittle()!=null){
@@ -133,7 +133,7 @@ public class ErrorGlassPane extends javax.swing.JPanel {
             }
         });
 
-        jLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/hp/descriptor/Resources/Images/error.png"))); // NOI18N
+        jLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/error.png"))); // NOI18N
 
         jPanel5.setOpaque(false);
         jPanel5.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -142,7 +142,7 @@ public class ErrorGlassPane extends javax.swing.JPanel {
             }
         });
 
-        jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/hp/descriptor/Resources/Images/rightarrow.png"))); // NOI18N
+        jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/rightarrow.png"))); // NOI18N
         jLabel1.setText("Click Here To Show Error Stack");
         jLabel1.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -157,7 +157,7 @@ public class ErrorGlassPane extends javax.swing.JPanel {
             .addGroup(jPanel5Layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jLabel1)
-                .addContainerGap(243, Short.MAX_VALUE))
+                .addContainerGap(236, Short.MAX_VALUE))
         );
         jPanel5Layout.setVerticalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -247,7 +247,7 @@ public class ErrorGlassPane extends javax.swing.JPanel {
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(translucentpanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 483, Short.MAX_VALUE)
+            .addComponent(translucentpanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -256,7 +256,8 @@ public class ErrorGlassPane extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void closebtActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_closebtActionPerformed
-        setVisible(false);
+        //setVisible(false);
+        //TODO: this might require to do a callback to something else.
     }//GEN-LAST:event_closebtActionPerformed
 
     private void jLabel1ShowStack(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel1ShowStack
@@ -275,7 +276,7 @@ public class ErrorGlassPane extends javax.swing.JPanel {
 
     private void translucentpanel1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_translucentpanel1MouseClicked
         if (evt.getButton() == MouseEvent.BUTTON1 && evt.getClickCount() >= 1) {
-            setVisible(false);
+            //setVisible(false);
             evt.consume();
         }
     }//GEN-LAST:event_translucentpanel1MouseClicked

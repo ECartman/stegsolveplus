@@ -91,6 +91,7 @@ public class CanvasContainer {
     CanvasContainer(Path Source) throws IOException {
         Objects.requireNonNull(Source, "the path is null");
         originalImage = ImageIO.read(Source.toFile());
+        check(originalImage);
     }
 
     /**
@@ -102,6 +103,7 @@ public class CanvasContainer {
     CanvasContainer(URL Source) throws IOException {
         Objects.requireNonNull(Source, "the path is null");
         originalImage = ImageIO.read(Source);
+        check(originalImage);
     }
 
     /**
@@ -113,6 +115,7 @@ public class CanvasContainer {
     CanvasContainer(InputStream ImageStream) throws IOException {
         Objects.requireNonNull(ImageStream, "the path is null");
         originalImage = ImageIO.read(ImageStream);
+        check(originalImage);
     }
 
     /**
@@ -128,8 +131,13 @@ public class CanvasContainer {
         Objects.requireNonNull(SourceToClone, "the Source Image is null");
         originalImage = getCloneofImage(SourceToClone);
     }
-    // </editor-fold>
 
+    private void check(BufferedImage originalImage) throws IOException {
+        if (null == originalImage) {
+            throw new IOException(new NullPointerException("The Image Cannot be Read, either there is not supported reader or the file is Not a image or corrupted"));
+        }
+    }
+    // </editor-fold>
     // <editor-fold defaultstate="collapsed" desc="create empty image"> 
     /**
      * creates a new BufferedImage that support ARGB wit the same dimensions as
@@ -192,6 +200,11 @@ public class CanvasContainer {
         return originalImage.getWidth() * originalImage.getHeight();
     }
 
+    /**
+     * check if the image has a Alpha channel on the original image.
+     *
+     * @return
+     */
     public boolean HasAlphaChannel() {
         return originalImage.getAlphaRaster() != null;
     }
@@ -599,7 +612,8 @@ public class CanvasContainer {
      *
      * @param MathFunction a {@link Function} that accepts and returns an array
      * of shorts values. the input array is an array of {@link Short} type
-     * values of size {@code 4} in the order this class works with. see: null null     {@link CanvasContainer#ALPHA},
+     * values of size {@code 4} in the order this class works with. see: null
+     * null null null null null     {@link CanvasContainer#ALPHA},
      * {@link CanvasContainer#RED},
      * {@link CanvasContainer#GREEN},
      * {@link CanvasContainer#BLUE}. the resulting array is also Expected that
@@ -714,7 +728,8 @@ public class CanvasContainer {
      *
      * @param MathFunction a {@link Function} that accepts and returns an array
      * of shorts values. the input array is an array of {@link Short} type
-     * values of size {@code 4} in the order this class works with. see: null null     {@link CanvasContainer#ALPHA},
+     * values of size {@code 4} in the order this class works with. see: null
+     * null null null null null     {@link CanvasContainer#ALPHA},
      * {@link CanvasContainer#RED},
      * {@link CanvasContainer#GREEN},
      * {@link CanvasContainer#BLUE}. the resulting array is also Expected that
@@ -789,8 +804,7 @@ public class CanvasContainer {
     /**
      * gathers the Color information for the specified position
      *
-     * @param Channel the color channel that most be one of the following:
-     * <pre>
+     * @param Channel the color channel that most be one of the following:      <pre>
      * {@link CanvasContainer#ALPHA}
      * {@link CanvasContainer#RED}
      * {@link CanvasContainer#GREEN}

@@ -43,6 +43,8 @@ import javax.swing.SwingWorker;
  * generally speaking this is fine for images that are less than 2k resolution
  * but for big images takes several seconds to minutes..
  *
+ * NOTE: Once done is called and the results are read and used. the List is
+ * cleared and thus calling get again the result object would be empty.
  *
  * TODO: load image from URL should be easy to add. but require changes on the
  * UI to support it.
@@ -77,7 +79,6 @@ public class StegnoAnalysis extends SwingWorker<List<Pair<String, BufferedImage>
         private TransformAnalysis(String name) {
             this.Name = name;
         }
-
     }
 
     /**
@@ -610,17 +611,23 @@ public class StegnoAnalysis extends SwingWorker<List<Pair<String, BufferedImage>
 
     @Override
     protected void done() {
+        List<Pair<String, BufferedImage>> results = null;
+        loger.log(Level.INFO, "StegnoAnalysis Done, Calling back");
         try {
-            loger.log(Level.INFO, "StegnoAnalysis Done, Calling back");
-            callBack.accept(true, get());
+            results = get();
+            callBack.accept(true, results);
+            if (!results.isEmpty()) {
+                results.clear();
+            }
         } catch (InterruptedException ex) {
             loger.log(Level.SEVERE, "Task was Cancelled. or interrupted.", ex);
         } catch (ExecutionException ex) {
             //TODO add a callback if error.
             loger.log(Level.SEVERE, "an error happend during execution", ex.getCause());
         }
+        callBack.accept(true, results);
     }
-
+  
     public static List<String> getAnalysisTransformationNames() {
         var list = new ArrayList<String>(TransformAnalysis.values().length);
         for (var ordered : TransformAnalysis.values()) {

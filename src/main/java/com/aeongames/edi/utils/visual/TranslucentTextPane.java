@@ -23,9 +23,7 @@ public class TranslucentTextPane extends JTextPane{
   
     public static final int DEFAULTARC = 0;
     public static final int DEFTRANSPARENCY = 200;
-    public static final Color DEFCOL = new Color(219, 229, 241, DEFTRANSPARENCY); //r,g,b,alpha
     private int arcWidth = DEFAULTARC, arcHeight = DEFAULTARC;
-    private Color ppColor = DEFCOL;
     private int trasparency = DEFTRANSPARENCY;
 
     public TranslucentTextPane() {
@@ -37,6 +35,7 @@ public class TranslucentTextPane extends JTextPane{
     @Override
     protected void paintComponent(Graphics g) {
         Color temp = g.getColor();
+        var ppColor = new Color(temp.getRGB()|DEFTRANSPARENCY<<24, true);
         g.setColor(ppColor);
         g.fillRoundRect(0, 0, this.getWidth(), this.getHeight(), arcWidth, arcHeight);
         g.setColor(temp);
@@ -54,7 +53,6 @@ public class TranslucentTextPane extends JTextPane{
     public void setPanelTrasparency(int Trasparency) {
         if (Trasparency >= 0 && Trasparency <= 255) {
             trasparency = Trasparency;
-            setcolor(ppColor);
         }
         repaint();
     }
@@ -98,23 +96,8 @@ public class TranslucentTextPane extends JTextPane{
         }
     }
 
-    @Override
-    public void setBackground(Color bg) {
-        super.setBackground(bg);
-        if (bg != null) {
-            setcolor(bg);
-        } else {
-            setcolor(DEFCOL);
-        }
-    }
-
     public final void setcolor(Color col) {
-        if (col != null) {
-            int r = col.getRed();
-            int g = col.getGreen();
-            int b = col.getBlue();
-            ppColor = new Color(r, g, b, trasparency);
-        }
+        super.setBackground(col);
         this.repaint();
     }  
 }
