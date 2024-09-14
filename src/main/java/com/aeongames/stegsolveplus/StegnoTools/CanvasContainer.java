@@ -750,6 +750,7 @@ public class CanvasContainer {
             }
             Destinationdatabuffer.setElem(i, CalculatedPixel);
         }
+        ResultImage.flush();
         return ResultImage;
     }
 
@@ -1056,6 +1057,7 @@ public class CanvasContainer {
             }
 
         }
+        image.flush();
         return image;
     }
 
