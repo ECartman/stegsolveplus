@@ -11,6 +11,7 @@
  */
 package com.aeongames.stegsolveplus.ui;
 
+import com.aeongames.edi.utils.DnD.DragAndDrop;
 import com.aeongames.edi.utils.data.Pair;
 import com.aeongames.edi.utils.error.LoggingHelper;
 import com.aeongames.edi.utils.visual.ImageScaleComponents;
@@ -57,6 +58,13 @@ import org.pushingpixels.radiance.theming.api.skin.RadianceNightShadeLookAndFeel
  */
 public class MainFrame extends javax.swing.JFrame {
 
+    public static final String APP_NAME = "StegnoSolver+ (ALPHA)";
+    public static ImageIcon APP_ICON = LoadAppIcon();
+
+    private static ImageIcon LoadAppIcon() {
+        var resource = MainFrame.class.getResource("/com/aeongames/stegsolveplus/ui/OIG3.jpg");
+        return resource == null ? null : new javax.swing.ImageIcon(resource);
+    }
     /**
      * counts the amount of "busy tabs" that are currently registered.
      */
@@ -79,11 +87,8 @@ public class MainFrame extends javax.swing.JFrame {
         BusyTabs = 0;
         BusyStateCallback = getBusyStateCallback();
         initComponents();
-        var image = MainFrame.class.getResource("/com/aeongames/stegsolveplus/ui/OIG3.jpg") == null
-                ? null : new javax.swing.ImageIcon(
-                        MainFrame.class.getResource("/com/aeongames/stegsolveplus/ui/OIG3.jpg"));
-        if (image != null) {
-            this.setIconImage(image.getImage());
+        if (APP_ICON != null) {
+            this.setIconImage(APP_ICON.getImage());
         }
         EnableDragAndDrop();
     }
@@ -114,13 +119,20 @@ public class MainFrame extends javax.swing.JFrame {
         MOpenFile = new javax.swing.JMenuItem();
         MOpenLink = new javax.swing.JMenuItem();
         MOpenClipboard = new javax.swing.JMenuItem();
+        jSeparator1 = new javax.swing.JPopupMenu.Separator();
+        MbExit = new javax.swing.JMenuItem();
         jMenu2 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("StegnoSolver + (ALPHA)");
+        setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
+        setTitle(APP_NAME);
         setMinimumSize(new java.awt.Dimension(370, 510));
         setName("MainFrame"); // NOI18N
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosing(java.awt.event.WindowEvent evt) {
+                formWindowClosing(evt);
+            }
+        });
 
         MainTabPane.setBackgroundPolicy(ImageScaleComponents.SCALE_ALWAYS);
         MainTabPane.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
@@ -162,6 +174,18 @@ public class MainFrame extends javax.swing.JFrame {
             }
         });
         FileMenu.add(MOpenClipboard);
+        FileMenu.add(jSeparator1);
+
+        MbExit.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F4, java.awt.event.InputEvent.ALT_DOWN_MASK));
+        MbExit.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/exitsmall.png"))); // NOI18N
+        MbExit.setText(String.format("Exit %s",APP_NAME)
+        );
+        MbExit.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                MbExitActionPerformed(evt);
+            }
+        });
+        FileMenu.add(MbExit);
 
         MainMenu.add(FileMenu);
 
@@ -279,6 +303,14 @@ public class MainFrame extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_MOpenClipboardActionPerformed
 
+    private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+        CloseRequested();
+    }//GEN-LAST:event_formWindowClosing
+
+    private void MbExitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MbExitActionPerformed
+        CloseRequested();
+    }//GEN-LAST:event_MbExitActionPerformed
+
     private String ValidFileTypes(String list2[]) {
         var descriptor = new StringBuilder("Images (");
         for (int index = 0; index < list2.length; index++) {
@@ -297,7 +329,7 @@ public class MainFrame extends javax.swing.JFrame {
      * particular file
      */
     private boolean loadImages(File[] selecteddata) {
-        var pathList= new ArrayList<Path>(selecteddata.length);
+        var pathList = new ArrayList<Path>(selecteddata.length);
         for (var file : selecteddata) {
             pathList.add(file.toPath());
         }
@@ -589,6 +621,35 @@ public class MainFrame extends javax.swing.JFrame {
         this.revalidate();
     }
 
+    private void CloseRequested() {
+        if (MainTabPane.getTabCount() == 0) {
+            this.setVisible(false);
+            this.dispose();
+            System.exit(0);
+            return;
+        }
+        CloseDialog Dialog = new CloseDialog(this, true);
+        Dialog.setLocationRelativeTo(this);
+        Dialog.setVisible(true);
+        if (Dialog.getSelectedOption() == CloseDialog.RET_EXIT) {
+            try {
+                for (var index = 0; index < MainTabPane.getTabCount(); index++) {
+                    if (MainTabPane.getComponentAt(index) instanceof InvestigationTab tab) {
+                        tab.Close(true);
+                    }
+                }
+                this.setVisible(false);
+                this.dispose();
+                //Do whatever other cleanup might still pending
+                //bye
+                System.exit(0);
+            } catch (Throwable err) {
+                LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "error while closing", err);
+                System.exit(-2);
+            }
+        }
+    }
+
     // <editor-fold defaultstate="collapsed" desc="Start Up Functions">
     /**
      * Initialize the LAF for the application. this function needs to be called
@@ -656,8 +717,10 @@ public class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenuItem MOpenLink;
     private javax.swing.JMenuBar MainMenu;
     private com.aeongames.stegsolveplus.ui.tabcomponents.JStegnoTabbedPane MainTabPane;
+    private javax.swing.JMenuItem MbExit;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenuItem jMenuItem1;
+    private javax.swing.JPopupMenu.Separator jSeparator1;
     // End of variables declaration//GEN-END:variables
 
     // </editor-fold>  

@@ -23,11 +23,12 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Stack;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveTask;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
@@ -88,22 +89,28 @@ public class StegnoAnalysis extends SwingWorker<List<Pair<String, BufferedImage>
     private final URL ImageAddress;
     private CanvasContainer ImageCache;
     private static final Logger loger = LoggingHelper.getLogger(StegnoAnalysis.class.getName());
-    private final BiConsumer<Boolean, List<Pair<String, BufferedImage>>> callBack;
+    private final Consumer<List<Pair<String, BufferedImage>>> callBack;
+    private final ConcurrentLinkedDeque<RecursiveTask<Pair<String, BufferedImage>>> stack;
+    private final ConcurrentLinkedDeque<RecursiveTask<List<Pair<String, BufferedImage>>>> stackListResult;
 
-    public StegnoAnalysis(BiConsumer<Boolean, List<Pair<String, BufferedImage>>> callback, Path File) {
+    public StegnoAnalysis(Consumer<List<Pair<String, BufferedImage>>> callback, Path File) {
         this.File = File;
         callBack = callback;
         ImageAddress = null;
+        stack= new ConcurrentLinkedDeque<>();
+        stackListResult= new ConcurrentLinkedDeque<>();
     }
 
-    public StegnoAnalysis(BiConsumer<Boolean, List<Pair<String, BufferedImage>>> callback, File file) {
+    public StegnoAnalysis(Consumer<List<Pair<String, BufferedImage>>> callback, File file) {
         this(callback, file.toPath());
     }
 
-    public StegnoAnalysis(BiConsumer<Boolean, List<Pair<String, BufferedImage>>> callback, URL Address) {
+    public StegnoAnalysis(Consumer<List<Pair<String, BufferedImage>>> callback, URL Address) {
         this.ImageAddress = Address;
         callBack = callback;
         File = null;
+        stack= new ConcurrentLinkedDeque<>();
+        stackListResult= new ConcurrentLinkedDeque<>();
     }
 
     public Path getFilePath() {
@@ -394,8 +401,6 @@ public class StegnoAnalysis extends SwingWorker<List<Pair<String, BufferedImage>
 
     protected List<Pair<String, BufferedImage>> RunTrasFormations(String Stage) {
         var list = new ArrayList<Pair<String, BufferedImage>>(20);
-        var stack = new Stack<RecursiveTask<Pair<String, BufferedImage>>>();
-        var stackListResult = new Stack<RecursiveTask<List<Pair<String, BufferedImage>>>>();
         /**
          * *****************************************************
          */
@@ -410,7 +415,6 @@ public class StegnoAnalysis extends SwingWorker<List<Pair<String, BufferedImage>
                 return list;
             }
         });
-
         bookandStartListTask(stackListResult, new RecursiveTask<List<Pair<String, BufferedImage>>>() {
             @Override
             protected List<Pair<String, BufferedImage>> compute() {
@@ -579,25 +583,41 @@ public class StegnoAnalysis extends SwingWorker<List<Pair<String, BufferedImage>
         //list.add(new Pair<>("Grey Scale REC709 (gamma Corrected)", TranformGreyScaleSlow()));
         //list.add(new Pair<>("Grey Scale REC709 fast", TranformGreyScaleSlow(true)));
         loger.log(Level.INFO, "Joining Tasks");
-        while (!stack.isEmpty()) {
-            list.add(stack.pop().join());
+        while (!stack.isEmpty() && !isCancelled()) {
+            var poped =stack.pop();
+            list.add(poped.join());
         }
-        while (!stackListResult.isEmpty()) {
-            list.addAll(stackListResult.pop().join());
+        while (!stackListResult.isEmpty() && !isCancelled()) {
+            var poped =stackListResult.pop();
+            list.addAll(poped.join());
+        }
+        if (isCancelled()) {
+            while (!stack.isEmpty()) {
+                stack.pop().cancel(true);
+            }
+            while (!stackListResult.isEmpty()) {
+                stackListResult.pop().cancel(true);
+            }
         }
         loger.log(Level.INFO, "done");
         System.gc();
         return list;
     }
 
-    private void bookandStartTask(Stack<RecursiveTask<Pair<String, BufferedImage>>> stack, RecursiveTask<Pair<String, BufferedImage>> recursiveTask) {
+    private void bookandStartTask(ConcurrentLinkedDeque<RecursiveTask<Pair<String, BufferedImage>>> stack, RecursiveTask<Pair<String, BufferedImage>> recursiveTask) {
+        if (isCancelled()) {
+            return;
+        }
         var Pool = ForkJoinPool.commonPool();
         stack.push(recursiveTask);
         //recursiveTask.fork();
         Pool.submit(recursiveTask);
     }
 
-    private void bookandStartListTask(Stack<RecursiveTask<List<Pair<String, BufferedImage>>>> stack, RecursiveTask<List<Pair<String, BufferedImage>>> recursiveTask) {
+    private void bookandStartListTask(ConcurrentLinkedDeque<RecursiveTask<List<Pair<String, BufferedImage>>>> stack, RecursiveTask<List<Pair<String, BufferedImage>>> recursiveTask) {
+        if (isCancelled()) {
+            return;
+        }
         var Pool = ForkJoinPool.commonPool();
         stack.push(recursiveTask);
         //recursiveTask.fork();
@@ -606,7 +626,7 @@ public class StegnoAnalysis extends SwingWorker<List<Pair<String, BufferedImage>
 
     @Override
     protected void process(List<Pair<String, BufferedImage>> chunks) {
-        callBack.accept(false, chunks);
+        callBack.accept(chunks);
     }
 
     @Override
@@ -615,19 +635,28 @@ public class StegnoAnalysis extends SwingWorker<List<Pair<String, BufferedImage>
         loger.log(Level.INFO, "StegnoAnalysis Done, Calling back");
         try {
             results = get();
-            callBack.accept(true, results);
-            if (!results.isEmpty()) {
-                results.clear();
-            }
-        } catch (InterruptedException ex) {
+        } catch (CancellationException | InterruptedException ex) {
             loger.log(Level.SEVERE, "Task was Cancelled. or interrupted.", ex);
         } catch (ExecutionException ex) {
             //TODO add a callback if error.
             loger.log(Level.SEVERE, "an error happend during execution", ex.getCause());
         }
-        callBack.accept(true, results);
+        callBack.accept(results);
+        if (results != null && !results.isEmpty()) {
+            results.clear();
+        }
     }
-  
+
+    public synchronized void stopAnalysis() {
+        stack.forEach((t) -> {
+            t.cancel(true);//this does not interrupt...
+        });
+        stackListResult.forEach((t) -> {
+            t.cancel(true);
+        });
+        cancel(true);
+    }
+
     public static List<String> getAnalysisTransformationNames() {
         var list = new ArrayList<String>(TransformAnalysis.values().length);
         for (var ordered : TransformAnalysis.values()) {

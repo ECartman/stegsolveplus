@@ -9,10 +9,11 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-package com.aeongames.stegsolveplus.ui;
+package com.aeongames.edi.utils.DnD;
 
 import com.aeongames.edi.utils.File.PropertiesHelper;
 import com.aeongames.edi.utils.error.LoggingHelper;
+import com.aeongames.stegsolveplus.ui.MainFrame;
 import java.awt.Component;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
@@ -46,28 +47,40 @@ import java.util.regex.Pattern;
 import javax.swing.SwingUtilities;
 
 /**
- * a Helper class to handle Drop (from the Drag and Drop) into an application
- * this class simplify handling drag and drop events. to listen and handle
- * specific events. for this class currently it handles Files, URL and Text
- * other events might require further code to be added.
+ * a Helper (abstract) class to handle Drop (from the Drag and Drop) into an
+ * application this class simplify handling drag and drop events. to listen and
+ * handle specific events. for this class currently it handles Files, URL and
+ * Text other events might require further code to be added.
  *
  * @author Eduardo Vindas
  */
 public abstract class DragAndDrop implements DropTargetListener {
 
+    /**
+     * the Helper to load the Properties settings (regex on this case)
+     */
     private static final PropertiesHelper REGEX_RESOURCE = loadProperties();
 
     /**
-     *
+     * File Patterns for Windows Files.
      */
     public static final Pattern WINDOWS_PATTERN
             = REGEX_RESOURCE != null
                     ? Pattern.compile(REGEX_RESOURCE.getProperty("WindowsPathPattern"))
                     : Pattern.compile("\\\"?((?:\\\\\\\\\\?\\\\)?(?:[a-zA-Z]:[\\\\/]|[\\\\]{2})(?:[^\\\\/\\\"<>:\\|\\?\\*\\r\\n]+[\\\\/])*[^\\\\/\\\"<>:\\|\\?\\*\\r\\n ]+)(?:\\\")?");
+    /**
+     * Linux file pattern
+     */
     public static final Pattern LINUX_PATTERN
             = REGEX_RESOURCE != null
                     ? Pattern.compile(REGEX_RESOURCE.getProperty("LinuxPathPattern"))
                     : Pattern.compile("^(/[^/\\x00 ]*)+/?$");
+    /**
+     * URL pattern. here we narrow a lot of what is actually allowed for a URL
+     * pattern to HTTP,HTTPS, FTP and file URL. this is done as those are the
+     * only ones we want to handle on the app. (unless modified on the Property
+     * file)
+     */
     public static final Pattern URL_PATTERN
             = REGEX_RESOURCE != null
                     ? Pattern.compile(REGEX_RESOURCE.getProperty("URLPattern"))
@@ -114,8 +127,9 @@ public abstract class DragAndDrop implements DropTargetListener {
             Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "Unable to create TMP folder to analisis", ex);
         }
         ANALISIS_DIRECTORY = tmp;
-        Objects.requireNonNull(listToFill, "invalid List");
-        FlavorsIgnore.addAll(listToFill);
+        if (listToFill != null) {//if null just ignore it. 
+            FlavorsIgnore.addAll(listToFill);
+        }
     }
 
     /**
@@ -319,10 +333,10 @@ public abstract class DragAndDrop implements DropTargetListener {
         }
         DropCompleteUI(dtde);
     }
-    
-    private void DropCompleteUI(DropTargetDropEvent dtde){
+
+    private void DropCompleteUI(DropTargetDropEvent dtde) {
         if (SwingUtilities.isEventDispatchThread()) {
-             DropComplete(dtde);
+            DropComplete(dtde);
             return;
         }
         try {
@@ -550,23 +564,24 @@ public abstract class DragAndDrop implements DropTargetListener {
     }
 
     /**
-     * prepares a file to be used. 
-     * if the file exist and can be read. we will check if this file is a Temporal
-     * file. if so we made a copy because the Source that Started the drag 
-     * of the image MAY OR MIGHT NOT Delete the file or overwrite. to avoid this
-     * we will check if the image dragged is on the TMP folder. if so we make a copy
+     * prepares a file to be used. if the file exist and can be read. we will
+     * check if this file is a Temporal file. if so we made a copy because the
+     * Source that Started the drag of the image MAY OR MIGHT NOT Delete the
+     * file or overwrite. to avoid this we will check if the image dragged is on
+     * the TMP folder. if so we make a copy
      * <br>
-     * Performance Considerations: 
-     * this Function. unfortunately. requires to check if the File Exist and if it can be 
-     * read. this check can be slow due the need to check on the FileSystem.
-     * also given that the source Could remove the file upon return from the Drag
-     * and Drop action. it might be needed for us to held the Thread hostage.
+     * Performance Considerations: this Function. unfortunately. requires to
+     * check if the File Exist and if it can be read. this check can be slow due
+     * the need to check on the FileSystem. also given that the source Could
+     * remove the file upon return from the Drag and Drop action. it might be
+     * needed for us to held the Thread hostage.
      * <br>
-     * @param Potentialfile the file to analyze 
-     * @return a Path that target the original file OR if the file is at the 
+     *
+     * @param Potentialfile the file to analyze
+     * @return a Path that target the original file OR if the file is at the
      * temporal folder a copy of that that we can use securely.
      */
-    private Path PrepareFile(File Potentialfile ) {
+    private Path PrepareFile(File Potentialfile) {
         var log = LoggingHelper.getLogger(DragAndDrop.class.getName());
         var pathForFile = Potentialfile.toPath();
         if (!Potentialfile.exists() || !Potentialfile.canRead()) {
@@ -663,25 +678,25 @@ public abstract class DragAndDrop implements DropTargetListener {
     public abstract void NotifyFoundPaths(List<Path> fileList);
 
     /**
-     *  a method to be implemented by child classes. we ensure that the parameter
-     * is not null, we do not ensure the link is valid or is warrantee to connect.
-     * the implementer will need to check on that. 
+     * a method to be implemented by child classes. we ensure that the parameter
+     * is not null, we do not ensure the link is valid or is warrantee to
+     * connect. the implementer will need to check on that.
      * <strong>we do not warrantee this will be called from EDT</strong>
-     * 
+     *
      * @param link a URL with the data provided from the Drag and Drop
-     * 
+     *
      */
     public abstract void NotifyFoundUrl(URL link);
 
-     /**
+    /**
      * triggered by the Event Dispatch thread when a
      * {@link DropTargetListener#drop(java.awt.dnd.DropTargetDropEvent)} event
      * concludes its execution and the Drop is consumed. this method is ensured
-     * to be called by the EDT. note this method will block the thread that 
+     * to be called by the EDT. note this method will block the thread that
      * trigger the Drag and Drop (if that thread is NOT the EDT) and activity
-     * takes too long can cause problems on the OS
-     * Drag And Drop functionality. thus make sure this method returns as fast
-     * as possible. also note. the even is unfiltered.
+     * takes too long can cause problems on the OS Drag And Drop functionality.
+     * thus make sure this method returns as fast as possible. also note. the
+     * even is unfiltered.
      *
      * @param dtde the event details data
      */

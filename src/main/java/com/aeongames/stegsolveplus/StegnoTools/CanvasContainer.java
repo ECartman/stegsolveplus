@@ -137,6 +137,7 @@ public class CanvasContainer {
             throw new IOException(new NullPointerException("The Image Cannot be Read, either there is not supported reader or the file is Not a image or corrupted"));
         }
     }
+
     // </editor-fold>
     // <editor-fold defaultstate="collapsed" desc="create empty image"> 
     /**
@@ -612,8 +613,8 @@ public class CanvasContainer {
      *
      * @param MathFunction a {@link Function} that accepts and returns an array
      * of shorts values. the input array is an array of {@link Short} type
-     * values of size {@code 4} in the order this class works with. see: null
-     * null null null null null     {@link CanvasContainer#ALPHA},
+     * values of size {@code 4} in the order this class works with. see:
+     * {@link CanvasContainer#ALPHA},
      * {@link CanvasContainer#RED},
      * {@link CanvasContainer#GREEN},
      * {@link CanvasContainer#BLUE}. the resulting array is also Expected that
@@ -624,7 +625,11 @@ public class CanvasContainer {
      * expects and uses arrays with the ARGB order. no matter if the type is BGR
      * as this function handles the translations.
      * @return a image that contain the changes to the pixels done via the
-     * provided function.
+     * provided function. TODO:: This is slow because the call stack ends up
+     * into a Syncronized block at StateTrackableDelegate.SetUntrable. this
+     * blocking statement blocks us a BIG deal. and for no reason. as MULTIPLE
+     * calls have been done alredy to this function making thus function
+     * pointless.
      */
     public BufferedImage MathOnPixels(int TypeRequred, Function<Short[], Short[]> MathFunction) {
         //note if provided a unsupported type we could use whatever we want... or throw a error.
@@ -729,7 +734,7 @@ public class CanvasContainer {
      * @param MathFunction a {@link Function} that accepts and returns an array
      * of shorts values. the input array is an array of {@link Short} type
      * values of size {@code 4} in the order this class works with. see: null
-     * null null null null null     {@link CanvasContainer#ALPHA},
+     * {@link CanvasContainer#ALPHA},
      * {@link CanvasContainer#RED},
      * {@link CanvasContainer#GREEN},
      * {@link CanvasContainer#BLUE}. the resulting array is also Expected that
@@ -959,6 +964,9 @@ public class CanvasContainer {
         return getColorForIndex(Index, RED, FillColor);
     }
 
+    //TODO:: this is a slow implementation due Syncronized DAta load inside a loop. 
+    //We need to either invert that (get the data prior the loop) or cache the data. 
+    //the issue is also present in Math Pixels. 
     BufferedImage getColorForIndex(int Index, int Channel, Color FillColor) {
         if (Channel < 0 || Channel > BLUE) {
             throw new ArrayIndexOutOfBoundsException("Invalid Channel");

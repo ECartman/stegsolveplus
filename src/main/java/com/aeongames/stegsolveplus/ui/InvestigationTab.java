@@ -29,7 +29,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  *
@@ -46,7 +46,7 @@ public class InvestigationTab extends Tab {
     private final StegnoAnalysis Analyst;
     private HashMap<String, ImagePreviewPanel> ThumbsReferences;
     private final PropertyChangeListener ThumbClickListener;
-    private final BiConsumer<Boolean, List<Pair<String, BufferedImage>>> Callback;
+    private final Consumer<List<Pair<String, BufferedImage>>> Callback;
 
     /**
      * Creates new form InvestigationTab
@@ -94,12 +94,16 @@ public class InvestigationTab extends Tab {
         };
     }
 
-    private BiConsumer<Boolean, List<Pair<String, BufferedImage>>> getCallback() {
-        return (Isfinish, List) -> {
-            if (List == null && Isfinish) {
+    private Consumer<List<Pair<String, BufferedImage>>> getCallback() {
+        return (List) -> {
+            if(Analyst.isCancelled()){
+                //if the task was cancelled that means *This* UI. is no longer valid. bail
+                return;
+            }
+            if (List == null && Analyst.isDone()) {
                 //fail. TODO: add the means to read error from the process.
-                ThumbGridPanel.removeAll();                
-                var err = new ErrorGlassPane(new ErrorData("Error Loading file.", Analyst.exceptionNow().getMessage(), Analyst.exceptionNow()));                
+                ThumbGridPanel.removeAll();
+                var err = new ErrorGlassPane(new ErrorData("Error Loading file.", Analyst.exceptionNow().getMessage(), Analyst.exceptionNow()));
                 ThumbGridPanel.add(err);
                 ThumbGridPanel.setLayout(new javax.swing.BoxLayout(ThumbGridPanel, javax.swing.BoxLayout.PAGE_AXIS));
                 err.setVisible(true);
@@ -109,7 +113,7 @@ public class InvestigationTab extends Tab {
                 //Notify the Parent our work is done. 
                 setAvailable();
                 return;
-            } else if (List == null || (List.isEmpty() && !Isfinish)) {
+            } else if (List == null || (List.isEmpty() && !Analyst.isDone())) {
                 return;//null or empty is notified. nothing to do. 
             }
             for (var pair : List) {
@@ -133,7 +137,7 @@ public class InvestigationTab extends Tab {
             ThumbGridPanel.invalidate();
             ThumbGridPanel.repaint();
             InvestigationTab.this.repaint();
-            if (Isfinish) {
+            if (Analyst.isDone()) {
                 pFooter.setFooterText(String.format("analysis Finish for: %s", Analyst.getSourceName()));
                 //Notify the Parent our work is done. 
                 setAvailable();
@@ -323,7 +327,7 @@ public class InvestigationTab extends Tab {
     @Override
     public boolean Close(boolean force) {
         if (!Analyst.isDone() && !Analyst.isCancelled()) {
-            Analyst.cancel(true);
+            Analyst.stopAnalysis();
         }
         /*
         try {
@@ -333,6 +337,7 @@ public class InvestigationTab extends Tab {
                     .log(Level.INFO, "Exception on Results, This might be expected", ex);
         }*/
         System.gc();
+        setAvailable();
         return true;
     }
 

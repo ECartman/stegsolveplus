@@ -12,6 +12,7 @@
  */
 package com.aeongames.stegsolveplus.ui;
 
+import com.aeongames.edi.utils.DnD.DragAndDrop;
 import com.aeongames.edi.utils.visual.ImageScaleComponents;
 import com.aeongames.edi.utils.visual.ImageUtils;
 import com.aeongames.edi.utils.visual.Panels.TranslucentImagedPanel;
