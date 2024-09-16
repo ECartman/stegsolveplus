@@ -85,10 +85,10 @@ public class InvestigationTab extends Tab {
             if (evt.getPropertyName().equals(ImagePreviewPanel.ThumbClickEvent)) {
                 if (evt.getSource() instanceof ImagePreviewPanel) {
                     var closeComponent = new TabClose(AnalysisTabs);
-                    var imagep= new ImagePanel((Image) evt.getNewValue());
+                    var imagep = new ImagePanel((Image) evt.getNewValue());
                     imagep.SetBackgroundPolicy(ImageScaleComponents.SCALE_ALWAYS);
                     imagep.SmoothWhenScale(false);
-                    AnalysisTabs.addTab(evt.getOldValue().toString(),imagep);
+                    AnalysisTabs.addTab(evt.getOldValue().toString(), imagep);
                     AnalysisTabs.setTabComponentAt(AnalysisTabs.getTabCount() - 1, closeComponent);
                     AnalysisTabs.setSelectedIndex(AnalysisTabs.getTabCount() - 1);
                     //update the information on the component.
@@ -100,7 +100,7 @@ public class InvestigationTab extends Tab {
 
     private Consumer<List<Pair<String, BufferedImage>>> getCallback() {
         return (List) -> {
-            if(Analyst.isCancelled()){
+            if (Analyst.isCancelled()) {
                 //if the task was cancelled that means *This* UI. is no longer valid. bail
                 return;
             }
@@ -172,6 +172,14 @@ public class InvestigationTab extends Tab {
         return OtherFile.toString().equals(Analyst.getAnalysisSource());
     }
 
+    public Object getImageResource() {
+       var path = Analyst.getFilePath();
+       if(path!=null){
+           return path;
+       }
+       return Analyst.getAnalysisSource();
+    }
+    
     private void prepareAnalysis() {
         List<String> names = StegnoAnalysis.getAnalysisTransformationNames();
         ThumbsReferences = new HashMap<>(names.size());
@@ -253,6 +261,42 @@ public class InvestigationTab extends Tab {
         _InternalSetTitle(Filename);
     }
 
+    //TODO::do the actual cleanup. pop if wants to keep work open?
+    @Override
+    public boolean Close(boolean force) {
+        if (!Analyst.isDone() && !Analyst.isCancelled()) {
+            Analyst.stopAnalysis();
+        }
+        /*
+        try {
+            Analyst.get();
+        } catch (InterruptedException | ExecutionException ex) {
+            LoggingHelper.getLogger(InvestigationTab.class.getName())
+                    .log(Level.INFO, "Exception on Results, This might be expected", ex);
+        }*/
+        System.gc();
+        setAvailable();
+        return true;
+    }
+
+    @Override
+    protected void setBusy() {
+        SetCursorBusy();
+        var oldstate = isBusy;
+        isBusy = true;
+        pFooter.SetProgressIndeterminate();
+        firePropertyChange(ChangePropertys.BUSY, oldstate, isBusy);
+    }
+
+    @Override
+    protected void setAvailable() {
+        var oldstate = isBusy;
+        isBusy = false;
+        pFooter.SetProgress(0);
+        firePropertyChange(ChangePropertys.BUSY, oldstate, isBusy);
+        ClearCursor();
+    }
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -326,41 +370,5 @@ public class InvestigationTab extends Tab {
     private javax.swing.JScrollPane jScrollPane1;
     private com.aeongames.stegsolveplus.ui.Footer pFooter;
     // End of variables declaration//GEN-END:variables
-
-    //TODO::do the actual cleanup. pop if wants to keep work open?
-    @Override
-    public boolean Close(boolean force) {
-        if (!Analyst.isDone() && !Analyst.isCancelled()) {
-            Analyst.stopAnalysis();
-        }
-        /*
-        try {
-            Analyst.get();
-        } catch (InterruptedException | ExecutionException ex) {
-            LoggingHelper.getLogger(InvestigationTab.class.getName())
-                    .log(Level.INFO, "Exception on Results, This might be expected", ex);
-        }*/
-        System.gc();
-        setAvailable();
-        return true;
-    }
-
-    @Override
-    protected void setBusy() {
-        SetCursorBusy();
-        var oldstate = isBusy;
-        isBusy = true;
-        pFooter.SetProgressIndeterminate();
-        firePropertyChange(ChangePropertys.BUSY, oldstate, isBusy);
-    }
-
-    @Override
-    protected void setAvailable() {
-        var oldstate = isBusy;
-        isBusy = false;
-        pFooter.SetProgress(0);
-        firePropertyChange(ChangePropertys.BUSY, oldstate, isBusy);
-        ClearCursor();
-    }
 
 }

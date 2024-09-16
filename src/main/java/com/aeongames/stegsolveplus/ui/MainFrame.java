@@ -19,6 +19,7 @@ import com.aeongames.edi.utils.visual.Panels.JAeonTabPane;
 import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalysis;
 import com.aeongames.stegsolveplus.ui.tabcomponents.JStegnoTabbedPane;
 import java.awt.Color;
+import java.awt.Desktop;
 import java.awt.IllegalComponentStateException;
 import java.awt.Image;
 import java.awt.dnd.DropTargetDragEvent;
@@ -26,6 +27,7 @@ import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DropTargetEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -122,6 +124,8 @@ public class MainFrame extends javax.swing.JFrame {
         jSeparator1 = new javax.swing.JPopupMenu.Separator();
         MbExit = new javax.swing.JMenuItem();
         jMenu2 = new javax.swing.JMenu();
+        jMenuItem2 = new javax.swing.JMenuItem();
+        jMenuItem3 = new javax.swing.JMenuItem();
         jMenuItem1 = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
@@ -191,7 +195,25 @@ public class MainFrame extends javax.swing.JFrame {
 
         jMenu2.setText("Actions");
 
-        jMenuItem1.setText("Run Image Study");
+        jMenuItem2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/openf.png"))); // NOI18N
+        jMenuItem2.setText("Open Original Image Location");
+        jMenuItem2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem2ActionPerformed(evt);
+            }
+        });
+        jMenu2.add(jMenuItem2);
+
+        jMenuItem3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/openf.png"))); // NOI18N
+        jMenuItem3.setText("Open Original Image");
+        jMenuItem3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem3ActionPerformed(evt);
+            }
+        });
+        jMenu2.add(jMenuItem3);
+
+        jMenuItem1.setText("TEST <UI>");
         jMenuItem1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItem1ActionPerformed(evt);
@@ -311,6 +333,49 @@ public class MainFrame extends javax.swing.JFrame {
         CloseRequested();
     }//GEN-LAST:event_MbExitActionPerformed
 
+    private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
+        if (MainTabPane.getSelectedComponent() instanceof InvestigationTab tab) {
+            var resource = tab.getImageResource();
+            if (resource instanceof Path file) {
+                try {
+                    var parent = file.getParent();
+                    if (parent != null) {
+                        Desktop.getDesktop().open(parent.toFile());
+                    } else {
+                        Desktop.getDesktop().open(file.toFile());
+                    }
+                } catch (IOException ex) {
+                    LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.INFO, "unable to open the file", ex);
+                }
+            } else if (resource != null) {
+                try {
+                    Desktop.getDesktop().browse(URI.create(resource.toString()));
+                } catch (IOException ex) {
+                    LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.INFO, "unable to open the URL", ex);
+                }
+            }
+        }
+    }//GEN-LAST:event_jMenuItem2ActionPerformed
+
+    private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
+        if (MainTabPane.getSelectedComponent() instanceof InvestigationTab tab) {
+            var resource = tab.getImageResource();
+            if (resource instanceof Path file) {
+                try {
+                    Desktop.getDesktop().open(file.toFile());
+                } catch (IOException ex) {
+                    LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.INFO, "unable to open the file", ex);
+                }
+            } else if (resource != null) {
+                try {
+                    Desktop.getDesktop().browse(URI.create(resource.toString()));
+                } catch (IOException ex) {
+                    LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.INFO, "unable to open the URL", ex);
+                }
+            }
+        }
+    }//GEN-LAST:event_jMenuItem3ActionPerformed
+
     private String ValidFileTypes(String list2[]) {
         var descriptor = new StringBuilder("Images (");
         for (int index = 0; index < list2.length; index++) {
@@ -368,15 +433,15 @@ public class MainFrame extends javax.swing.JFrame {
             while (!taskStack.isEmpty()) {
                 final var Checkresult = taskStack.pop().join();
                 if (Checkresult.getRight()) {
-                        SwingUtilities.invokeLater(() -> {
-                            newFileTab(Checkresult.getLeft());
-                        });
+                    SwingUtilities.invokeLater(() -> {
+                        newFileTab(Checkresult.getLeft());
+                    });
                 }
             }
             SwingUtilities.invokeLater(() -> {
                 SetMenuStatus(BusyTabs == 0);
             });
-        },"File Checking").start();
+        }, "File Checking").start();
         return true;
     }
 
@@ -716,6 +781,8 @@ public class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenuItem MbExit;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenuItem jMenuItem1;
+    private javax.swing.JMenuItem jMenuItem2;
+    private javax.swing.JMenuItem jMenuItem3;
     private javax.swing.JPopupMenu.Separator jSeparator1;
     // End of variables declaration//GEN-END:variables
 

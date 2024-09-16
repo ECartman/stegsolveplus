@@ -13,7 +13,6 @@ package com.aeongames.edi.utils.DnD;
 
 import com.aeongames.edi.utils.File.PropertiesHelper;
 import com.aeongames.edi.utils.error.LoggingHelper;
-import com.aeongames.stegsolveplus.ui.MainFrame;
 import java.awt.Component;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
@@ -42,7 +41,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import javax.swing.SwingUtilities;
 
@@ -119,14 +117,7 @@ public abstract class DragAndDrop implements DropTargetListener {
      * @param listToFill a List of DataFlavors to be ignored by this class.
      */
     public DragAndDrop(List<DataFlavor> listToFill) {
-        Path tmp = null;
-        try {
-            tmp = Files.createTempDirectory("ImageAnalisis");
-            tmp.toFile().deleteOnExit();
-        } catch (IOException ex) {
-            Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "Unable to create TMP folder to analisis", ex);
-        }
-        ANALISIS_DIRECTORY = tmp;
+        ANALISIS_DIRECTORY = prepareTmpFolder();
         if (listToFill != null) {//if null just ignore it. 
             FlavorsIgnore.addAll(listToFill);
         }
@@ -140,18 +131,22 @@ public abstract class DragAndDrop implements DropTargetListener {
      * desired to be ignored.
      */
     public DragAndDrop(DataFlavor... ignoreFlavors) {
+        ANALISIS_DIRECTORY = prepareTmpFolder();
+        if (ignoreFlavors != null && ignoreFlavors.length > 0) {
+            FlavorsIgnore.addAll(Arrays.asList(ignoreFlavors));
+        }
+        // if no flavor is provided assume its A OK. just no flavors are to be ignored.
+    }
+ 
+    private Path prepareTmpFolder(){
         Path tmp = null;
         try {
             tmp = Files.createTempDirectory("ImageAnalisis");
             tmp.toFile().deleteOnExit();
         } catch (IOException ex) {
-            Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "Unable to create TMP folder to analisis", ex);
+            LoggingHelper.getLogger(DragAndDrop.class.getName()).log(Level.SEVERE, "Unable to create TMP folder to analisis", ex);
         }
-        ANALISIS_DIRECTORY = tmp;
-        if (ignoreFlavors != null && ignoreFlavors.length > 0) {
-            FlavorsIgnore.addAll(Arrays.asList(ignoreFlavors));
-        }
-        // if no flavor is provided assume its A OK. just no flavors are to be ignored.
+        return tmp;
     }
 
     /**
