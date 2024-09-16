@@ -232,6 +232,9 @@ public class CanvasContainer {
     }
 
     private synchronized Object setupDataBuffer() {
+        if (!FastReadSupported(originalImage.getType())) {
+            return ImageDataReference = null;
+        }
         if (ImageDataReference != null) {
             return ImageDataReference;
         }
@@ -242,7 +245,7 @@ public class CanvasContainer {
             case DataBufferInt IntegerData ->
                 ImageDataReference = IntegerData.getData();
             default ->
-                ImageDataReference = null;                    
+                ImageDataReference = null;
         }
         return ImageDataReference;
     }
@@ -304,6 +307,15 @@ public class CanvasContainer {
         }
         //TODO: support other types. 
         return order;
+    }
+
+    private static boolean FastReadSupported(int type) {
+        switch (type) {
+            case BufferedImage.TYPE_INT_RGB, BufferedImage.TYPE_INT_ARGB, BufferedImage.TYPE_INT_ARGB_PRE, BufferedImage.TYPE_INT_BGR, BufferedImage.TYPE_3BYTE_BGR, BufferedImage.TYPE_4BYTE_ABGR, BufferedImage.TYPE_4BYTE_ABGR_PRE -> {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static int getColorTranslation(int type, int channel) {
@@ -413,18 +425,18 @@ public class CanvasContainer {
         for (int i = 0; i < totalpixels; i++) {
             var pos = getPointForIndex(srcimg.getWidth(), i);
             var data = srcimg.getRaster().getDataElements(pos.x, pos.y, null);
-            var baseindex = getRawIndexForImageIndex(3, i);
+            var baseindex = DestType != BufferedImage.TYPE_BYTE_GRAY ? getRawIndexForImageIndex(3, i):i;
             switch (Channel) {
                 case ALPHA -> {//check if hasAlphaChannel maybe? 
-                    Destdata[baseindex + DestType == BufferedImage.TYPE_BYTE_GRAY ? 0 : 2]
+                    Destdata[baseindex + (DestType == BufferedImage.TYPE_BYTE_GRAY ? 0 : 2)]
                             = (byte) srcimg.getColorModel().getAlpha(data);
                 }
                 case RED -> {
-                    Destdata[baseindex + DestType == BufferedImage.TYPE_BYTE_GRAY ? 0 : 2]
+                    Destdata[baseindex +(DestType == BufferedImage.TYPE_BYTE_GRAY ? 0 : 2)]
                             = (byte) srcimg.getColorModel().getRed(data);
                 }
                 case GREEN ->
-                    Destdata[baseindex + DestType == BufferedImage.TYPE_BYTE_GRAY ? 0 : 1]
+                    Destdata[baseindex + (DestType == BufferedImage.TYPE_BYTE_GRAY ? 0 : 1)]
                             = (byte) srcimg.getColorModel().getGreen(data);
                 case BLUE -> {
                     Destdata[baseindex]
@@ -455,7 +467,7 @@ public class CanvasContainer {
         int jumpPerPixel = srcBytesPerPixel - 1;
         var destData = Destinationdatabuffer.getData();
         var srcTranslatedChannel = getColorTranslation(SourceType, Channel);
-        //destination Navigation
+        //destination Navigation+
         int destBytesPerPixel;
         if (DestinationType == BufferedImage.TYPE_BYTE_GRAY) {
             destBytesPerPixel = 1;
@@ -630,7 +642,7 @@ public class CanvasContainer {
         }
     }
 
-    private static void DrawSymetricGreyInt(int[]  SourceData, DataBufferByte destBuffer, byte Fill) {
+    private static void DrawSymetricGreyInt(int[] SourceData, DataBufferByte destBuffer, byte Fill) {
         var destData = destBuffer.getData();
         for (int srcIndex = 0; srcIndex < SourceData.length; srcIndex++) {
             var mid = ((SourceData[srcIndex] >>> 8) & MAXUBYTE);
@@ -765,7 +777,8 @@ public class CanvasContainer {
      * @param MathFunction a {@link Function} that accepts and returns an array
      * of shorts values. the input array is an array of {@link Short} type
      * values of size {@code 4} in the order this class works with. see: null
-     * null null null null null null null null null null null null null     {@link CanvasContainer#ALPHA},
+     * null null null null null null null null null null null null null null
+     * null null     {@link CanvasContainer#ALPHA},
      * {@link CanvasContainer#RED},
      * {@link CanvasContainer#GREEN},
      * {@link CanvasContainer#BLUE}. the resulting array is also Expected that
@@ -885,7 +898,8 @@ public class CanvasContainer {
      * @param MathFunction a {@link Function} that accepts and returns an array
      * of shorts values. the input array is an array of {@link Short} type
      * values of size {@code 4} in the order this class works with. see: null
-     * null null null null null null null null null null null null null null     {@link CanvasContainer#ALPHA},
+     * null null null null null null null null null null null null null null
+     * null null null     {@link CanvasContainer#ALPHA},
      * {@link CanvasContainer#RED},
      * {@link CanvasContainer#GREEN},
      * {@link CanvasContainer#BLUE}. the resulting array is also Expected that
@@ -976,7 +990,7 @@ public class CanvasContainer {
         if (Channel == ALPHA && originalImage.getAlphaRaster() == null) {
             return MAXUBYTE;//we will not check or compute. is a waste. if no alpha is fully opaque.
         }
-        var dataArrayObject = ImageDataReference==null?setupDataBuffer():ImageDataReference;
+        var dataArrayObject = ImageDataReference == null ? setupDataBuffer() : ImageDataReference;
         var i = getIndexForPosition(originalImage.getWidth(), x, y);
         int readvalue;
         switch (dataArrayObject) {
@@ -984,6 +998,9 @@ public class CanvasContainer {
                 readvalue = Byte.toUnsignedInt(getColorPixelByte(originalImage.getType(), HasAlphaChannel(), bytesData, Channel, i));
             case int[] IntegerData ->
                 readvalue = getColorPixelInt(originalImage.getType(), HasAlphaChannel(), IntegerData, Channel, i);
+            case null ->{
+                readvalue = getColorDefaultMethod(Channel, x, y);
+            }
             default -> {
                 readvalue = getColorDefaultMethod(Channel, x, y);
             }
@@ -995,13 +1012,17 @@ public class CanvasContainer {
         if (Channel == ALPHA && originalImage.getAlphaRaster() == null) {
             return MAXUBYTE;//the image is fully opaque. 
         }
-        var dataArrayObject = ImageDataReference==null?setupDataBuffer():ImageDataReference;
+        var dataArrayObject = ImageDataReference == null ? setupDataBuffer() : ImageDataReference;
         int readvalue;
         switch (dataArrayObject) {
             case byte[] bytesData ->
                 readvalue = convertToUnsigned(getColorPixelByte(originalImage.getType(), HasAlphaChannel(), bytesData, Channel, LinearPosition));
             case int[] IntegerData ->
                 readvalue = getColorPixelInt(originalImage.getType(), HasAlphaChannel(), IntegerData, Channel, LinearPosition);
+            case null->{
+                var pos = getPointForIndex(originalImage.getWidth(), LinearPosition);
+                readvalue = getColorDefaultMethod(Channel, pos.x, pos.y);
+            }
             default -> {
                 var pos = getPointForIndex(originalImage.getWidth(), LinearPosition);
                 readvalue = getColorDefaultMethod(Channel, pos.x, pos.y);
@@ -1125,7 +1146,7 @@ public class CanvasContainer {
         }
         //here if needs be we could fill the new image with white pixels. or something... 
         var Destinationdatabuffer = (DataBufferInt) image.getRaster().getDataBuffer();//rgb is int. thus. 
-        var dataArrayObject = ImageDataReference==null?setupDataBuffer():ImageDataReference;
+        var dataArrayObject = ImageDataReference == null ? setupDataBuffer() : ImageDataReference;
         for (int i = 0; i < getTotalPixels(); i++) {//Should we do the loop once we know the type of buffer and avoid 1 computation?
             int readvalue = 0b0;
             switch (dataArrayObject) {
@@ -1133,6 +1154,20 @@ public class CanvasContainer {
                     readvalue = convertToUnsigned(getColorPixelByte(originalImage.getType(), hasAlphaChannel, bytesData, Channel, i));
                 case int[] IntegerData ->
                     readvalue = getColorPixelInt(originalImage.getType(), hasAlphaChannel, IntegerData, Channel, i);
+                case null->{
+                    var pos = getPointForIndex(originalImage.getWidth(), i);
+                    var data = originalImage.getRaster().getDataElements(pos.x, pos.y, null);
+                    switch (Channel) {
+                        case ALPHA ->
+                            readvalue = originalImage.getColorModel().getAlpha(data);
+                        case RED ->
+                            readvalue = originalImage.getColorModel().getRed(data);
+                        case GREEN ->
+                            readvalue = originalImage.getColorModel().getGreen(data);
+                        case BLUE ->
+                            readvalue = originalImage.getColorModel().getBlue(data);
+                    }
+                }
                 default -> {
                     var pos = getPointForIndex(originalImage.getWidth(), i);
                     var data = originalImage.getRaster().getDataElements(pos.x, pos.y, null);
@@ -1189,7 +1224,7 @@ public class CanvasContainer {
     public BufferedImage getSymetricPixels(Color Fill) {
         var image = createBIemptyCopy(BufferedImage.TYPE_BYTE_GRAY);//note We could just return a binary image
         var Destinationdatabuffer = (DataBufferByte) image.getRaster().getDataBuffer();
-        var dataArrayObject = ImageDataReference==null?setupDataBuffer():ImageDataReference;
+        var dataArrayObject = ImageDataReference == null ? setupDataBuffer() : ImageDataReference;
         /*fill the image with empty "canvas color" */
         Arrays.fill(Destinationdatabuffer.getData(), (byte) 0xFF);
         switch (dataArrayObject) {
@@ -1199,6 +1234,24 @@ public class CanvasContainer {
             }
             case int[] IntegerData ->
                 DrawSymetricInt(originalImage.getType(), image.getType(), image.getAlphaRaster() != null, IntegerData, Destinationdatabuffer, Fill);
+            case null->{
+                var rgbfill = getRGBArray(Fill);
+                var Destdata = Destinationdatabuffer.getData();
+                for (int i = 0; i < getTotalPixels(); i++) {//Should we do the loop once we know the type of buffer and avoid 1 computation?
+                    var pos = getPointForIndex(originalImage.getWidth(), i);
+                    var data = originalImage.getRaster().getDataElements(pos.x, pos.y, null);
+                    var green = originalImage.getColorModel().getGreen(data);
+                    var same
+                            = originalImage.getColorModel().getRed(data) == green
+                            && green == originalImage.getColorModel().getBlue(data);
+                    if (same) {
+                        var baseindex = i;//getRawIndexForImageIndex(3, i);
+                        Destdata[baseindex] = rgbfill[2];
+                        //Destdata[baseindex + 1] = rgbfill[1];
+                        //Destdata[baseindex + 2] = rgbfill[0];
+                    }
+                }
+            }
             default -> {
                 var rgbfill = getRGBArray(Fill);
                 var Destdata = Destinationdatabuffer.getData();
@@ -1210,7 +1263,7 @@ public class CanvasContainer {
                             = originalImage.getColorModel().getRed(data) == green
                             && green == originalImage.getColorModel().getBlue(data);
                     if (same) {
-                        var baseindex = getRawIndexForImageIndex(3, i);
+                        var baseindex = i;//getRawIndexForImageIndex(3, i);
                         Destdata[baseindex] = rgbfill[2];
                         //Destdata[baseindex + 1] = rgbfill[1];
                         //Destdata[baseindex + 2] = rgbfill[0];
@@ -1289,13 +1342,17 @@ public class CanvasContainer {
         }
         var image = GrayImage ? createBIemptyCopy(BufferedImage.TYPE_BYTE_GRAY) : createBIemptyCopy(BufferedImage.TYPE_3BYTE_BGR);
         var Destinationdatabuffer = (DataBufferByte) image.getRaster().getDataBuffer();
-        final var dataArrayObject = ImageDataReference==null?setupDataBuffer():ImageDataReference;        
+        final var dataArrayObject = ImageDataReference == null ? setupDataBuffer() : ImageDataReference;
         //NOTE: Alpha channel will become visible on the "blue" or Red channel (if the image is not grey)
         switch (dataArrayObject) {
             case byte[] bytesData ->
                 cloneChannelBytes(originalImage.getType(), image.getType(), hasAlphaChannel, false, bytesData, Destinationdatabuffer, Channel);
             case int[] IntegerData ->
                 cloneChannelInt(originalImage.getType(), image.getType(), hasAlphaChannel, false, IntegerData, Destinationdatabuffer, Channel);
+            case null->{
+                var Destdata = Destinationdatabuffer.getData();
+                cloneChannelDefault(Channel, originalImage, getTotalPixels(), image.getType(), Destdata);
+            }
             default -> {
                 var Destdata = Destinationdatabuffer.getData();
                 cloneChannelDefault(Channel, originalImage, getTotalPixels(), image.getType(), Destdata);

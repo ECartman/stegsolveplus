@@ -34,7 +34,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Stack;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.RecursiveTask;
 import java.util.logging.Level;
 import javax.swing.ImageIcon;
@@ -347,7 +347,7 @@ public class MainFrame extends javax.swing.JFrame {
         if (FileList.isEmpty()) {
             return false;
         }
-        final var taskStack = new Stack<RecursiveTask<Pair<Path, Boolean>>>();
+        final var taskStack = new ConcurrentLinkedDeque<RecursiveTask<Pair<Path, Boolean>>>();
         for (final var file : FileList) {
             taskStack.push(new RecursiveTask<Pair<Path, Boolean>>() {
                 @Override
@@ -358,7 +358,8 @@ public class MainFrame extends javax.swing.JFrame {
                             && Files.isReadable(file));
                     return created;
                 }
-            }).fork();
+            });
+            taskStack.peek().fork();
         }
         if (taskStack.isEmpty()) {
             return false;
@@ -367,20 +368,15 @@ public class MainFrame extends javax.swing.JFrame {
             while (!taskStack.isEmpty()) {
                 final var Checkresult = taskStack.pop().join();
                 if (Checkresult.getRight()) {
-                    try {
-                        SwingUtilities.invokeAndWait(() -> {
+                        SwingUtilities.invokeLater(() -> {
                             newFileTab(Checkresult.getLeft());
                         });
-                    } catch (InterruptedException | InvocationTargetException ex) {
-                        LoggingHelper.getLogger(MainFrame.class.getName())
-                                .log(Level.INFO, "UI interrupted or error on call", ex);
-                    }
                 }
             }
             SwingUtilities.invokeLater(() -> {
                 SetMenuStatus(BusyTabs == 0);
             });
-        }).start();
+        },"File Checking").start();
         return true;
     }
 

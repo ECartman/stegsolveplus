@@ -29,7 +29,8 @@ public class ErrorData {
     public ErrorData(Throwable error) {
         Objects.requireNonNull(error, "the error cannot be null");
         ErrorTittle = "Error on Execution";
-        ErrorMessage = error.getMessage();
+        ErrorMessage = Objects.requireNonNullElse(error.getMessage(),
+               Objects.requireNonNullElse(error.getCause().getMessage(),"Error during Execution"));
         this.error = error;
     }
 
@@ -40,7 +41,8 @@ public class ErrorData {
         if (Message != null &&  !Message.strip().equals("") ) {
             ErrorMessage = Message;
         } else if (error != null) {
-            ErrorMessage = error.getMessage();
+            ErrorMessage = Objects.requireNonNullElse(error.getMessage(),
+               Objects.requireNonNullElse(error.getCause().getMessage(),"Error during Execution"));
         } else {
             ErrorMessage = "Error on the Application, details are not provided.";
         }
