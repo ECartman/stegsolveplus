@@ -14,6 +14,7 @@ package com.aeongames.stegsolveplus.ui;
 
 import com.aeongames.edi.utils.data.Pair;
 import com.aeongames.edi.utils.error.ErrorData;
+import com.aeongames.edi.utils.visual.ImageScaleComponents;
 import com.aeongames.edi.utils.visual.Panels.ErrorGlassPane;
 import com.aeongames.edi.utils.visual.Panels.ImagePanel;
 import com.aeongames.stegsolveplus.ui.tabcomponents.Tab;
@@ -84,7 +85,10 @@ public class InvestigationTab extends Tab {
             if (evt.getPropertyName().equals(ImagePreviewPanel.ThumbClickEvent)) {
                 if (evt.getSource() instanceof ImagePreviewPanel) {
                     var closeComponent = new TabClose(AnalysisTabs);
-                    AnalysisTabs.addTab(evt.getOldValue().toString(), new ImagePanel((Image) evt.getNewValue()));
+                    var imagep= new ImagePanel((Image) evt.getNewValue());
+                    imagep.SetBackgroundPolicy(ImageScaleComponents.SCALE_ALWAYS);
+                    imagep.SmoothWhenScale(false);
+                    AnalysisTabs.addTab(evt.getOldValue().toString(),imagep);
                     AnalysisTabs.setTabComponentAt(AnalysisTabs.getTabCount() - 1, closeComponent);
                     AnalysisTabs.setSelectedIndex(AnalysisTabs.getTabCount() - 1);
                     //update the information on the component.

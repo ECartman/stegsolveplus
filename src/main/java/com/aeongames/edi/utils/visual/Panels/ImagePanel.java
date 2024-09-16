@@ -25,8 +25,10 @@ import javax.imageio.ImageIO;
  * @author Eduardo Vindas
  */
 public class ImagePanel extends javax.swing.JPanel {
-
-
+    /**
+     * whenever or not we should smooth the Image scaling
+     */
+    private boolean SmothPaint = true;
     /**
      * the policy to use to resize and or print the image the default is Scale
      * Small Only
@@ -37,7 +39,7 @@ public class ImagePanel extends javax.swing.JPanel {
      * provided.
      */
     static final String DEF_LOGO = "/com/aeongames/stegsolveplus/ui/pexels-photo-7319068.jpeg";
-    
+
     private static Image DefaultImageLoaded;
     /**
      * the image to be show or process.
@@ -150,7 +152,7 @@ public class ImagePanel extends javax.swing.JPanel {
      * read and sets the default image for the panel.
      */
     private void readDefault() {
-        if(DefaultImageLoaded!=null){
+        if (DefaultImageLoaded != null) {
             this.RenderImage = DefaultImageLoaded;
             return;
         }
@@ -172,12 +174,12 @@ public class ImagePanel extends javax.swing.JPanel {
      * @param policy the policy to use.
      * @throws IllegalArgumentException if a invalid parameter is sent
      */
-    public void setbackground_policy(ImageScaleComponents policy) {
+    public void SetBackgroundPolicy(ImageScaleComponents policy) {
         Objects.requireNonNull(policy, "Invalid Policy");
         ScalePolicy = policy;
     }
-    
-    public final boolean setImage(Image img){
+
+    public final boolean setImage(Image img) {
         return changeImage(img);
     }
 
@@ -195,7 +197,7 @@ public class ImagePanel extends javax.swing.JPanel {
             OriginalImage = null;
             readDefault();
         } else {
-            if ((OriginalImage != null && OriginalImage != todisplay) 
+            if ((OriginalImage != null && OriginalImage != todisplay)
                     || RenderImage != todisplay) {
                 RenderImage = todisplay;
                 OriginalImage = null;
@@ -251,16 +253,28 @@ public class ImagePanel extends javax.swing.JPanel {
         repeat_Y = repeat;
     }
 
+    public final void SmoothWhenScale(boolean smoth) {
+        SmothPaint = smoth;
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        //we should add code for set this as an option instad of always apply
-        ((Graphics2D) g).setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                RenderingHints.VALUE_ANTIALIAS_ON);
-        ((Graphics2D) g).setRenderingHint(RenderingHints.KEY_INTERPOLATION,
-                RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-//       ((Graphics2D) g).setRenderingHint(RenderingHints.KEY_RENDERING,
+        if (g instanceof Graphics2D g2d) {
+            if (SmothPaint) {
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                        RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                        RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+//          g2d.setRenderingHint(RenderingHints.KEY_RENDERING,
 //                RenderingHints.VALUE_RENDER_QUALITY);
+            } else {
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                        RenderingHints.VALUE_ANTIALIAS_OFF);
+                g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                        RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+            }
+        }
         switch (ScalePolicy) {
             case SCALE_ALWAYS:
                 paintRespectRatio(g);
@@ -301,7 +315,7 @@ public class ImagePanel extends javax.swing.JPanel {
      */
     private void paintRespectRatio(Graphics g) {
         //ok now we want to keep the image ratio so lets try the new aproach
-        int[] size = ImageUtils.keep_ratio_for_size(getWidth(),getHeight(), RenderImage);
+        int[] size = ImageUtils.keep_ratio_for_size(getWidth(), getHeight(), RenderImage);
         g.drawImage(RenderImage, size[2], size[3], size[0], size[1], this);
     }
 
@@ -310,7 +324,7 @@ public class ImagePanel extends javax.swing.JPanel {
      * not respect the ratio will fill the hold panel.
      */
     private void paintDefault(Graphics g) {
-        g.drawImage(RenderImage, 0, 0, getWidth(),getHeight(), this);
+        g.drawImage(RenderImage, 0, 0, getWidth(), getHeight(), this);
     }
 
     /**
@@ -341,7 +355,9 @@ public class ImagePanel extends javax.swing.JPanel {
     /**
      * provides the image Dimension. the Dimensions are generated each time this
      * method is called.
-     * @return returns the Dimension of the underline image that is being rendered.
+     *
+     * @return returns the Dimension of the underline image that is being
+     * rendered.
      */
     public Dimension getImageSize() {
         if (RenderImage != null) {

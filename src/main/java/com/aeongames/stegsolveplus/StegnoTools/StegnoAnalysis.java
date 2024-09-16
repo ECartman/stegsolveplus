@@ -649,7 +649,8 @@ public class StegnoAnalysis extends SwingWorker<List<Pair<String, BufferedImage>
 
     public synchronized void stopAnalysis() {
         stack.forEach((t) -> {
-            t.cancel(true);//this does not interrupt...
+            t.cancel(true);//this does not interrupt... thus the underline thread might still stuck. 
+            //and the functions on canvas are not aware they are paralelized. (by design) 
         });
         stackListResult.forEach((t) -> {
             t.cancel(true);

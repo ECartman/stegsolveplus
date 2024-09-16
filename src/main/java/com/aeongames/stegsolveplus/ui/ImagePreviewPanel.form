@@ -172,6 +172,7 @@
           </Events>
           <AuxValues>
             <AuxValue name="JavaCodeGenerator_CreateCodeCustom" type="java.lang.String" value="ImageToPreview == null&#xa;? new ImagePanel()&#xa;: new ImagePanel(ImageToPreview)"/>
+            <AuxValue name="JavaCodeGenerator_InitCodePost" type="java.lang.String" value="ImagePreviewPanel.SetBackgroundPolicy(ImageScaleComponents.SCALE_ALWAYS);&#xa;ImagePreviewPanel.SmoothWhenScale(false);"/>
             <AuxValue name="JavaCodeGenerator_ListenersCodePost" type="java.lang.String" value="ImagePreviewPanel.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));"/>
             <AuxValue name="JavaCodeGenerator_SerializeTo" type="java.lang.String" value="ImagePreviewPanel_imagePanel1"/>
           </AuxValues>

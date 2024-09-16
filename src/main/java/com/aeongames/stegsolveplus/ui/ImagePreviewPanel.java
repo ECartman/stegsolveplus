@@ -13,6 +13,7 @@
 package com.aeongames.stegsolveplus.ui;
 
 import com.aeongames.edi.utils.text.LabelText;
+import com.aeongames.edi.utils.visual.ImageScaleComponents;
 import com.aeongames.edi.utils.visual.Panels.ImagePanel;
 import java.awt.CardLayout;
 import java.awt.geom.AffineTransform;
@@ -225,6 +226,8 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
         );
 
         ImagePreviewPanel.setOpaque(false);
+        ImagePreviewPanel.SetBackgroundPolicy(ImageScaleComponents.SCALE_ALWAYS);
+        ImagePreviewPanel.SmoothWhenScale(false);
         ImagePreviewPanel.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 ImagePreviewPanelMouseClicked(evt);
