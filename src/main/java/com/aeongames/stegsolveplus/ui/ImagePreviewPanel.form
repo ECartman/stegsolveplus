@@ -103,6 +103,9 @@
         <Property name="arcHeight" type="int" value="20"/>
         <Property name="arcWidth" type="int" value="20"/>
       </Properties>
+      <AuxValues>
+        <AuxValue name="JavaCodeGenerator_InitCodePost" type="java.lang.String" value="ImagThumbpanel.putClientProperty(RadianceSynapse.COLORIZATION_FACTOR, 1.0);"/>
+      </AuxValues>
       <Constraints>
         <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignCardLayout" value="org.netbeans.modules.form.compat2.layouts.DesignCardLayout$CardConstraintsDescription">
           <CardConstraints cardName="ImageView"/>

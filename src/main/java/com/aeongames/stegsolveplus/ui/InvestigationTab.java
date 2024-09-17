@@ -106,8 +106,12 @@ public class InvestigationTab extends Tab {
             }
             if (List == null && Analyst.isDone()) {
                 //fail. TODO: add the means to read error from the process.
+                ThumbGridPanel.setLayout(null);
                 ThumbGridPanel.removeAll();
-                var err = new ErrorGlassPane(new ErrorData("Error Loading file.", Analyst.exceptionNow().getMessage(), Analyst.exceptionNow()));
+                var err = new ErrorGlassPane(new ErrorData("Error Loading file.", Analyst.exceptionNow().getMessage(), Analyst.exceptionNow())
+                ,(t) -> {
+                    this.Close(true);
+                        });
                 ThumbGridPanel.add(err);
                 ThumbGridPanel.setLayout(new javax.swing.BoxLayout(ThumbGridPanel, javax.swing.BoxLayout.PAGE_AXIS));
                 err.setVisible(true);

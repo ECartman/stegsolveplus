@@ -19,22 +19,24 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.util.Objects;
+import java.util.function.Consumer;
+import org.pushingpixels.radiance.theming.internal.RadianceSynapse;
 
 /**
  *
  * @author Eduardo V<cartman AeonGames.com>
  */
 public class ErrorGlassPane extends javax.swing.JPanel {
-
+    private Consumer<Void> callback;
     private ErrorData errdata;
 
     /**
      * Creates new form ErrorGlassPane
      */
-    public ErrorGlassPane(ErrorData err/*,CloseListener listener*/) {
+    public ErrorGlassPane(ErrorData err,Consumer<Void> callback) {
         errdata = Objects.requireNonNull(err, "the Error Data cannot be Null");
         initComponents();
-
+        this.callback=callback;
         addMouseListener(new MouseAdapter() {
         });
         addMouseMotionListener(new MouseMotionAdapter() {
@@ -44,8 +46,9 @@ public class ErrorGlassPane extends javax.swing.JPanel {
         setVisible(false);
     }
 
-    public void ChangeError(ErrorData err/*,CloseListener listener*/) {
+    public void ChangeError(ErrorData err,Consumer<Void> callback) {
         errdata = Objects.requireNonNull(err, "the Error Data cannot be Null");
+        this.callback=callback;
         update();
     }
 
@@ -157,7 +160,7 @@ public class ErrorGlassPane extends javax.swing.JPanel {
             .addGroup(jPanel5Layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jLabel1)
-                .addContainerGap(236, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel5Layout.setVerticalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -170,14 +173,14 @@ public class ErrorGlassPane extends javax.swing.JPanel {
         txtstack.setColumns(20);
         txtstack.setRows(5);
         txtstack.setText(errdata!=null? errdata.getErrorStack():"");
-        //txtstack.putClientProperty(LafWidget.TEXT_EDIT_CONTEXT_MENU, Boolean.TRUE);
+        txtstack.putClientProperty(RadianceSynapse.TEXT_EDIT_CONTEXT_MENU, Boolean.TRUE);
         jScrollPane2.setViewportView(txtstack);
 
         javax.swing.GroupLayout pstackLayout = new javax.swing.GroupLayout(pstack);
         pstack.setLayout(pstackLayout);
         pstackLayout.setHorizontalGroup(
             pstackLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane2)
+            .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
         );
         pstackLayout.setVerticalGroup(
             pstackLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -247,7 +250,7 @@ public class ErrorGlassPane extends javax.swing.JPanel {
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(translucentpanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(translucentpanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 273, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -256,8 +259,9 @@ public class ErrorGlassPane extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void closebtActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_closebtActionPerformed
-        //setVisible(false);
-        //TODO: this might require to do a callback to something else.
+        if(callback!=null){
+            callback.accept(null);
+        }
     }//GEN-LAST:event_closebtActionPerformed
 
     private void jLabel1ShowStack(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel1ShowStack
@@ -289,7 +293,8 @@ public class ErrorGlassPane extends javax.swing.JPanel {
     }//GEN-LAST:event_closebtKeyTyped
 
     private void formComponentShown(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentShown
-        closebt.requestFocusInWindow();
+        //closebt.requestFocusInWindow();
+        closebt.setVisible(false);
     }//GEN-LAST:event_formComponentShown
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel LbErrorTittle;

@@ -789,11 +789,8 @@ public class CanvasContainer {
      * expects and uses arrays with the ARGB order. no matter if the type is BGR
      * as this function handles the translations.
      * @return a image that contain the changes to the pixels done via the
-     * provided function. TODO:: This is slow because the call stack ends up
-     * into a Syncronized block at StateTrackableDelegate.SetUntrable. this
-     * blocking statement blocks us a BIG deal. and for no reason. as MULTIPLE
-     * calls have been done alredy to this function making thus function
-     * pointless.
+     * provided function. TODO:: this class is consuming a lot of memory. due big images
+     * transformations. we need to fix that...
      */
     public BufferedImage MathOnPixels(int TypeRequred, Function<Short[], Short[]> MathFunction) {
         //note if provided a unsupported type we could use whatever we want... or throw a error.
@@ -1124,9 +1121,8 @@ public class CanvasContainer {
         return getColorForIndex(Index, ALPHA, FillColor);
     }
 
-    //TODO:: this is a slow implementation due Syncronized DAta load inside a loop. 
-    //We need to either invert that (get the data prior the loop) or cache the data. 
-    //the issue is also present in Math Pixels. 
+    //TODO:: this implementation is now corrected but now it might consume too much memory
+    //Fix the data consumption.
     BufferedImage getColorForIndex(int Index, int Channel, Color FillColor) {
         if (Channel < 0 || Channel > BLUE) {
             throw new ArrayIndexOutOfBoundsException("Invalid Channel");
@@ -1134,16 +1130,18 @@ public class CanvasContainer {
         if (Index < 0 || Index >= 8) {
             throw new ArrayIndexOutOfBoundsException("the index(bit) Specified is not present on the image");
         }
-        var image = createBINoAlphaemptyCopy();//and RGB image
         var hasAlphaChannel = HasAlphaChannel();
         if (Channel == ALPHA && !hasAlphaChannel) {
             //if this image has no alpha channel then it means if it were to add one it will be fully opaque
-            //and thus for this specific case. it fills the data and thus a fully opaque image
+            //given the image is simply a full opaque image there is NO reason to make a image the same size as 
+            //the original. we will make a 10x10 fully opauqe BINARY image. 
+            var image =  new BufferedImage(10,10,BufferedImage.TYPE_BYTE_BINARY);
             var databuff = ((DataBufferInt) image.getRaster().getDataBuffer()).getData();
             Arrays.fill(databuff, FillColor.getRGB());
             image.flush();
             return image;
-        }
+        }        
+        var image = createBINoAlphaemptyCopy();//and RGB image
         //here if needs be we could fill the new image with white pixels. or something... 
         var Destinationdatabuffer = (DataBufferInt) image.getRaster().getDataBuffer();//rgb is int. thus. 
         var dataArrayObject = ImageDataReference == null ? setupDataBuffer() : ImageDataReference;
@@ -1334,7 +1332,7 @@ public class CanvasContainer {
     BufferedImage getImageForChannel(boolean GrayImage, int Channel) {
         var hasAlphaChannel = HasAlphaChannel();
         if (Channel == ALPHA && !hasAlphaChannel) {
-            var image = createBIemptyCopy(BufferedImage.TYPE_BYTE_GRAY);//note We could just return a binary image
+            var image = createBIemptyCopy(BufferedImage.TYPE_BYTE_BINARY);
             var databuff = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
             Arrays.fill(databuff, (byte) 0);
             image.flush();

@@ -59,8 +59,8 @@ import org.pushingpixels.radiance.theming.api.skin.RadianceNightShadeLookAndFeel
  * @author Eduardo Vindas
  */
 public class MainFrame extends javax.swing.JFrame {
-
-    public static final String APP_NAME = "StegnoSolver+ (ALPHA)";
+    public static final String Version =  "0.5.8";
+    public static final String APP_NAME = "StegnoSolver+ (ALPHA)" ;
     public static ImageIcon APP_ICON = LoadAppIcon();
 
     private static ImageIcon LoadAppIcon() {
@@ -127,6 +127,8 @@ public class MainFrame extends javax.swing.JFrame {
         jMenuItem2 = new javax.swing.JMenuItem();
         jMenuItem3 = new javax.swing.JMenuItem();
         jMenuItem1 = new javax.swing.JMenuItem();
+        MenuHelp = new javax.swing.JMenu();
+        jMenuItem4 = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
         setTitle(APP_NAME);
@@ -222,6 +224,22 @@ public class MainFrame extends javax.swing.JFrame {
         jMenu2.add(jMenuItem1);
 
         MainMenu.add(jMenu2);
+
+        MenuHelp.setText("Help");
+        MenuHelp.setToolTipText("");
+
+        jMenuItem4.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F12, 0));
+        jMenuItem4.setIcon(new ImageIcon(APP_ICON.getImage().getScaledInstance(25,25, Image.SCALE_FAST),"app icon"));
+        jMenuItem4.setText(String.format("About %s",APP_NAME)
+        );
+        jMenuItem4.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                CallAboutWin(evt);
+            }
+        });
+        MenuHelp.add(jMenuItem4);
+
+        MainMenu.add(MenuHelp);
 
         setJMenuBar(MainMenu);
 
@@ -375,6 +393,12 @@ public class MainFrame extends javax.swing.JFrame {
             }
         }
     }//GEN-LAST:event_jMenuItem3ActionPerformed
+
+    private void CallAboutWin(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CallAboutWin
+        AboutWindow about = new AboutWindow(this, true);
+        about.setLocationRelativeTo(this);
+        about.setVisible(true);
+    }//GEN-LAST:event_CallAboutWin
 
     private String ValidFileTypes(String list2[]) {
         var descriptor = new StringBuilder("Images (");
@@ -779,10 +803,12 @@ public class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenuBar MainMenu;
     private com.aeongames.stegsolveplus.ui.tabcomponents.JStegnoTabbedPane MainTabPane;
     private javax.swing.JMenuItem MbExit;
+    private javax.swing.JMenu MenuHelp;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JMenuItem jMenuItem3;
+    private javax.swing.JMenuItem jMenuItem4;
     private javax.swing.JPopupMenu.Separator jSeparator1;
     // End of variables declaration//GEN-END:variables
 

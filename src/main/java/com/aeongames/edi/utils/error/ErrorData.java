@@ -85,6 +85,9 @@ public class ErrorData {
         try (StringWriter writer = new StringWriter()) {
             try (PrintWriter out = new PrintWriter(writer)) {
                 error.printStackTrace(out);
+                if(error.getCause()!=null){
+                    error.getCause().printStackTrace(out);
+                }
                 //out.flush(); //StringWritter flush does nothing.
                ErrorStackString= writer.toString();
             }

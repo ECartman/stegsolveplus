@@ -19,12 +19,11 @@ import java.awt.CardLayout;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Objects;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.swing.SwingUtilities;
+import java.util.concurrent.ExecutionException;
+import javax.swing.SwingWorker;
 import javax.swing.event.AncestorEvent;
+import org.pushingpixels.radiance.theming.internal.RadianceSynapse;
 
 /**
  *
@@ -70,9 +69,11 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
 
                 @Override
                 public void ancestorMoved(AncestorEvent event) {
-                    SetImage(ImageToPreview);
-                    //we no longer need to listen to events. remove this listener
-                    removeAncestorListener(this);
+                    if (ImageToPreview != null) {
+                        SetImage(ImageToPreview);
+                        //we no longer need to listen to events. remove this listener
+                        removeAncestorListener(this);
+                    }
                 }
             });
         } else {
@@ -96,24 +97,30 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
         var totalpix = ImageToPreview.getWidth() * ImageToPreview.getHeight();
         var acceptable = this.getWidth() * this.getHeight() * 1.50;
         if (totalpix >= acceptable) {
-            new Thread(() -> {
-                double scalex = (double) (this.getWidth() * 1.50) / ImageToPreview.getWidth();
-                double scaley = (double) (this.getHeight() * 1.50) / ImageToPreview.getHeight();
-                BufferedImage tmp = scale(ImageToPreview, Math.min(scalex, scaley), AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
-                try {
-                    SwingUtilities.invokeAndWait(() -> {
-                        ImagePreviewPanel.setImage(tmp);
-                        Layout.show(this, THUMBNAIL);
-                        repaint();
-                    });
-                } catch (InterruptedException | InvocationTargetException ex) {
-                    Logger.getLogger(ImagePreviewPanel.class.getName()).log(Level.SEVERE, null, ex);
+            new SwingWorker<BufferedImage, Void>() {
+                @Override
+                protected BufferedImage doInBackground() throws Exception {
+                    double scalex = (double) (ImagePreviewPanel.this.getWidth() * 1.50) / ImageToPreview.getWidth();
+                    double scaley = (double) (ImagePreviewPanel.this.getHeight() * 1.50) / ImageToPreview.getHeight();
+                    BufferedImage tmp = scale(ImageToPreview, Math.min(scalex, scaley), AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
+                    return tmp;
                 }
-            }, "Thumbnail Resize").start();
+
+                @Override
+                protected void done() {
+                    try {
+                        var result = get();
+                        ImagePreviewPanel.setImage(result);
+                        ImagePreviewPanel.this.Layout.show(ImagePreviewPanel.this, THUMBNAIL);
+                        ImagePreviewPanel.this.repaint();
+                    } catch (ExecutionException | InterruptedException err) {
+                    }
+                }
+
+            }.execute();
             //if the image is  50%  or more than the size of this panel 
             //for sake of performance lets Scale the image down to our acceptable region
             //this also helps as the image will have its Raster untouch to be render.
-
         } else {
             ImagePreviewPanel.setImage(ImageToPreview);
             Layout.show(this, THUMBNAIL);
@@ -207,6 +214,7 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
         ImagThumbpanel.setBackground(new java.awt.Color(255, 255, 255));
         ImagThumbpanel.setArcHeight(20);
         ImagThumbpanel.setArcWidth(20);
+        ImagThumbpanel.putClientProperty(RadianceSynapse.COLORIZATION_FACTOR, 1.0);
 
         jPanel1.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
 
