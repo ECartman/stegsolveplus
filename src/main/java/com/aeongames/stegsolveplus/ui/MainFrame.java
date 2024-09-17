@@ -45,6 +45,7 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JRootPane;
 import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -59,18 +60,15 @@ import org.pushingpixels.radiance.theming.api.skin.RadianceNightShadeLookAndFeel
  * @author Eduardo Vindas
  */
 public class MainFrame extends javax.swing.JFrame {
-    public static final String Version =  "0.5.8";
-    public static final String APP_NAME = "StegnoSolver+ (ALPHA)" ;
+
+    public static final String VERSION = "0.5.9";
+    public static final String APP_NAME = "StegnoSolver+ (ALPHA)";
     public static ImageIcon APP_ICON = LoadAppIcon();
 
     private static ImageIcon LoadAppIcon() {
         var resource = MainFrame.class.getResource("/com/aeongames/stegsolveplus/ui/OIG3.jpg");
         return resource == null ? null : new javax.swing.ImageIcon(resource);
     }
-    /**
-     * counts the amount of "busy tabs" that are currently registered.
-     */
-    private int BusyTabs;
     /**
      * TODO: better approach using javaFX or Low level?
      */
@@ -86,7 +84,6 @@ public class MainFrame extends javax.swing.JFrame {
      * Creates new form MainFrame
      */
     public MainFrame() {
-        BusyTabs = 0;
         BusyStateCallback = getBusyStateCallback();
         initComponents();
         if (APP_ICON != null) {
@@ -97,12 +94,10 @@ public class MainFrame extends javax.swing.JFrame {
 
     private PropertyChangeListener getBusyStateCallback() {
         return (evt) -> {
-            if (evt.getPropertyName().equals(InvestigationTab.ChangePropertys.BUSY) && evt.getSource() instanceof InvestigationTab && evt.getNewValue() instanceof Boolean newvalue) {
-                if (!newvalue) {//not busy
-                    SetMenuStatus(--BusyTabs == 0);
-                } else {
-                    SetMenuStatus(newvalue);
-                }
+            if (evt.getPropertyName().equals(InvestigationTab.ChangePropertys.BUSY) && evt.getSource() instanceof InvestigationTab) {
+                //we unfortunately cannot just re enable if a single tab is idle we need to check that ALL of them are idle.
+                //and retriger if any of them becomes busy.
+                checkBusyAndEnableMenu();
             }
         };
     }
@@ -123,6 +118,8 @@ public class MainFrame extends javax.swing.JFrame {
         MOpenClipboard = new javax.swing.JMenuItem();
         jSeparator1 = new javax.swing.JPopupMenu.Separator();
         MbExit = new javax.swing.JMenuItem();
+        jMenu1 = new javax.swing.JMenu();
+        jMenuItem5 = new javax.swing.JMenuItem();
         jMenu2 = new javax.swing.JMenu();
         jMenuItem2 = new javax.swing.JMenuItem();
         jMenuItem3 = new javax.swing.JMenuItem();
@@ -195,7 +192,20 @@ public class MainFrame extends javax.swing.JFrame {
 
         MainMenu.add(FileMenu);
 
-        jMenu2.setText("Actions");
+        jMenu1.setText("Analysis Actions");
+
+        jMenuItem5.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F7, 0));
+        jMenuItem5.setText("Run Analysis");
+        jMenuItem5.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem5ActionPerformed(evt);
+            }
+        });
+        jMenu1.add(jMenuItem5);
+
+        MainMenu.add(jMenu1);
+
+        jMenu2.setText("External Actions");
 
         jMenuItem2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/openf.png"))); // NOI18N
         jMenuItem2.setText("Open Original Image Location");
@@ -259,10 +269,6 @@ public class MainFrame extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
-        var currentTab = MainTabPane.getSelectedComponent();
-        if (currentTab instanceof InvestigationTab ITab) {
-            /*      ITab.startAnalysis();*/
-        }
         //SetDefOSUI();
         SetNimbusUI();
         this.setVisible(true);
@@ -290,11 +296,10 @@ public class MainFrame extends javax.swing.JFrame {
         if (rVal == JFileChooser.APPROVE_OPTION) {
             var selecteddata = fileChooser.getSelectedFiles();
             if (!loadImages(selecteddata)) {
-                SetMenuStatus(true);
+                checkBusyAndEnableMenu();
             }
-            //SetMenuStatus(true);
         } else {
-            SetMenuStatus(true);
+            checkBusyAndEnableMenu();
         }
     }//GEN-LAST:event_MOpenFileActionPerformed
 
@@ -319,7 +324,7 @@ public class MainFrame extends javax.swing.JFrame {
                     }
                 } else {
                     try {
-                        if (loadUrl(uri.toURL())) {
+                        if (newURLTab(uri.toURL())) {
                             return;
                         }
                     } catch (MalformedURLException ex) {
@@ -328,7 +333,7 @@ public class MainFrame extends javax.swing.JFrame {
                 }
             }
         }
-        SetMenuStatus(true);
+        checkBusyAndEnableMenu();
     }//GEN-LAST:event_MOpenLinkActionPerformed
 
     private void MainTabPanePropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_MainTabPanePropertyChange
@@ -400,6 +405,12 @@ public class MainFrame extends javax.swing.JFrame {
         about.setVisible(true);
     }//GEN-LAST:event_CallAboutWin
 
+    private void jMenuItem5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem5ActionPerformed
+        if (MainTabPane.getSelectedComponent() instanceof InvestigationTab tab) {
+            tab.startAnalysis();
+        }
+    }//GEN-LAST:event_jMenuItem5ActionPerformed
+
     private String ValidFileTypes(String list2[]) {
         var descriptor = new StringBuilder("Images (");
         for (int index = 0; index < list2.length; index++) {
@@ -425,7 +436,7 @@ public class MainFrame extends javax.swing.JFrame {
         return loadImages(pathList);
     }
 
-    private boolean loadImages(List<Path> FileList) {
+    private boolean loadImages(final List<Path> FileList) {
         //do the fast check if already has a tab avail 
         for (var iterator = FileList.iterator(); iterator.hasNext();) {
             Path next = iterator.next();
@@ -436,36 +447,44 @@ public class MainFrame extends javax.swing.JFrame {
         if (FileList.isEmpty()) {
             return false;
         }
-        final var taskStack = new ConcurrentLinkedDeque<RecursiveTask<Pair<Path, Boolean>>>();
-        for (final var file : FileList) {
-            taskStack.push(new RecursiveTask<Pair<Path, Boolean>>() {
-                @Override
-                protected Pair<Path, Boolean> compute() {
-                    var created = new Pair<>(file,
-                            Files.exists(file)
-                            && Files.isRegularFile(file)
-                            && Files.isReadable(file));
-                    return created;
-                }
-            });
-            taskStack.peek().fork();
-        }
-        if (taskStack.isEmpty()) {
-            return false;
-        }
-        new Thread(() -> {
-            while (!taskStack.isEmpty()) {
-                final var Checkresult = taskStack.pop().join();
-                if (Checkresult.getRight()) {
-                    SwingUtilities.invokeLater(() -> {
-                        newFileTab(Checkresult.getLeft());
+        new SwingWorker<Void, Path>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                final var taskStack = new ConcurrentLinkedDeque<RecursiveTask<Pair<Path, Boolean>>>();
+                for (final var file : FileList) {
+                    taskStack.push(new RecursiveTask<Pair<Path, Boolean>>() {
+                        @Override
+                        protected Pair<Path, Boolean> compute() {
+                            var created = new Pair<>(file,
+                                    Files.exists(file)
+                                    && Files.isRegularFile(file)
+                                    && Files.isReadable(file));
+                            if (created.getRight()) {
+                                publish(file);
+                            }
+                            return created;
+                        }
                     });
+                    taskStack.peek().fork();
+                }
+                while (!taskStack.isEmpty()) {
+                    taskStack.pop().join();
+                }
+                return null;
+            }
+
+            @Override
+            protected void process(List<Path> chunks) {
+                for (Path path : chunks) {
+                    newFileTab(path);
                 }
             }
-            SwingUtilities.invokeLater(() -> {
-                SetMenuStatus(BusyTabs == 0);
-            });
-        }, "File Checking").start();
+
+            @Override
+            protected void done() {
+                checkBusyAndEnableMenu();
+            }
+        }.execute();
         return true;
     }
 
@@ -498,23 +517,27 @@ public class MainFrame extends javax.swing.JFrame {
      * @return true if the tab was sucessfully created false otherwise.
      */
     private boolean newFileTab(final Path file) {
-        var success = false;
-        if (Files.exists(file) && Files.isRegularFile(file) && Files.isReadable(file)) {
-            InvestigationTab tab = new InvestigationTab(file);
-            tab.addBusyListener(BusyStateCallback);
-            BusyTabs++;
-            success = addTab(tab);
-        } else {
-            LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.WARNING, "the Path {0} Does not exist, is not a File. or Cannot be Read", file.toString());
+        InvestigationTab tab = new InvestigationTab(file);
+        tab.addBusyListener(BusyStateCallback);
+        return addTab(tab);
+    }
+
+    private boolean newURLTab(URL Link) {
+        int tabindx;
+        if ((tabindx = hasTabforLink(Link)) >= 0) {
+            MainTabPane.setSelectedIndex(tabindx);
+            return false;
         }
-        return success;
+        var tab = new InvestigationTab(Link);
+        tab.addBusyListener(BusyStateCallback);
+        return addTab(tab);
     }
 
     private void ProcessDropedFiles(final List<Path> FileList) {
         if (SwingUtilities.isEventDispatchThread()) {
             SetMenuStatus(false);
             if (!loadImages(FileList)) {
-                SetMenuStatus(true);
+                checkBusyAndEnableMenu();
             }
             return;
         }
@@ -530,8 +553,8 @@ public class MainFrame extends javax.swing.JFrame {
     private void ProcessDropedLinks(final URL link) {
         if (SwingUtilities.isEventDispatchThread()) {
             SetMenuStatus(false);
-            if (!loadUrl(link)) {
-                SetMenuStatus(true);
+            if (!newURLTab(link)) {
+                checkBusyAndEnableMenu();
             }
             return;
         }
@@ -553,22 +576,9 @@ public class MainFrame extends javax.swing.JFrame {
                 DragAndDrophelper.UnRegisterTarget(panel);
                 panel.setVisible(false);
             }
-            Tabcreated = true;// we might want to do something extra here. but this will do for now. 
+            Tabcreated = true;
         }
         return Tabcreated;
-    }
-
-    private boolean loadUrl(URL Link) {
-        int tabindx;
-        if ((tabindx = hasTabforLink(Link)) >= 0) {
-            MainTabPane.setSelectedIndex(tabindx);
-            return false;
-        }
-        InvestigationTab tab = null;
-        tab = new InvestigationTab(Link);
-        tab.addBusyListener(BusyStateCallback);
-        BusyTabs++;
-        return addTab(tab);
     }
 
     private void SetMenuStatus(boolean status) {
@@ -576,6 +586,18 @@ public class MainFrame extends javax.swing.JFrame {
         MOpenLink.setEnabled(status);
         //this is not ready to be changed.
         //MOpenClipboard.setEnabled(status);
+    }
+
+    private void checkBusyAndEnableMenu() {
+        var isbusy = false;
+        for (var index = 0; index < MainTabPane.getTabCount(); index++) {
+            if (MainTabPane.getComponentAt(index) instanceof InvestigationTab tab) {
+                if (isbusy = tab.isBusy()) {
+                    break;
+                }
+            }
+        }
+        SetMenuStatus(!isbusy);
     }
 
     private int hasTabforFile(Path pathFile) {
@@ -598,6 +620,35 @@ public class MainFrame extends javax.swing.JFrame {
             }
         }
         return -1;
+    }
+
+    private void CloseRequested() {
+        if (MainTabPane.getTabCount() == 0) {
+            this.setVisible(false);
+            this.dispose();
+            System.exit(0);
+            return;
+        }
+        CloseDialog Dialog = new CloseDialog(this, true);
+        Dialog.setLocationRelativeTo(this);
+        Dialog.setVisible(true);
+        if (Dialog.getSelectedOption() == CloseDialog.RET_EXIT) {
+            try {
+                for (var index = 0; index < MainTabPane.getTabCount(); index++) {
+                    if (MainTabPane.getComponentAt(index) instanceof InvestigationTab tab) {
+                        tab.Close(true);
+                    }
+                }
+                this.setVisible(false);
+                this.dispose();
+                //Do whatever other cleanup might still pending
+                //bye
+                System.exit(0);
+            } catch (Throwable err) {
+                LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "error while closing", err);
+                System.exit(-2);
+            }
+        }
     }
 
     private void EnableDragAndDrop() {
@@ -654,6 +705,7 @@ public class MainFrame extends javax.swing.JFrame {
         DragAndDrophelper.RegisterTarget(this);
     }
 
+    // <editor-fold defaultstate="collapsed" desc="LAF">
     private void SetNimbusUI() {
         for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
             if ("Nimbus".equals(info.getName())) {
@@ -705,35 +757,7 @@ public class MainFrame extends javax.swing.JFrame {
         }
         this.revalidate();
     }
-
-    private void CloseRequested() {
-        if (MainTabPane.getTabCount() == 0) {
-            this.setVisible(false);
-            this.dispose();
-            System.exit(0);
-            return;
-        }
-        CloseDialog Dialog = new CloseDialog(this, true);
-        Dialog.setLocationRelativeTo(this);
-        Dialog.setVisible(true);
-        if (Dialog.getSelectedOption() == CloseDialog.RET_EXIT) {
-            try {
-                for (var index = 0; index < MainTabPane.getTabCount(); index++) {
-                    if (MainTabPane.getComponentAt(index) instanceof InvestigationTab tab) {
-                        tab.Close(true);
-                    }
-                }
-                this.setVisible(false);
-                this.dispose();
-                //Do whatever other cleanup might still pending
-                //bye
-                System.exit(0);
-            } catch (Throwable err) {
-                LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "error while closing", err);
-                System.exit(-2);
-            }
-        }
-    }
+    // </editor-fold >
 
     // <editor-fold defaultstate="collapsed" desc="Start Up Functions">
     /**
@@ -804,11 +828,13 @@ public class MainFrame extends javax.swing.JFrame {
     private com.aeongames.stegsolveplus.ui.tabcomponents.JStegnoTabbedPane MainTabPane;
     private javax.swing.JMenuItem MbExit;
     private javax.swing.JMenu MenuHelp;
+    private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JMenuItem jMenuItem3;
     private javax.swing.JMenuItem jMenuItem4;
+    private javax.swing.JMenuItem jMenuItem5;
     private javax.swing.JPopupMenu.Separator jSeparator1;
     // End of variables declaration//GEN-END:variables
 

@@ -19,9 +19,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.RenderingHints;
-import java.io.IOException;
 import java.util.Objects;
-import javax.imageio.ImageIO;
 
 /**
  *
@@ -45,11 +43,6 @@ public class JImageTabPane extends javax.swing.JTabbedPane {
      */
     private ImageScaleComponents ScalePolicy = ImageScaleComponents.SCALE_SMALL_ONLY;
     /**
-     * the default image location we use on our Image panel when none is
-     * provided.
-     */
-    private static final String DEF_LOGO = ImagePanel.DEF_LOGO;
-    /**
      * the image to be show or process.
      */
     private Image img;
@@ -63,7 +56,7 @@ public class JImageTabPane extends javax.swing.JTabbedPane {
      */
     public JImageTabPane() {
         super();
-        img = loadDefault();
+        img = ImagePanel.LoadDefault();
         setSize(new Dimension(img.getWidth(null), img.getHeight(null)));
         this.setTabLayoutPolicy(javax.swing.JTabbedPane.SCROLL_TAB_LAYOUT);
     }
@@ -78,29 +71,11 @@ public class JImageTabPane extends javax.swing.JTabbedPane {
      */
     public JImageTabPane(Image todisplay) {
         super();
-        img = todisplay != null ? todisplay : loadDefault();
+        img = todisplay != null ? todisplay : ImagePanel.LoadDefault();
         setSize(new Dimension(img.getWidth(null), img.getHeight(null)));
         this.setTabLayoutPolicy(javax.swing.JTabbedPane.SCROLL_TAB_LAYOUT);
     }
     //</editor-fold>
-
-    /**
-     * Loads the default image to use on this pane.
-     * @return 
-     */
-    private Image loadDefault() {
-        Image loaded = null;
-        try {
-            loaded = ImageIO.read(this.getClass().getResource(DEF_LOGO));
-        } catch (IOException ex) {
-            try {
-                loaded = java.awt.Toolkit.getDefaultToolkit().getImage(this.getClass().getResource(DEF_LOGO));
-            } catch (Exception sub) {
-                //we should print error if debug build. here. 
-            }
-        }
-        return loaded;
-    }
 
     /**
      * {@inheritDoc}

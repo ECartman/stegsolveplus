@@ -25,6 +25,7 @@ import javax.imageio.ImageIO;
  * @author Eduardo Vindas
  */
 public class ImagePanel extends javax.swing.JPanel {
+
     /**
      * whenever or not we should smooth the Image scaling
      */
@@ -148,6 +149,24 @@ public class ImagePanel extends javax.swing.JPanel {
         }
     }
 
+    static Image LoadDefault() {
+        if (DefaultImageLoaded == null) {
+            synchronized(ImagePanel.class){
+                var res = ImagePanel.class.getResource(DEF_LOGO);
+                try {
+                    DefaultImageLoaded = ImageIO.read(res);
+                } catch (IOException ex) {
+                    try {
+                        DefaultImageLoaded = java.awt.Toolkit.getDefaultToolkit().getImage(res);
+                    } catch (Exception sub) {
+                        //we should print error if debug build. here. 
+                    }
+                }
+            }
+        }
+        return DefaultImageLoaded;
+    }
+
     /**
      * read and sets the default image for the panel.
      */
@@ -156,15 +175,7 @@ public class ImagePanel extends javax.swing.JPanel {
             this.RenderImage = DefaultImageLoaded;
             return;
         }
-        try {
-            RenderImage = DefaultImageLoaded = ImageIO.read(this.getClass().getResource(DEF_LOGO));
-        } catch (IOException ex) {
-            try {
-                this.RenderImage = DefaultImageLoaded = java.awt.Toolkit.getDefaultToolkit().getImage(this.getClass().getResource(DEF_LOGO));
-            } catch (Exception sub) {
-                //we should print error if debug build. here. 
-            }
-        }
+        RenderImage = LoadDefault();
     }
 
     /**

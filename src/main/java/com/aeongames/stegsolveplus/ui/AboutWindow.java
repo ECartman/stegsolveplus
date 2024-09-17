@@ -30,7 +30,7 @@ public class AboutWindow extends javax.swing.JDialog {
         initComponents();
         //for the RADIANCE UI this will set the panner NOT to morph colors when painting.
         jPanel1.putClientProperty(RadianceSynapse.COLORIZATION_FACTOR, 1.0);
-        setTitle(String.format("About %s %s", MainFrame.APP_NAME, MainFrame.Version));
+        setTitle(String.format("About %s %s", MainFrame.APP_NAME, MainFrame.VERSION));
     }
 
     /**
@@ -65,7 +65,7 @@ public class AboutWindow extends javax.swing.JDialog {
         jLabel2.setFont(new java.awt.Font("Comic Sans MS", 1, 24)); // NOI18N
         jLabel2.setForeground(new java.awt.Color(0, 0, 0));
         jLabel2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel2.setText(MainFrame.Version);
+        jLabel2.setText(MainFrame.VERSION);
 
         jLabel3.setIcon(new ImageIcon(MainFrame.APP_ICON.getImage().getScaledInstance(100,100,Image.SCALE_FAST),"Application Icon")
         );

@@ -20,6 +20,7 @@ import com.aeongames.edi.utils.visual.Panels.ImagePanel;
 import com.aeongames.stegsolveplus.ui.tabcomponents.Tab;
 import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalysis;
 import com.aeongames.stegsolveplus.ui.tabcomponents.TabClose;
+import java.awt.CardLayout;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeListener;
@@ -43,7 +44,7 @@ public class InvestigationTab extends Tab {
         public static final String BUSY = "BUSY";
         public static final String STATEINFO = "STATE_STRING";
     }
-    private boolean isBusy = true;
+    private boolean isBusy=false;
     private final StegnoAnalysis Analyst;
     private HashMap<String, ImagePreviewPanel> ThumbsReferences;
     private final PropertyChangeListener ThumbClickListener;
@@ -65,7 +66,6 @@ public class InvestigationTab extends Tab {
         Callback = getCallback();
         ThumbClickListener = generateThumbReader();
         Analyst = new StegnoAnalysis(Callback, FilePath);
-        pFooter.SetProgressIndeterminate();
         prepareAnalysis();
     }
 
@@ -76,7 +76,6 @@ public class InvestigationTab extends Tab {
         Callback = getCallback();
         ThumbClickListener = generateThumbReader();
         Analyst = new StegnoAnalysis(Callback, Link);
-        pFooter.SetProgressIndeterminate();
         prepareAnalysis();
     }
 
@@ -108,9 +107,9 @@ public class InvestigationTab extends Tab {
                 //fail. TODO: add the means to read error from the process.
                 ThumbGridPanel.setLayout(null);
                 ThumbGridPanel.removeAll();
-                var err = new ErrorGlassPane(new ErrorData("Error Loading file.", Analyst.exceptionNow().getMessage(), Analyst.exceptionNow())
-                ,(t) -> {
-                    this.Close(true);
+                var err = new ErrorGlassPane(new ErrorData("Error Loading file.", Analyst.exceptionNow().getMessage(), Analyst.exceptionNow()),
+                        (t) -> {
+                            this.Close(true);
                         });
                 ThumbGridPanel.add(err);
                 ThumbGridPanel.setLayout(new javax.swing.BoxLayout(ThumbGridPanel, javax.swing.BoxLayout.PAGE_AXIS));
@@ -177,13 +176,13 @@ public class InvestigationTab extends Tab {
     }
 
     public Object getImageResource() {
-       var path = Analyst.getFilePath();
-       if(path!=null){
-           return path;
-       }
-       return Analyst.getAnalysisSource();
+        var path = Analyst.getFilePath();
+        if (path != null) {
+            return path;
+        }
+        return Analyst.getAnalysisSource();
     }
-    
+
     private void prepareAnalysis() {
         List<String> names = StegnoAnalysis.getAnalysisTransformationNames();
         ThumbsReferences = new HashMap<>(names.size());
@@ -193,10 +192,18 @@ public class InvestigationTab extends Tab {
             ThumbsReferences.put(name, preview);
             ThumbGridPanel.add(preview);
         }
+        if (jPanel2.getLayout() instanceof CardLayout cards) {
+            cards.show(jPanel2, "Action");
+        }
     }
 
     public void startAnalysis() {
         if (!Analyst.isDone()) {
+            if (jPanel2.getLayout() instanceof CardLayout cards) {
+                cards.show(jPanel2, "Transforms");
+            }
+            pFooter.setFooterText(String.format("Analysing File: %s", Analyst.getSourceName()));
+            setBusy();
             Analyst.execute();
         }
     }
@@ -212,7 +219,7 @@ public class InvestigationTab extends Tab {
     private void SetTitleInternal(Path FilePath) {
         //assume the file is alredy non null. we are too deep if it is not a verification was missing before
         var Filename = FilePath.getFileName().toString().strip();
-        pFooter.setFooterText(String.format("analyzing File: %s", Filename));
+        pFooter.setFooterText(String.format("Ready File: %s", Filename));
         var extension = Filename;
         if (Filename != null && Filename.length() > 20) {
             var StartExtensionIndex = Filename.lastIndexOf('.');//get the file type
@@ -301,6 +308,10 @@ public class InvestigationTab extends Tab {
         ClearCursor();
     }
 
+    public boolean isBusy() {
+        return isBusy;
+    }
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -309,10 +320,13 @@ public class InvestigationTab extends Tab {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jPanel2 = new javax.swing.JPanel();
         AnalysisTabs = new com.aeongames.edi.utils.visual.Panels.JImageTabPane();
         jPanel1 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
         ThumbGridPanel = new javax.swing.JPanel();
+        jPanel3 = new javax.swing.JPanel();
+        jLabel1 = new javax.swing.JLabel();
         pFooter = new com.aeongames.stegsolveplus.ui.Footer();
 
         addComponentListener(new java.awt.event.ComponentAdapter() {
@@ -321,7 +335,7 @@ public class InvestigationTab extends Tab {
             }
         });
 
-        AnalysisTabs.setTabPlacement(javax.swing.JTabbedPane.BOTTOM);
+        jPanel2.setLayout(new java.awt.CardLayout());
 
         jPanel1.setOpaque(false);
 
@@ -335,42 +349,75 @@ public class InvestigationTab extends Tab {
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 658, Short.MAX_VALUE)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 781, Short.MAX_VALUE)
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 455, Short.MAX_VALUE)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 443, Short.MAX_VALUE)
         );
 
         AnalysisTabs.addTab("Transformations", new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/color.png")), jPanel1); // NOI18N
+
+        jPanel2.add(AnalysisTabs, "Transforms");
+        AnalysisTabs.getAccessibleContext().setAccessibleName("");
+        AnalysisTabs.getAccessibleContext().setAccessibleDescription("");
+
+        jLabel1.setFont(new java.awt.Font("Comic Sans MS", 1, 24)); // NOI18N
+        jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel1.setText("<html>To Start the Analysis hit F7, Choose Analysis action or Click here.");
+        jLabel1.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jLabel1MouseClicked(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
+        jPanel3.setLayout(jPanel3Layout);
+        jPanel3Layout.setHorizontalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(jLabel1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 781, Short.MAX_VALUE)
+        );
+        jPanel3Layout.setVerticalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addGap(135, 135, 135)
+                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 138, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(208, Short.MAX_VALUE))
+        );
+
+        jPanel2.add(jPanel3, "Action");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(AnalysisTabs, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addComponent(pFooter, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+            .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(AnalysisTabs, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGap(0, 0, 0)
                 .addComponent(pFooter, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
-
-        AnalysisTabs.getAccessibleContext().setAccessibleName("");
-        AnalysisTabs.getAccessibleContext().setAccessibleDescription("");
     }// </editor-fold>//GEN-END:initComponents
 
     private void formComponentShown(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentShown
-        startAnalysis();
+        //startAnalysis();
     }//GEN-LAST:event_formComponentShown
+
+    private void jLabel1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel1MouseClicked
+        startAnalysis();
+    }//GEN-LAST:event_jLabel1MouseClicked
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private com.aeongames.edi.utils.visual.Panels.JImageTabPane AnalysisTabs;
     private javax.swing.JPanel ThumbGridPanel;
+    private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;
     private com.aeongames.stegsolveplus.ui.Footer pFooter;
     // End of variables declaration//GEN-END:variables
