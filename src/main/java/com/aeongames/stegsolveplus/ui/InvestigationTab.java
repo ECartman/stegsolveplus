@@ -18,9 +18,8 @@ import com.aeongames.edi.utils.visual.ImageScaleComponents;
 import com.aeongames.edi.utils.visual.Panels.ErrorGlassPane;
 import com.aeongames.edi.utils.visual.Panels.ImagePanel;
 import com.aeongames.stegsolveplus.ui.tabcomponents.Tab;
-import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalysis;
+import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalyzer;
 import com.aeongames.stegsolveplus.ui.tabcomponents.TabClose;
-import java.awt.CardLayout;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeListener;
@@ -44,11 +43,10 @@ public class InvestigationTab extends Tab {
         public static final String BUSY = "BUSY";
         public static final String STATEINFO = "STATE_STRING";
     }
-    private boolean isBusy=false;
-    private final StegnoAnalysis Analyst;
+    private boolean isBusy = false;
+    private final StegnoAnalyzer Analyst;
     private HashMap<String, ImagePreviewPanel> ThumbsReferences;
     private final PropertyChangeListener ThumbClickListener;
-    private final Consumer<List<Pair<String, BufferedImage>>> Callback;
 
     /**
      * Creates new form InvestigationTab
@@ -63,19 +61,18 @@ public class InvestigationTab extends Tab {
         FilePath = Objects.requireNonNull(FilePath, "provided path is null");
         initComponents();
         SetTitleInternal(FilePath);
-        Callback = getCallback();
         ThumbClickListener = generateThumbReader();
-        Analyst = new StegnoAnalysis(Callback, FilePath);
+        Analyst = new StegnoAnalyzer(FilePath);
         prepareAnalysis();
+
     }
 
     public InvestigationTab(URL Link) {
         Link = Objects.requireNonNull(Link, "provided Link is null");
         initComponents();
         SetTitleInternal(Link);
-        Callback = getCallback();
         ThumbClickListener = generateThumbReader();
-        Analyst = new StegnoAnalysis(Callback, Link);
+        Analyst = new StegnoAnalyzer(Link);
         prepareAnalysis();
     }
 
@@ -152,6 +149,36 @@ public class InvestigationTab extends Tab {
         };
     }
 
+    private Consumer<BufferedImage> getImageLoadCallback() {
+        return (image) -> {
+          if (Analyst.isCancelled()) {
+                //if the task was cancelled that means *This* UI. is no longer valid. bail
+                return;
+            }
+            if (image == null) {
+                AnalysisTabs.setEnabledAt(1, true);
+                AnalysisTabs.setSelectedIndex(1);
+                //fail. TODO: add the means to read error from the process.
+                ThumbGridPanel.setLayout(null);
+                ThumbGridPanel.removeAll();
+                var err = new ErrorGlassPane(new ErrorData("Error Loading file.", Analyst.exceptionNow().getMessage(), Analyst.exceptionNow()),
+                        (t) -> {
+                            this.Close(true);
+                        });
+                ThumbGridPanel.add(err);
+                ThumbGridPanel.setLayout(new javax.swing.BoxLayout(ThumbGridPanel, javax.swing.BoxLayout.PAGE_AXIS));
+                err.setVisible(true);
+                ThumbGridPanel.invalidate();
+                ThumbGridPanel.repaint();
+                pFooter.setFooterText(String.format("analysis Finish with errors for: %s", Analyst.getSourceName()));
+                //Notify the Parent our work is done. 
+                setAvailable();
+                return;
+            }
+            Originalimg.SetImage(image,true);
+        };
+    }
+
     public boolean IsAnalizing(Path OtherFile) {
         if (OtherFile == null) {
             return false;
@@ -184,7 +211,7 @@ public class InvestigationTab extends Tab {
     }
 
     private void prepareAnalysis() {
-        List<String> names = StegnoAnalysis.getAnalysisTransformationNames();
+        List<String> names = StegnoAnalyzer.getAnalysisTransformationNames();
         ThumbsReferences = new HashMap<>(names.size());
         for (String name : names) {
             var preview = new ImagePreviewPanel(name);
@@ -192,19 +219,15 @@ public class InvestigationTab extends Tab {
             ThumbsReferences.put(name, preview);
             ThumbGridPanel.add(preview);
         }
-        if (jPanel2.getLayout() instanceof CardLayout cards) {
-            cards.show(jPanel2, "Action");
-        }
+        AnalysisTabs.setEnabledAt(1, false);
     }
 
     public void startAnalysis() {
         if (!Analyst.isDone()) {
-            if (jPanel2.getLayout() instanceof CardLayout cards) {
-                cards.show(jPanel2, "Transforms");
-            }
             pFooter.setFooterText(String.format("Analysing File: %s", Analyst.getSourceName()));
             setBusy();
-            Analyst.execute();
+            Analyst.RunTransformations(getCallback());
+            AnalysisTabs.setEnabledAt(1, true);
         }
     }
 
@@ -322,11 +345,10 @@ public class InvestigationTab extends Tab {
 
         jPanel2 = new javax.swing.JPanel();
         AnalysisTabs = new com.aeongames.edi.utils.visual.Panels.JImageTabPane();
+        Originalimg = new com.aeongames.stegsolveplus.ui.ImagePreviewPanel();
         jPanel1 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
         ThumbGridPanel = new javax.swing.JPanel();
-        jPanel3 = new javax.swing.JPanel();
-        jLabel1 = new javax.swing.JLabel();
         pFooter = new com.aeongames.stegsolveplus.ui.Footer();
 
         addComponentListener(new java.awt.event.ComponentAdapter() {
@@ -335,7 +357,7 @@ public class InvestigationTab extends Tab {
             }
         });
 
-        jPanel2.setLayout(new java.awt.CardLayout());
+        AnalysisTabs.addTab("Original Image", new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/image.png")), Originalimg); // NOI18N
 
         jPanel1.setOpaque(false);
 
@@ -356,36 +378,21 @@ public class InvestigationTab extends Tab {
             .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 443, Short.MAX_VALUE)
         );
 
-        AnalysisTabs.addTab("Transformations", new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/color.png")), jPanel1); // NOI18N
+        AnalysisTabs.addTab("Transformations", new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/color.png")), jPanel1, ""); // NOI18N
 
-        jPanel2.add(AnalysisTabs, "Transforms");
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(AnalysisTabs, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+        );
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(AnalysisTabs, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+        );
+
         AnalysisTabs.getAccessibleContext().setAccessibleName("");
         AnalysisTabs.getAccessibleContext().setAccessibleDescription("");
-
-        jLabel1.setFont(new java.awt.Font("Comic Sans MS", 1, 24)); // NOI18N
-        jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel1.setText("<html>To Start the Analysis hit F7, Choose Analysis action or Click here.");
-        jLabel1.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                jLabel1MouseClicked(evt);
-            }
-        });
-
-        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
-        jPanel3.setLayout(jPanel3Layout);
-        jPanel3Layout.setHorizontalGroup(
-            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jLabel1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 781, Short.MAX_VALUE)
-        );
-        jPanel3Layout.setVerticalGroup(
-            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel3Layout.createSequentialGroup()
-                .addGap(135, 135, 135)
-                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 138, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(208, Short.MAX_VALUE))
-        );
-
-        jPanel2.add(jPanel3, "Action");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
@@ -404,20 +411,15 @@ public class InvestigationTab extends Tab {
     }// </editor-fold>//GEN-END:initComponents
 
     private void formComponentShown(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentShown
-        //startAnalysis();
+        Analyst.LoadImageData(getImageLoadCallback());
     }//GEN-LAST:event_formComponentShown
-
-    private void jLabel1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel1MouseClicked
-        startAnalysis();
-    }//GEN-LAST:event_jLabel1MouseClicked
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private com.aeongames.edi.utils.visual.Panels.JImageTabPane AnalysisTabs;
+    private com.aeongames.stegsolveplus.ui.ImagePreviewPanel Originalimg;
     private javax.swing.JPanel ThumbGridPanel;
-    private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
-    private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;
     private com.aeongames.stegsolveplus.ui.Footer pFooter;
     // End of variables declaration//GEN-END:variables

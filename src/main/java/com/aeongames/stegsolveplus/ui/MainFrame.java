@@ -16,7 +16,7 @@ import com.aeongames.edi.utils.data.Pair;
 import com.aeongames.edi.utils.error.LoggingHelper;
 import com.aeongames.edi.utils.visual.ImageScaleComponents;
 import com.aeongames.edi.utils.visual.Panels.JAeonTabPane;
-import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalysis;
+import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalyzer;
 import com.aeongames.stegsolveplus.ui.tabcomponents.JStegnoTabbedPane;
 import java.awt.Color;
 import java.awt.Desktop;
@@ -285,7 +285,7 @@ public class MainFrame extends javax.swing.JFrame {
             SetDefOSUI();
         }
         JFileChooser fileChooser = new JFileChooser(System.getProperty("user.dir"));
-        var list2 = StegnoAnalysis.ValidImagesFiles;
+        var list2 = StegnoAnalyzer.ValidImagesFiles;
         fileChooser.setFileFilter(new FileNameExtensionFilter(ValidFileTypes(list2), list2));
         fileChooser.setMultiSelectionEnabled(true);
         int rVal = fileChooser.showOpenDialog(this);

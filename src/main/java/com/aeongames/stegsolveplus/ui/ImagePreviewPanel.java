@@ -37,6 +37,17 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
     private BufferedImage ImageToPreview;
     private final CardLayout Layout;
 
+    public ImagePreviewPanel() {
+        PreviewTitle = "Image";
+        ImageToPreview = null;
+        initComponents();
+        if (getLayout() instanceof CardLayout ly) {
+            Layout = ly;
+        } else {
+            Layout = null;
+        }
+    }
+
     /**
      * Creates new form ImagePreviewPanel
      *
@@ -89,6 +100,17 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
             Layout.show(this, THUMBNAIL);
         } else {
             ImageToPreview = img;
+        }
+    }
+
+    public final void SetImage(BufferedImage img, boolean KeepOriginal) {
+        ImageToPreview = img;
+        if (KeepOriginal) {
+            ImagePreviewPanel.setImage(ImageToPreview);
+            Layout.show(this, THUMBNAIL);
+            repaint();
+        } else {
+            SetImage(img);
         }
     }
 
