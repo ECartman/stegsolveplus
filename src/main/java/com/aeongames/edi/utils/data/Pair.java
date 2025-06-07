@@ -18,7 +18,7 @@ package com.aeongames.edi.utils.data;
  *
  * @author Eduardo V
  */
-public class Pair<L, R> {
+public class Pair<L,R> {
 
     private final L left;
     private final R right;

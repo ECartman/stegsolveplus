@@ -1,6 +1,6 @@
 /*
  * 
- * Copyright © 2010-2024 Eduardo Vindas. All rights reserved.
+ * Copyright © 2008-2011,2024-2025 Eduardo Vindas Cordoba. All rights reserved.
  * 
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -17,13 +17,14 @@
  */
 package com.aeongames.edi.utils.text;
 
+import com.aeongames.edi.utils.error.LoggingHelper;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Objects;
 import java.util.Stack;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import javax.swing.text.MutableAttributeSet;
 import javax.swing.text.html.HTML;
 import javax.swing.text.html.HTMLEditorKit;
@@ -31,27 +32,35 @@ import javax.swing.text.html.parser.ParserDelegator;
 
 public class Html2Text extends HTMLEditorKit.ParserCallback {
 
-    private static final Logger log = Logger.getLogger(Html2Text.class.getName());
-
-    static {
-        try {
-            if (!new java.io.File("error").exists() || !new java.io.File("error").isDirectory()) {
-                new java.io.File("error").mkdir();
-            }
-            log.addHandler(new java.util.logging.FileHandler("error/Html2Text%g.log"));
-        } catch (IOException | SecurityException ex1) {
-        }
-    }
+    /**
+     * error logging object.
+     */
+    private static final Logger LOGGER = LoggingHelper.getClassLoggerForMe();
+    /**
+     * a bool that determine if we should just ignore tags that have special
+     * meaning such as:
+     * <ul>
+     * <li>p</li>
+     * <li>ol</li>
+     * <li>ul</li>
+     * <li>li</li>
+     * <li>dd</li>
+     * </ul>
+     */
     private boolean ignoretags = false;
-    private StringBuffer stringBuffer;
+
+    /**
+     * the buffer that contains the text.
+     */
+    private final StringBuffer stringBuffer;
     private Stack<IndexType> indentStack;
 
-    public static class IndexType {
+    private static class IndexType {
 
-        public String type;
-        public int counter; // used for ordered lists
+        String type;
+        int counter; // used for ordered lists
 
-        public IndexType(String type) {
+        IndexType(String type) {
             this.type = type;
             counter = 0;
         }
@@ -67,18 +76,23 @@ public class Html2Text extends HTMLEditorKit.ParserCallback {
     }
 
     /**
-     * depending on the parameter value we will acknowledge the parameter if is
-     * send as true we will ignore the tags and will not be process meaning for
-     * example &lt; br/ &gt; will be ignore and will not be change into a "\n"
+     * creates a new instance and will listen and process. the tags if the
+     * parameters is set to process the tags.
      *
-     * @param ignoretagseffect
+     * @param ignoreTags true to ignore the tags. false to process the tags
+     * (default)
      */
-    public Html2Text(boolean ignoretagseffect) {
-        stringBuffer = new StringBuffer();
-        indentStack = new Stack<>();
-        ignoretags = ignoretagseffect;
+    public Html2Text(boolean ignoreTags) {
+        this();
+        ignoretags = ignoreTags;
     }
 
+    /**
+     * Parses the HTML String into a plain text string.
+     *
+     * @param html the HTML text to parse to plain text
+     * @return the Plain text resulting of parsing the HTML.
+     */
     public static String convert(String html) {
         Html2Text parser = new Html2Text();
         Reader in = new StringReader(html);
@@ -86,12 +100,12 @@ public class Html2Text extends HTMLEditorKit.ParserCallback {
             // the HTML to convert
             parser.parse(in);
         } catch (IOException e) {
-            log.log(Level.SEVERE, "error Parsing", e);
+            LOGGER.log(Level.SEVERE, "error Parsing", e);
         } finally {
             try {
                 in.close();
             } catch (IOException ioe) {
-                log.log(Level.WARNING, "error in.close();", ioe);
+                LOGGER.log(Level.WARNING, "error in.close();", ioe);
             }
         }
         return parser.getText();
@@ -105,46 +119,39 @@ public class Html2Text extends HTMLEditorKit.ParserCallback {
 
     @Override
     public void handleStartTag(HTML.Tag t, MutableAttributeSet a, int pos) {
-        if (!ignoretags) {
-            switch (t.toString()) {
-                case "p":
-                    if (stringBuffer.length() > 0 && !stringBuffer.substring(stringBuffer.length() - 1).equals("\n")) {
-                        newLine();
-                    }   newLine();
-                    break;
-                case "ol":
-                    indentStack.push(new IndexType("ol"));
+        if (ignoretags) {
+            return;
+        }
+        switch (t.toString()) {
+            case "dd"://add identation and newline
+            case "ol"://add identation and newline
+            case "ul"://add identation and newline
+                indentStack.push(new IndexType(t.toString()));
+            case "dl"://add newline
+            case "dt"://add newline
+                newLine();
+                break;
+            case "p":
+                if (stringBuffer.length() > 0 && !stringBuffer.substring(stringBuffer.length() - 1).equals("\n")) {
                     newLine();
-                    break;
-                case "ul":
-                    indentStack.push(new IndexType("ul"));
-                    newLine();
-                    break;
-                case "li":
-                    IndexType parent = indentStack.peek();
-                    if (parent.type.equals("ol")) {
-                        String numberString = "" + (++parent.counter) + ".";
-                        stringBuffer.append(numberString);
-                        for (int i = 0; i < (4 - numberString.length()); i++) {
-                            stringBuffer.append(" ");
-                        }
-                    } else {
-                        stringBuffer.append("*   ");
-                    }   indentStack.push(new IndexType("li"));
-                    break;
-                case "dl":
-                    newLine();
-                    break;
-                case "dt":
-                    newLine();
-                    break;
-                case "dd":
-                    indentStack.push(new IndexType("dd"));
-                    newLine();
-                    break;
-                default:
-                    break;
-            }
+                }
+                newLine();
+                break;
+            case "li":
+                IndexType parent = indentStack.peek();
+                if (parent.type.equals("ol")) {
+                    String numberString = "" + (++parent.counter) + ".";
+                    stringBuffer.append(numberString);
+                    for (int i = 0; i < (4 - numberString.length()); i++) {
+                        stringBuffer.append(" ");
+                    }
+                } else {
+                    stringBuffer.append("*   ");
+                }
+                indentStack.push(new IndexType("li"));
+                break;
+            default:
+                break;
         }
     }
 
@@ -157,38 +164,32 @@ public class Html2Text extends HTMLEditorKit.ParserCallback {
 
     @Override
     public void handleEndTag(HTML.Tag t, int pos) {
-        if (!ignoretags){
-            switch (t.toString()) {
-                case "p":
-                    newLine();
-                    break;
-                case "ol":
-                    indentStack.pop();
-                    newLine();
-                    break;
-                case "ul":
-                    indentStack.pop();
-                    newLine();
-                    break;
-                case "li":
-                    indentStack.pop();
-                    newLine();
-                    break;
-                case "dd":
-                    indentStack.pop();
-                    break;
-                default:
-                    break;
-            }
+        if (ignoretags) {
+            return;
+        }
+        switch (t.toString()) {
+            case "ol":
+            case "ul":
+            case "li":
+                indentStack.pop();
+            case "p":
+                newLine();
+                break;
+            case "dd":
+                indentStack.pop();
+                break;
+            default:
+                break;
         }
     }
 
     @Override
     public void handleSimpleTag(HTML.Tag t, MutableAttributeSet a, int pos) {
-        if (!ignoretags) {
-            if (t.toString().equals("br")) {
-                newLine();
-            }
+        if (ignoretags) {
+            return;
+        }
+        if (Objects.equals(HTML.Tag.BR, t)) {
+            newLine();
         }
     }
 

@@ -1,13 +1,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
- xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
   
-  <groupId>com.aeongames</groupId>
-  <artifactId>StegsolvePlus</artifactId>
-  <version>0.5.8-SNAPSHOT</version>
-  
-  <name>StegsolvePlus</name>
+    <groupId>com.aeongames</groupId>
+    <artifactId>StegsolvePlus</artifactId>
+    <version>0.5.8-SNAPSHOT</version>
+    <name>StegsolvePlus</name>
     <build>
         <plugins>
             <plugin>
@@ -20,36 +19,49 @@
                     </compilerArgs>
                 </configuration>
             </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>com.aeongames.stegsolveplus.ui.MainFrame</mainClass>
+                        </manifest>
+                    </archive>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
     <properties>
-    <java.version>21</java.version>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>21</maven.compiler.source>
-    <maven.compiler.target>21</maven.compiler.target>
-  </properties>
+        <java.version>21</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+    </properties>
   
- <dependencies>
- 	<dependency>
-		<groupId>org.pushing-pixels</groupId>
-  		<artifactId>radiance-common</artifactId>
-  		<version>7.5.0</version>
-	</dependency>
-	<dependency>
-  		<groupId>org.pushing-pixels</groupId>
-  		<artifactId>radiance-theming</artifactId>
-  		<version>7.5.0</version>
-	</dependency>
-	<dependency>
-  		<groupId>org.pushing-pixels</groupId>
-  		<artifactId>radiance-component</artifactId>
-  		<version>7.5.0</version>
-	</dependency>
-  <dependency>
-   <groupId>org.netbeans.external</groupId>
-   <artifactId>AbsoluteLayout</artifactId>
-   <version>RELEASE220</version>
-  </dependency>
- </dependencies>
+    <dependencies>
+        <dependency>
+            <groupId>org.pushing-pixels</groupId>
+            <artifactId>radiance-common</artifactId>
+            <version>7.5.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.pushing-pixels</groupId>
+            <artifactId>radiance-theming</artifactId>
+            <version>7.5.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.pushing-pixels</groupId>
+            <artifactId>radiance-component</artifactId>
+            <version>7.5.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.netbeans.external</groupId>
+            <artifactId>AbsoluteLayout</artifactId>
+            <version>RELEASE220</version>
+        </dependency>
+    </dependencies>
     
 </project>
