@@ -14,7 +14,7 @@ package com.aeongames.stegsolveplus.ui;
 
 import com.aeongames.edi.utils.text.LabelText;
 import com.aeongames.edi.utils.visual.ImageScaleComponents;
-import com.aeongames.edi.utils.visual.Panels.ImagePanel;
+import com.aeongames.edi.utils.visual.panels.ImagePanel;
 import java.awt.CardLayout;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
@@ -174,11 +174,11 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        LoadPanel = new com.aeongames.edi.utils.visual.Panels.TranslucentPanel();
+        LoadPanel = new com.aeongames.edi.utils.visual.panels.TranslucentPanel();
         txtloading = new javax.swing.JLabel();
         jProgressBar1 = new javax.swing.JProgressBar();
         jLabel1 = new javax.swing.JLabel();
-        ImagThumbpanel = new com.aeongames.edi.utils.visual.Panels.TranslucentPanel();
+        ImagThumbpanel = new com.aeongames.edi.utils.visual.panels.TranslucentPanel();
         jPanel1 = new javax.swing.JPanel();
         txtTitle = new javax.swing.JLabel();
         ImagePreviewPanel = ImageToPreview == null
@@ -316,9 +316,9 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private com.aeongames.edi.utils.visual.Panels.TranslucentPanel ImagThumbpanel;
-    private com.aeongames.edi.utils.visual.Panels.ImagePanel ImagePreviewPanel;
-    private com.aeongames.edi.utils.visual.Panels.TranslucentPanel LoadPanel;
+    private com.aeongames.edi.utils.visual.panels.TranslucentPanel ImagThumbpanel;
+    private com.aeongames.edi.utils.visual.panels.ImagePanel ImagePreviewPanel;
+    private com.aeongames.edi.utils.visual.panels.TranslucentPanel LoadPanel;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JProgressBar jProgressBar1;

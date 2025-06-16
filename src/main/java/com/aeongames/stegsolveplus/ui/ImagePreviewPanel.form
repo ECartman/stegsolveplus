@@ -28,7 +28,7 @@
 
   <Layout class="org.netbeans.modules.form.compat2.layouts.DesignCardLayout"/>
   <SubComponents>
-    <Container class="com.aeongames.edi.utils.visual.Panels.TranslucentPanel" name="LoadPanel">
+    <Container class="com.aeongames.edi.utils.visual.panels.TranslucentPanel" name="LoadPanel">
       <Constraints>
         <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignCardLayout" value="org.netbeans.modules.form.compat2.layouts.DesignCardLayout$CardConstraintsDescription">
           <CardConstraints cardName="Loading"/>
@@ -95,7 +95,7 @@
         </Component>
       </SubComponents>
     </Container>
-    <Container class="com.aeongames.edi.utils.visual.Panels.TranslucentPanel" name="ImagThumbpanel">
+    <Container class="com.aeongames.edi.utils.visual.panels.TranslucentPanel" name="ImagThumbpanel">
       <Properties>
         <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
           <Color blue="ff" green="ff" red="ff" type="rgb"/>
@@ -165,7 +165,7 @@
             </Component>
           </SubComponents>
         </Container>
-        <Container class="com.aeongames.edi.utils.visual.Panels.ImagePanel" name="ImagePreviewPanel">
+        <Container class="com.aeongames.edi.utils.visual.panels.ImagePanel" name="ImagePreviewPanel">
           <Properties>
             <Property name="opaque" type="boolean" value="false"/>
           </Properties>

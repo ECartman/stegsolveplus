@@ -12,10 +12,11 @@
  */
 package com.aeongames.stegsolveplus.ui;
 
-import com.aeongames.edi.utils.DnD.DragAndDrop;
 import com.aeongames.edi.utils.visual.ImageScaleComponents;
 import com.aeongames.edi.utils.visual.ImageUtils;
-import com.aeongames.edi.utils.visual.Panels.TranslucentImagedPanel;
+import com.aeongames.edi.utils.visual.panels.TranslucentImagedPanel;
+import java.awt.Component;
+import java.util.function.Predicate;
 
 /**
  *
@@ -25,12 +26,13 @@ public class GlassFileDnDPanel extends javax.swing.JPanel {
 
     private short Alphalevel;
     private float ImageAlpha;
-    private DragAndDrop dndHelper;
+    private final Predicate<Component> dndHelper;
 
     /**
      * Creates new form GlassFileDnDpanel
+     * @param helper
      */
-    public GlassFileDnDPanel(DragAndDrop helper) {
+    public GlassFileDnDPanel(Predicate<Component> helper) {
         initComponents();
         dndHelper=helper;
     }
@@ -56,7 +58,7 @@ public class GlassFileDnDPanel extends javax.swing.JPanel {
 
     @Override
     public void removeNotify() {
-        dndHelper.UnRegisterTarget(this);
+        dndHelper.test(this);
         super.removeNotify();
     }
 
@@ -111,6 +113,6 @@ public class GlassFileDnDPanel extends javax.swing.JPanel {
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private com.aeongames.edi.utils.visual.Panels.TranslucentImagedPanel translucentImagedPanel1;
+    private com.aeongames.edi.utils.visual.panels.TranslucentImagedPanel translucentImagedPanel1;
     // End of variables declaration//GEN-END:variables
 }

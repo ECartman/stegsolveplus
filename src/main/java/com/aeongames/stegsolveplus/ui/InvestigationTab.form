@@ -49,7 +49,7 @@
         </DimensionLayout>
       </Layout>
       <SubComponents>
-        <Container class="com.aeongames.edi.utils.visual.Panels.JImageTabPane" name="AnalysisTabs">
+        <Container class="com.aeongames.edi.utils.visual.panels.JImageTabPane" name="AnalysisTabs">
           <AccessibilityProperties>
             <Property name="AccessibleContext.accessibleName" type="java.lang.String" value=""/>
             <Property name="AccessibleContext.accessibleDescription" type="java.lang.String" value=""/>

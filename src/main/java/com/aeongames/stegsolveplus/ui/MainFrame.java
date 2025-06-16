@@ -11,20 +11,19 @@
  */
 package com.aeongames.stegsolveplus.ui;
 
-import com.aeongames.edi.utils.DnD.DragAndDrop;
+import com.aeongames.stegsolveplus.StegnoTools.DragStegnoProcessor;
 import com.aeongames.edi.utils.data.Pair;
+import com.aeongames.edi.utils.datatransfer.DragAndDropHelper;
 import com.aeongames.edi.utils.error.LoggingHelper;
 import com.aeongames.edi.utils.visual.ImageScaleComponents;
-import com.aeongames.edi.utils.visual.Panels.JAeonTabPane;
+import com.aeongames.edi.utils.visual.panels.JAeonTabPane;
 import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalyzer;
 import com.aeongames.stegsolveplus.ui.tabcomponents.JStegnoTabbedPane;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.IllegalComponentStateException;
 import java.awt.Image;
-import java.awt.dnd.DropTargetDragEvent;
-import java.awt.dnd.DropTargetDropEvent;
-import java.awt.dnd.DropTargetEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
@@ -50,6 +49,9 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import org.pushingpixels.radiance.theming.api.skin.RadianceNightShadeLookAndFeel;
+import com.aeongames.edi.utils.datatransfer.dndEventListener;
+import com.aeongames.stegsolveplus.StegnoTools.ImageInputListener;
+import java.util.logging.Logger;
 
 /**
  * the Main Windows(frame) for the application. this application is intended to
@@ -60,7 +62,7 @@ import org.pushingpixels.radiance.theming.api.skin.RadianceNightShadeLookAndFeel
  * @author Eduardo Vindas
  */
 public class MainFrame extends javax.swing.JFrame {
-
+    public static final Logger UIlogger = LoggingHelper.getLogger("StegnoUI");
     public static final String VERSION = "0.5.9";
     public static final String APP_NAME = "StegnoSolver+ (ALPHA)";
     public static ImageIcon APP_ICON = LoadAppIcon();
@@ -76,7 +78,7 @@ public class MainFrame extends javax.swing.JFrame {
     /**
      * Drag and Drop Helper to handle File Loading from System Dragging images
      */
-    private DragAndDrop DragAndDrophelper;
+    private DragAndDropHelper DragAndDrophelper;
 
     private final PropertyChangeListener BusyStateCallback;
 
@@ -312,7 +314,7 @@ public class MainFrame extends javax.swing.JFrame {
                         "AppIcon"), null, null);
         var responce = UIresponse == null ? null : UIresponse.toString().strip();
         if (responce != null) {
-            var matcher = DragAndDrop.URL_PATTERN.matcher(responce);
+            var matcher = DragStegnoProcessor.URL_PATTERN.matcher(responce);
             if (matcher.matches()) {
                 URI uri = URI.create(responce);
                 var scheme = uri.getScheme();
@@ -328,7 +330,7 @@ public class MainFrame extends javax.swing.JFrame {
                             return;
                         }
                     } catch (MalformedURLException ex) {
-                        LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "unable to transform the URI to URL", ex);
+                        UIlogger.log(Level.SEVERE, "unable to transform the URI to URL", ex);
                     }
                 }
             }
@@ -368,13 +370,13 @@ public class MainFrame extends javax.swing.JFrame {
                         Desktop.getDesktop().open(file.toFile());
                     }
                 } catch (IOException ex) {
-                    LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.INFO, "unable to open the file", ex);
+                    UIlogger.log(Level.INFO, "unable to open the file", ex);
                 }
             } else if (resource != null) {
                 try {
                     Desktop.getDesktop().browse(URI.create(resource.toString()));
                 } catch (IOException ex) {
-                    LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.INFO, "unable to open the URL", ex);
+                    UIlogger.log(Level.INFO, "unable to open the URL", ex);
                 }
             }
         }
@@ -387,13 +389,13 @@ public class MainFrame extends javax.swing.JFrame {
                 try {
                     Desktop.getDesktop().open(file.toFile());
                 } catch (IOException ex) {
-                    LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.INFO, "unable to open the file", ex);
+                    UIlogger.log(Level.INFO, "unable to open the file", ex);
                 }
             } else if (resource != null) {
                 try {
                     Desktop.getDesktop().browse(URI.create(resource.toString()));
                 } catch (IOException ex) {
-                    LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.INFO, "unable to open the URL", ex);
+                    UIlogger.log(Level.INFO, "unable to open the URL", ex);
                 }
             }
         }
@@ -544,9 +546,9 @@ public class MainFrame extends javax.swing.JFrame {
         try {
             SwingUtilities.invokeAndWait(() -> this.ProcessDropedFiles(FileList));
         } catch (InterruptedException ex) {
-            LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "A call to UI was Interrupted", ex);
+            UIlogger.log(Level.SEVERE, "A call to UI was Interrupted", ex);
         } catch (InvocationTargetException ex) {
-            LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "Could not invoke the UI", ex);
+            UIlogger.log(Level.SEVERE, "Could not invoke the UI", ex);
         }
     }
 
@@ -561,9 +563,9 @@ public class MainFrame extends javax.swing.JFrame {
         try {
             SwingUtilities.invokeAndWait(() -> this.ProcessDropedLinks(link));
         } catch (InterruptedException ex) {
-            LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "A call to UI was Interrupted", ex);
+            UIlogger.log(Level.SEVERE, "A call to UI was Interrupted", ex);
         } catch (InvocationTargetException ex) {
-            LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "Could not invoke the UI", ex);
+            UIlogger.log(Level.SEVERE, "Could not invoke the UI", ex);
         }
     }
 
@@ -573,7 +575,7 @@ public class MainFrame extends javax.swing.JFrame {
             MainTabPane.add(tab);
             MainTabPane.setSelectedComponent(tab);
             if (getRootPane().getGlassPane() instanceof GlassFileDnDPanel panel) {
-                DragAndDrophelper.UnRegisterTarget(panel);
+                DragAndDrophelper.unRegisterTarget(panel);
                 panel.setVisible(false);
             }
             Tabcreated = true;
@@ -645,7 +647,8 @@ public class MainFrame extends javax.swing.JFrame {
                 //bye
                 System.exit(0);
             } catch (Throwable err) {
-                LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "error while closing", err);
+                
+                UIlogger.log(Level.SEVERE, "error while closing", err);
                 System.exit(-2);
             }
         }
@@ -653,49 +656,16 @@ public class MainFrame extends javax.swing.JFrame {
 
     private void EnableDragAndDrop() {
         if (DragAndDrophelper == null) {
-            DragAndDrophelper = new DragAndDrop(JAeonTabPane.J_AEON_TAB_FLAVOR) {
-                @Override
-                public void triggerDragdetectedImp(DropTargetDragEvent dtde) {
-                    var source = dtde.getDropTargetContext().getComponent();
-                    if (source instanceof GlassFileDnDPanel panel) {
-                        panel.setInvisible(false);
-                    }
-                }
-
-                @Override
-                public void triggerDragExitImp(DropTargetEvent dte) {
-                    var source = dte.getDropTargetContext().getComponent();
-                    if (source instanceof GlassFileDnDPanel panel) {
-                        panel.setInvisible(true);
-                    }
-                }
-
-                @Override
-                public void NotifyFoundPaths(List<Path> fileList) {
-                    //maybe we should disable if Busy Tabs > 0
-                    ProcessDropedFiles(fileList);
-                }
-
-                @Override
-                public void NotifyFoundUrl(URL link) {
-                    //maybe we should disable if Busy Tabs > 0
-                    ProcessDropedLinks(link);
-                }
-
-                @Override
-                public void DropComplete(DropTargetDropEvent dtde) {
-                    var source = dtde.getDropTargetContext().getComponent();
-                    if (source instanceof GlassFileDnDPanel panel) {
-                        panel.setInvisible(true);
-                    }
-                }
-            };
+            DragAndDrophelper = new DragAndDropHelper(JAeonTabPane.J_AEON_TAB_FLAVOR);
+            DragAndDrophelper.registerEventListener(getCallbackObject());
+            var processor = new DragStegnoProcessor(getImageCallback());
+            DragAndDrophelper.addFlavorHandler(processor,DragStegnoProcessor.Myflavors);
         }
         GlassFileDnDPanel glasspane;
         if (getRootPane().getGlassPane() instanceof GlassFileDnDPanel glass) {
             glasspane = glass;
         } else {
-            glasspane = new GlassFileDnDPanel(DragAndDrophelper);
+            glasspane = new GlassFileDnDPanel(((t) -> DragAndDrophelper.unRegisterTarget(t)));
             getRootPane().setGlassPane(glasspane);
         }
         DragAndDrophelper.RegisterTarget(glasspane);
@@ -703,6 +673,62 @@ public class MainFrame extends javax.swing.JFrame {
         glasspane.setInvisible(true);
         //also register *the Window so we can trigger DnD events from toolbar
         DragAndDrophelper.RegisterTarget(this);
+    }
+
+    private ImageInputListener getImageCallback() {
+        return new ImageInputListener() {
+            @Override
+            public void HandleFileList(List<Path> fileList) {
+                //maybe we should disable if Busy Tabs > 0
+                ProcessDropedFiles(fileList);
+            }
+
+            @Override
+            public void HandleURL(URL FileLink) {
+                //maybe we should disable if Busy Tabs > 0
+                ProcessDropedLinks(FileLink);
+            }
+
+            @Override
+            public void HandleURI(URI FileLink) {
+                try {
+                    ProcessDropedLinks(FileLink.toURL());
+                } catch (MalformedURLException err) {
+
+                }
+            }
+        };
+    }
+
+    private dndEventListener getCallbackObject() {
+        return new dndEventListener() {
+            @Override
+            public void dragEvent(Component AffecteDnDComponent) {
+                if (AffecteDnDComponent == null) {
+                    return;
+                }
+                if (AffecteDnDComponent instanceof GlassFileDnDPanel panel) {
+                    panel.setInvisible(false);
+                }
+            }
+
+            @Override
+            public void dragExitEvent(Component AffecteDnDComponent) {
+                if (AffecteDnDComponent == null) {
+                    return;
+                }
+                if (AffecteDnDComponent instanceof GlassFileDnDPanel panel) {
+                    panel.setInvisible(true);
+                }
+            }
+
+            @Override
+            public void dropCompleteEvent(Component AffecteDnDComponent) {
+                if (AffecteDnDComponent instanceof GlassFileDnDPanel panel) {
+                    panel.setInvisible(true);
+                }
+            }
+        };
     }
 
     // <editor-fold defaultstate="collapsed" desc="LAF">
@@ -778,7 +804,7 @@ public class MainFrame extends javax.swing.JFrame {
             result = true;
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
             //unable to set the UI LAF we could try just allowing the defaults. 
-            LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "Unable to setup the UI LaF", e);
+            UIlogger.log(Level.SEVERE, "Unable to setup the UI LaF", e);
         }
 
         if (UIManager.getLookAndFeel().getSupportsWindowDecorations()) {
@@ -811,7 +837,7 @@ public class MainFrame extends javax.swing.JFrame {
                 frame.setVisible(true);
             } catch (Exception e) {
                 //log the error
-                LoggingHelper.getLogger(MainFrame.class.getName()).log(Level.SEVERE, "Exception at Main, Something crashed", e);
+                UIlogger.log(Level.SEVERE, "Exception at Main, Something crashed", e);
                 throw e;
             }
         });

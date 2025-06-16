@@ -1,5 +1,5 @@
 /*
- *  Copyright © 2024 Eduardo Vindas. All rights reserved.
+ *  Copyright © 2024,2025 Eduardo Vindas. All rights reserved.
  *  
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -17,57 +17,85 @@ import java.io.StringWriter;
 import java.util.Objects;
 
 /**
- *
- * @author Eduardo Vindas cartman aeongames
+ * this class defines a Object that Holds a error data and details 
+ * of a error to be reported and show on UI. 
+ * @author Eduardo Vindas
+ * @version 1.3
  */
 public class ErrorData {
-
-    private final String ErrorTittle;
+    /**
+     * the error title. 
+     */
+    private final String ErrorTitle;
+    /**
+     * the Error message. 
+     */
     private final String ErrorMessage;
+    /**
+     * the Error reference itself.
+     */
     private final Throwable error;
 
-    public ErrorData(Throwable error) {
-        Objects.requireNonNull(error, "the error cannot be null");
-        ErrorTittle = "Error on Execution";
-        ErrorMessage = Objects.requireNonNullElse(error.getMessage(),
-               Objects.requireNonNullElse(error.getCause().getMessage(),"Error during Execution"));
-        this.error = error;
+    /**
+     * creates a new instance of ErrorData and initialize the Properties
+     * of this object based on the {@code err} provided
+     * @param err the {@link Throwable} to report to this Error Data Object
+     * @throws NullPointerException if {@code err} is null
+     */
+    public ErrorData(final Throwable err) {
+        this(null, null, err);
     }
-
+    
+    /**
+     * creates a new instance of ErrorData and initialize the Properties
+     * of this object based on the {@code err} provided
+     * @param Message the message to report on this Error Data. we suggest to be
+     * this to be somewhat verbose. 
+     * @param err the {@link Throwable} to report to this Error Data Object
+     * @throws NullPointerException if {@code err} is null
+     */
+    public ErrorData(String Message, Throwable err) {
+        this(null, Message, err);
+    }
+    
+    /**
+     * creates a new instance of ErrorData and initialize the Properties
+     * of this object based on the {@code err} provided
+     * @param title the title of this Error Data. we suggest something shorter than 150 characters.
+     * @param Message the message to report on this Error Data. we suggest to be
+     * this to be somewhat verbose. 
+     * @param err the {@link Throwable} to report to this Error Data Object
+     * @throws NullPointerException if {@code err} is null
+     */
     public ErrorData(String title, String Message, Throwable err) {
         error = Objects.requireNonNull(err, "the error cannot be null");
-        title = Objects.requireNonNullElse(title, "Error on Execution");
-        ErrorTittle = title.strip().equals("") ? "Error on Execution" : title;
-        if (Message != null &&  !Message.strip().equals("") ) {
-            ErrorMessage = Message;
-        } else if (error != null) {
-            ErrorMessage = Objects.requireNonNullElse(error.getMessage(),
-               Objects.requireNonNullElse(error.getCause().getMessage(),"Error during Execution"));
-        } else {
-            ErrorMessage = "Error on the Application, details are not provided.";
+        if(Objects.isNull(title)|| title.isBlank()){
+            StringBuilder builder = new StringBuilder(error.getClass().getName());
+            builder.append(" on Execution");
+            title= builder.toString();
         }
-    }
-
-    public ErrorData(String Message, Throwable err) {
-        error = Objects.requireNonNull(err, "the error cannot be null");
-        ErrorTittle = "Error on Execution";
-        if (Message != null &&  !Message.strip().equals("") ) {
+        ErrorTitle = title;
+        if (Objects.nonNull(Message) && !Message.isBlank()) {
             ErrorMessage = Message;
-        } else if (error != null) {
-            ErrorMessage = error.getMessage();
         } else {
-            ErrorMessage = "Error on the Application, details are not provided.";
+            ErrorMessage = Objects.requireNonNullElse(error.getMessage(),
+                    Objects.requireNonNullElse(error.getCause().getMessage(),
+                            title));
         }
     }
 
     /**
+     * return a String that represent the Error Title
+     * we guarantee this should never be null;
      * @return the ErrorTittle
      */
     public String getErrorTittle() {
-        return ErrorTittle;
+        return ErrorTitle;
     }
 
     /**
+     * return a String that represent the Error Message
+     * we guarantee this should never be null;
      * @return the ErrorMessage
      */
     public String getErrorMessage() {
@@ -75,8 +103,8 @@ public class ErrorData {
     }
 
     /**
-     * builds and returns a String representation of the stack when the error 
-     * was captured. 
+     * builds and returns a String representation of the stack when the error
+     * was captured.
      * @return a String with the output from the Error.
      * @see Throwable#printStackTrace(java.io.PrintWriter)
      */
@@ -85,11 +113,11 @@ public class ErrorData {
         try (StringWriter writer = new StringWriter()) {
             try (PrintWriter out = new PrintWriter(writer)) {
                 error.printStackTrace(out);
-                if(error.getCause()!=null){
+                if (error.getCause() != null) {
                     error.getCause().printStackTrace(out);
                 }
                 //out.flush(); //StringWritter flush does nothing.
-               ErrorStackString= writer.toString();
+                ErrorStackString = writer.toString();
             }
         } catch (IOException e) {
         }

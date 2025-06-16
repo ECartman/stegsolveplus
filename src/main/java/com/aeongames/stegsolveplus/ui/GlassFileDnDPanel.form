@@ -37,7 +37,7 @@
     </DimensionLayout>
   </Layout>
   <SubComponents>
-    <Container class="com.aeongames.edi.utils.visual.Panels.TranslucentImagedPanel" name="translucentImagedPanel1">
+    <Container class="com.aeongames.edi.utils.visual.panels.TranslucentImagedPanel" name="translucentImagedPanel1">
       <Properties>
         <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
           <Color blue="0" green="ff" red="ff" type="rgb"/>

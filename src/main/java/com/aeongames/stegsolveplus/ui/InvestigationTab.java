@@ -15,8 +15,8 @@ package com.aeongames.stegsolveplus.ui;
 import com.aeongames.edi.utils.data.Pair;
 import com.aeongames.edi.utils.error.ErrorData;
 import com.aeongames.edi.utils.visual.ImageScaleComponents;
-import com.aeongames.edi.utils.visual.Panels.ErrorGlassPane;
-import com.aeongames.edi.utils.visual.Panels.ImagePanel;
+import com.aeongames.edi.utils.visual.panels.ErrorGlassPane;
+import com.aeongames.edi.utils.visual.panels.ImagePanel;
 import com.aeongames.stegsolveplus.ui.tabcomponents.Tab;
 import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalyzer;
 import com.aeongames.stegsolveplus.ui.tabcomponents.TabClose;
@@ -344,7 +344,7 @@ public class InvestigationTab extends Tab {
     private void initComponents() {
 
         jPanel2 = new javax.swing.JPanel();
-        AnalysisTabs = new com.aeongames.edi.utils.visual.Panels.JImageTabPane();
+        AnalysisTabs = new com.aeongames.edi.utils.visual.panels.JImageTabPane();
         Originalimg = new com.aeongames.stegsolveplus.ui.ImagePreviewPanel();
         jPanel1 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
@@ -415,7 +415,7 @@ public class InvestigationTab extends Tab {
     }//GEN-LAST:event_formComponentShown
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private com.aeongames.edi.utils.visual.Panels.JImageTabPane AnalysisTabs;
+    private com.aeongames.edi.utils.visual.panels.JImageTabPane AnalysisTabs;
     private com.aeongames.stegsolveplus.ui.ImagePreviewPanel Originalimg;
     private javax.swing.JPanel ThumbGridPanel;
     private javax.swing.JPanel jPanel1;
