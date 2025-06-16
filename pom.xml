@@ -5,9 +5,19 @@
   
     <groupId>com.aeongames</groupId>
     <artifactId>StegsolvePlus</artifactId>
-    <version>0.5.8-SNAPSHOT</version>
-    <name>StegsolvePlus</name>
+    <version>0.6.0-SNAPSHOT</version>
+    <name>StegnoSolverPlus</name>
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                      <include>**/*.*</include>
+                    <include>com/aeongames/stegsolveplus/text/app.properties</include>
+                </includes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

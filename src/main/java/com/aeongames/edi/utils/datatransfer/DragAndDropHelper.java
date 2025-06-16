@@ -23,7 +23,7 @@ import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DropTargetEvent;
 import java.awt.dnd.DropTargetListener;
 import java.awt.dnd.InvalidDnDOperationException;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -96,7 +96,7 @@ public class DragAndDropHelper implements DropTargetListener {
         FlavorsListPriority = new LinkedHashSet<>();
         MapProcessors = new HashMap<>();
         if (ignoreFlavors != null && ignoreFlavors.length > 0) {
-            FlavorsIgnore.addAll(Arrays.asList(ignoreFlavors));
+            Collections.addAll(FlavorsIgnore, ignoreFlavors);
         }
         // if no flavor is provided assume its A OK. just no flavors are to be ignored.
     }
@@ -379,16 +379,16 @@ public class DragAndDropHelper implements DropTargetListener {
     public void drop(DropTargetDropEvent dtde) {
         var log = LoggingHelper.getLogger(LOGGERNAME);
         log.log(Level.INFO, "Drop trigger at: {0}", dtde.getLocation());
-        var detected = isDroppable(dtde);
-        //TODO: I think is not required as handled on other events. HOWEVER 
-        // we might want to Reject if flavor is on ignoreFlavor 
-        if (Objects.isNull(detected)) {
-            //we dont support this flavor as reported. thus reject it. 
-            dtde.rejectDrop();
-            return;
-        }
+        var detected = isDroppable(dtde);        
         //at this point we know that we can support the drop. therefore accept it
         logDropActionType(dtde.getDropAction());
+        if (Objects.isNull(detected)) {
+            //we dont known, the Source did not provided flavors or we dont support
+            //this flavor as reported. thus reject it. 
+            dtde.rejectDrop();
+            triggerDropComplete(dtde.getDropTargetContext().getComponent());
+            return;
+        }
         //this implementation should be able to handle any sort of action.
         dtde.acceptDrop(dtde.getDropAction());
         Transferable contents = null;
@@ -397,17 +397,11 @@ public class DragAndDropHelper implements DropTargetListener {
         } catch (InvalidDnDOperationException ex) {
             log.log(Level.SEVERE, "we meet a error attempting to process the DnD action", ex);
         }
-        if (Objects.isNull(contents)) {
-            dtde.dropComplete(false);
-            return;
+        boolean handled = false;
+        if (Objects.nonNull(contents)) {
+            handled = processDrop(detected, contents);
         }
-        var handled = processDrop(detected, contents);
-        if (!handled) {
-            // we are unable to handle this type of drop thus not sucesful but complete.
-            dtde.dropComplete(false);
-        } else {
-            dtde.dropComplete(true);
-        }
+        dtde.dropComplete(handled);
         //Notify the UI (if needs be) that the Drag/drop is complete
         triggerDropComplete(dtde.getDropTargetContext().getComponent());
     }
@@ -415,12 +409,15 @@ public class DragAndDropHelper implements DropTargetListener {
 
     //<editor-fold defaultstate="collapsed" desc="Process Drop Event">
     /**
-     * process and handles the DnD drop event calling the prefer handler first. 
-     * if it fails it tries to call the next one from the {@code FlavorsListPriority}
-     * @param detected the detected FlavorHandler. that we should prioritize to use
-     * @param contents the transferable object from which we read the DnD data 
-     * @return whenever we succeed to handle the DnD. returns false if we exausted 
-     * all handles and the data could not be handled. 
+     * process and handles the DnD drop event calling the prefer handler first.
+     * if it fails it tries to call the next one from the
+     * {@code FlavorsListPriority}
+     *
+     * @param detected the detected FlavorHandler. that we should prioritize to
+     * use
+     * @param contents the transferable object from which we read the DnD data
+     * @return whenever we succeed to handle the DnD. returns false if we
+     * exausted all handles and the data could not be handled.
      */
     private boolean processDrop(FlavorHandler detected, Transferable contents) {
         //first try to process using the detected if works. fine otherwise loop all flavors
@@ -443,10 +440,11 @@ public class DragAndDropHelper implements DropTargetListener {
     }
 
     /**
-     * Executes the Handler. while catching error. and logging if they happen. 
-     * @param handler the handler to call 
+     * Executes the Handler. while catching error. and logging if they happen.
+     *
+     * @param handler the handler to call
      * @param contentst the content to delegate
-     * @return whenever or not the execution succeed. 
+     * @return whenever or not the execution succeed.
      */
     private boolean runDrop(FlavorHandler handler, Transferable contents) {
         try {
@@ -478,6 +476,12 @@ public class DragAndDropHelper implements DropTargetListener {
      * at the least there is 1 flavor that is not to be ignored.
      */
     private boolean ignoreFlavor(DropTargetDragEvent dtde) {
+        if (dtde.getCurrentDataFlavors() == null
+                || dtde.getCurrentDataFlavors().length == 0) {
+            //weird edge case. when dragging a image from the browser
+            //on ocations can be done but it does not want to disclose the flavor.
+            return false;
+        }
         for (var flavor : dtde.getCurrentDataFlavors()) {
             if (!FlavorsIgnore.contains(flavor)) {
                 return false;

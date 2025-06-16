@@ -63,8 +63,6 @@ import java.util.logging.Logger;
  */
 public class MainFrame extends javax.swing.JFrame {
     public static final Logger UIlogger = LoggingHelper.getLogger("StegnoUI");
-    public static final String VERSION = "0.5.9";
-    public static final String APP_NAME = "StegnoSolver+ (ALPHA)";
     public static ImageIcon APP_ICON = LoadAppIcon();
 
     private static ImageIcon LoadAppIcon() {
@@ -130,7 +128,8 @@ public class MainFrame extends javax.swing.JFrame {
         jMenuItem4 = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
-        setTitle(APP_NAME);
+        java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("com/aeongames/stegsolveplus/text/app"); // NOI18N
+        setTitle(bundle.getString("app.name")); // NOI18N
         setMinimumSize(new java.awt.Dimension(370, 510));
         setName("MainFrame"); // NOI18N
         addWindowListener(new java.awt.event.WindowAdapter() {
@@ -183,7 +182,7 @@ public class MainFrame extends javax.swing.JFrame {
 
         MbExit.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F4, java.awt.event.InputEvent.ALT_DOWN_MASK));
         MbExit.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/exitsmall.png"))); // NOI18N
-        MbExit.setText(String.format("Exit %s",APP_NAME)
+        MbExit.setText(String.format("Exit %s",bundle.getString("app.name.short"))
         );
         MbExit.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -242,7 +241,7 @@ public class MainFrame extends javax.swing.JFrame {
 
         jMenuItem4.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F12, 0));
         jMenuItem4.setIcon(new ImageIcon(APP_ICON.getImage().getScaledInstance(25,25, Image.SCALE_FAST),"app icon"));
-        jMenuItem4.setText(String.format("About %s",APP_NAME)
+        jMenuItem4.setText(String.format("About %s",bundle.getString("app.name.short"))
         );
         jMenuItem4.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {

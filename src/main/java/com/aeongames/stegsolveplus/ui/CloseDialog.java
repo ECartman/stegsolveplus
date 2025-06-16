@@ -37,7 +37,7 @@ import javax.swing.ImageIcon;
  * @author cartman
  */
 public class CloseDialog extends javax.swing.JDialog {
-
+    private java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("com/aeongames/stegsolveplus/text/app"); // NOI18N
     /**
      * A return status code - returned if Cancel button has been pressed
      */
@@ -86,7 +86,7 @@ public class CloseDialog extends javax.swing.JDialog {
         jButton1 = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
-        setTitle(String.format("Exit %s",MainFrame.APP_NAME));
+        setTitle(String.format("Exit %s",bundle.getString("app.name")));
         setAlwaysOnTop(true);
         setResizable(false);
         addWindowListener(new java.awt.event.WindowAdapter() {
@@ -95,7 +95,7 @@ public class CloseDialog extends javax.swing.JDialog {
             }
         });
 
-        jLabel1.setText(String.format("<html>Are you sure you want to Exit %s?", MainFrame.APP_NAME));
+        jLabel1.setText(String.format("<html>Are you sure you want to Exit %s?", bundle.getString("app.name.short")));
 
         jLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/exit.png"))); // NOI18N
 
