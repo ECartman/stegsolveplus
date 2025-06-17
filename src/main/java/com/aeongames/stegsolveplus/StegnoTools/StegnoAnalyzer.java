@@ -140,7 +140,7 @@ public class StegnoAnalyzer {
         if (File != null) {
             return File.getFileName().toString().strip();
         } else {
-            return ImageAddress.getPath().toString();
+            return ImageAddress.getPath();
         }
     }
 

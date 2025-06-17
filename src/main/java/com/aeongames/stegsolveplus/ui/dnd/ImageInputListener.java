@@ -10,7 +10,7 @@
  *  THE SOFTWARE.
  * 
  */
-package com.aeongames.stegsolveplus.StegnoTools;
+package com.aeongames.stegsolveplus.ui.dnd;
 
 import java.net.URI;
 import java.net.URL;
@@ -44,5 +44,12 @@ public interface ImageInputListener extends EventListener{
      * @param FileLink the URI to handle.
      */
     public void HandleURI(URI FileLink);
+    
+    /**
+     * called by the Processor when it has detected Text data that cannot be
+     * handled in another way. 
+     * @param data the text data. 
+     */
+    public void HandleTextData(String data);
     
 }

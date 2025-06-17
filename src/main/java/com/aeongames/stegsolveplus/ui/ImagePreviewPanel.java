@@ -12,30 +12,30 @@
  */
 package com.aeongames.stegsolveplus.ui;
 
-import com.aeongames.edi.utils.text.LabelText;
-import com.aeongames.edi.utils.visual.ImageScaleComponents;
-import com.aeongames.edi.utils.visual.panels.ImagePanel;
-import java.awt.CardLayout;
-import java.awt.geom.AffineTransform;
-import java.awt.image.AffineTransformOp;
-import java.awt.image.BufferedImage;
 import java.util.Objects;
-import java.util.concurrent.ExecutionException;
+import java.awt.CardLayout;
 import javax.swing.SwingWorker;
+import java.awt.image.BufferedImage;
+import java.awt.geom.AffineTransform;
 import javax.swing.event.AncestorEvent;
+import java.awt.image.AffineTransformOp;
+import com.aeongames.edi.utils.text.LabelText;
+import java.util.concurrent.ExecutionException;
+import com.aeongames.edi.utils.visual.panels.ImagePanel;
+import com.aeongames.edi.utils.visual.ImageScaleComponents;
 import org.pushingpixels.radiance.theming.internal.RadianceSynapse;
 
 /**
- *
- * @author cartman
+ * a Panel that Displays a loading screen until a image is setup to be display.
+ * @author Eduardo Vindas
  */
 public class ImagePreviewPanel extends javax.swing.JPanel {
 
-    public static final String ThumbClickEvent = "ThumbClicked";
+    public static final String THUMB_CLICK_EVENT = "ThumbClicked";
     private static final String THUMBNAIL = "ImageView";
     private final String PreviewTitle;
-    private BufferedImage ImageToPreview;
     private final CardLayout Layout;
+    private BufferedImage ImageToPreview;
 
     public ImagePreviewPanel() {
         PreviewTitle = "Image";
@@ -50,7 +50,6 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
 
     /**
      * Creates new form ImagePreviewPanel
-     *
      * @param Title the title to display
      */
     public ImagePreviewPanel(String Title) {
@@ -114,6 +113,8 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
         }
     }
 
+    //TODO:  we need to use The OG reference and resize it. NOT copy the image 
+    //AS this approach might leak memory. is OK to take longer. 
     public final void SetImage(BufferedImage img) {
         ImageToPreview = img;
         var totalpix = ImageToPreview.getWidth() * ImageToPreview.getHeight();
@@ -306,7 +307,7 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
     private void ImagePreviewPanelMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ImagePreviewPanelMouseClicked
         if (evt.getClickCount() >= 2) {
             evt.consume();
-            firePropertyChange(ThumbClickEvent, PreviewTitle, ImageToPreview);
+            firePropertyChange(THUMB_CLICK_EVENT, PreviewTitle, ImageToPreview);
         }
     }//GEN-LAST:event_ImagePreviewPanelMouseClicked
 

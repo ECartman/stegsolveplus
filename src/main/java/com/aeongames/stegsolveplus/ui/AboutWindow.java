@@ -33,6 +33,7 @@ public class AboutWindow extends javax.swing.JDialog {
         //for the RADIANCE UI this will set the panner NOT to morph colors when painting.
         jPanel1.putClientProperty(RadianceSynapse.COLORIZATION_FACTOR, 1.0);
         setTitle(String.format("About %s",bundle.getString("app.name")));
+        txtAboutInfo.setCaretPosition(0);
     }
 
     /**
@@ -50,7 +51,7 @@ public class AboutWindow extends javax.swing.JDialog {
         jLabel3 = new javax.swing.JLabel();
         btClose = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
-        jTextArea1 = new javax.swing.JTextArea();
+        txtAboutInfo = new javax.swing.JTextArea();
         jLabel4 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
@@ -82,11 +83,12 @@ public class AboutWindow extends javax.swing.JDialog {
         jScrollPane1.setOpaque(false);
         jScrollPane1.getViewport().setOpaque(false);
 
-        jTextArea1.setEditable(false);
-        jTextArea1.setColumns(20);
-        jTextArea1.setLineWrap(true);
-        jTextArea1.setRows(5);
-        jScrollPane1.setViewportView(jTextArea1);
+        txtAboutInfo.setEditable(false);
+        txtAboutInfo.setColumns(20);
+        txtAboutInfo.setLineWrap(true);
+        txtAboutInfo.setRows(5);
+        txtAboutInfo.setText(bundle.getString("app.about"));
+        jScrollPane1.setViewportView(txtAboutInfo);
 
         jLabel4.setFont(new java.awt.Font("Comic Sans MS", 1, 14)); // NOI18N
         jLabel4.setForeground(new java.awt.Color(0, 0, 0));
@@ -162,6 +164,6 @@ public class AboutWindow extends javax.swing.JDialog {
     private javax.swing.JLabel jLabel4;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JTextArea jTextArea1;
+    private javax.swing.JTextArea txtAboutInfo;
     // End of variables declaration//GEN-END:variables
 }

@@ -11,47 +11,40 @@
  */
 package com.aeongames.stegsolveplus.ui;
 
-import com.aeongames.stegsolveplus.StegnoTools.DragStegnoProcessor;
-import com.aeongames.edi.utils.data.Pair;
-import com.aeongames.edi.utils.datatransfer.DragAndDropHelper;
-import com.aeongames.edi.utils.error.LoggingHelper;
-import com.aeongames.edi.utils.visual.ImageScaleComponents;
-import com.aeongames.edi.utils.visual.panels.JAeonTabPane;
-import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalyzer;
-import com.aeongames.stegsolveplus.ui.tabcomponents.JStegnoTabbedPane;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Desktop;
-import java.awt.IllegalComponentStateException;
-import java.awt.Image;
-import java.beans.PropertyChangeListener;
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.nio.file.Files;
+import java.io.File;
+import java.awt.Image;
+import java.util.List;
+import java.awt.Desktop;
+import java.awt.Component;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.RecursiveTask;
-import java.util.logging.Level;
+import java.nio.file.Files;
+import java.io.IOException;
 import javax.swing.ImageIcon;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JOptionPane;
-import javax.swing.JRootPane;
-import javax.swing.SwingUtilities;
+import java.util.logging.Level;
 import javax.swing.SwingWorker;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
-import javax.swing.filechooser.FileNameExtensionFilter;
-import org.pushingpixels.radiance.theming.api.skin.RadianceNightShadeLookAndFeel;
-import com.aeongames.stegsolveplus.StegnoTools.ImageInputListener;
+import javax.swing.JOptionPane;
+import javax.swing.JFileChooser;
 import java.util.logging.Logger;
-import com.aeongames.edi.utils.datatransfer.DragDropEventListener;
+import javax.swing.SwingUtilities;
+import java.net.MalformedURLException;
+import com.aeongames.edi.utils.data.Pair;
+import java.beans.PropertyChangeListener;
+import java.util.concurrent.RecursiveTask;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import com.aeongames.edi.utils.error.LoggingHelper;
+import java.lang.reflect.InvocationTargetException;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import com.aeongames.edi.utils.visual.panels.JAeonTabPane;
+import com.aeongames.edi.utils.visual.ImageScaleComponents;
+import com.aeongames.stegsolveplus.ui.dnd.ImageInputListener;
+import com.aeongames.stegsolveplus.ui.dnd.DragStegnoProcessor;
+import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalyzer;
+import com.aeongames.edi.utils.datatransfer.dnd.DragAndDropHelper;
+import com.aeongames.stegsolveplus.ui.tabcomponents.JStegnoTabbedPane;
+import com.aeongames.edi.utils.datatransfer.dnd.DragDropEventListener;
 
 /**
  * the Main Windows(frame) for the application. this application is intended to
@@ -62,19 +55,32 @@ import com.aeongames.edi.utils.datatransfer.DragDropEventListener;
  * @author Eduardo Vindas
  */
 public class MainFrame extends javax.swing.JFrame {
-    public static final Logger UIlogger = LoggingHelper.getLogger("StegnoUI");
+    /**
+     * the application Icon.
+     */
     public static ImageIcon APP_ICON = LoadAppIcon();
+    /**
+     * UI logger for the whole app.
+     */
+    public static final Logger UIlogger = LoggingHelper.getLogger("StegnoUI");
 
+    /**
+     * loads the Icon for this application.
+     *
+     * @return the image or null if invalid.
+     */
     private static ImageIcon LoadAppIcon() {
         var resource = MainFrame.class.getResource("/com/aeongames/stegsolveplus/ui/OIG3.jpg");
         return resource == null ? null : new javax.swing.ImageIcon(resource);
     }
+
     /**
      * TODO: better approach using javaFX or Low level?
      */
     private boolean HackishOpenFile;
     /**
-     * Drag and Drop Helper to handle File Loading from System Dragging images
+     * Drag and Drop Helper to handle Drag And Drop if images and Assets from
+     * the Environment.(OS)
      */
     private DragAndDropHelper DragAndDrophelper;
 
@@ -119,13 +125,12 @@ public class MainFrame extends javax.swing.JFrame {
         jSeparator1 = new javax.swing.JPopupMenu.Separator();
         MbExit = new javax.swing.JMenuItem();
         jMenu1 = new javax.swing.JMenu();
-        jMenuItem5 = new javax.swing.JMenuItem();
+        MOrunAnalysis = new javax.swing.JMenuItem();
         jMenu2 = new javax.swing.JMenu();
         jMenuItem2 = new javax.swing.JMenuItem();
         jMenuItem3 = new javax.swing.JMenuItem();
-        jMenuItem1 = new javax.swing.JMenuItem();
         MenuHelp = new javax.swing.JMenu();
-        jMenuItem4 = new javax.swing.JMenuItem();
+        MOabout = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
         java.util.ResourceBundle bundle = java.util.ResourceBundle.getBundle("com/aeongames/stegsolveplus/text/app"); // NOI18N
@@ -195,14 +200,14 @@ public class MainFrame extends javax.swing.JFrame {
 
         jMenu1.setText("Analysis Actions");
 
-        jMenuItem5.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F7, 0));
-        jMenuItem5.setText("Run Analysis");
-        jMenuItem5.addActionListener(new java.awt.event.ActionListener() {
+        MOrunAnalysis.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F7, 0));
+        MOrunAnalysis.setText("Run Analysis");
+        MOrunAnalysis.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem5ActionPerformed(evt);
+                MOrunAnalysisActionPerformed(evt);
             }
         });
-        jMenu1.add(jMenuItem5);
+        jMenu1.add(MOrunAnalysis);
 
         MainMenu.add(jMenu1);
 
@@ -226,29 +231,21 @@ public class MainFrame extends javax.swing.JFrame {
         });
         jMenu2.add(jMenuItem3);
 
-        jMenuItem1.setText("TEST <UI>");
-        jMenuItem1.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem1ActionPerformed(evt);
-            }
-        });
-        jMenu2.add(jMenuItem1);
-
         MainMenu.add(jMenu2);
 
         MenuHelp.setText("Help");
         MenuHelp.setToolTipText("");
 
-        jMenuItem4.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F12, 0));
-        jMenuItem4.setIcon(new ImageIcon(APP_ICON.getImage().getScaledInstance(25,25, Image.SCALE_FAST),"app icon"));
-        jMenuItem4.setText(String.format("About %s",bundle.getString("app.name.short"))
+        MOabout.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F12, 0));
+        MOabout.setIcon(new ImageIcon(APP_ICON.getImage().getScaledInstance(25,25, Image.SCALE_FAST),"app icon"));
+        MOabout.setText(String.format("About %s",bundle.getString("app.name.short"))
         );
-        jMenuItem4.addActionListener(new java.awt.event.ActionListener() {
+        MOabout.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 CallAboutWin(evt);
             }
         });
-        MenuHelp.add(jMenuItem4);
+        MenuHelp.add(MOabout);
 
         MainMenu.add(MenuHelp);
 
@@ -269,12 +266,7 @@ public class MainFrame extends javax.swing.JFrame {
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
-        //SetDefOSUI();
-        SetNimbusUI();
-        this.setVisible(true);
-    }//GEN-LAST:event_jMenuItem1ActionPerformed
-
+    // <editor-fold defaultstate="collapsed" desc="Menu Triggers">
     /**
      * trigger by click on Open Action on the Menu bar.
      *
@@ -283,7 +275,7 @@ public class MainFrame extends javax.swing.JFrame {
     private void MOpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MOpenFileActionPerformed
         SetMenuStatus(false);
         if (HackishOpenFile) {
-            SetDefOSUI();
+            LafFunctions.SetDefOSUI(this);
         }
         JFileChooser fileChooser = new JFileChooser(System.getProperty("user.dir"));
         var list2 = StegnoAnalyzer.ValidImagesFiles;
@@ -291,7 +283,7 @@ public class MainFrame extends javax.swing.JFrame {
         fileChooser.setMultiSelectionEnabled(true);
         int rVal = fileChooser.showOpenDialog(this);
         if (HackishOpenFile) {
-            setRadianceUI();
+            LafFunctions.setRadianceUI(this);
         }
         System.setProperty("user.dir", fileChooser.getCurrentDirectory().getAbsolutePath());
         if (rVal == JFileChooser.APPROVE_OPTION) {
@@ -406,12 +398,13 @@ public class MainFrame extends javax.swing.JFrame {
         about.setVisible(true);
     }//GEN-LAST:event_CallAboutWin
 
-    private void jMenuItem5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem5ActionPerformed
+    private void MOrunAnalysisActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MOrunAnalysisActionPerformed
         if (MainTabPane.getSelectedComponent() instanceof InvestigationTab tab) {
             tab.startAnalysis();
         }
-    }//GEN-LAST:event_jMenuItem5ActionPerformed
-
+    }//GEN-LAST:event_MOrunAnalysisActionPerformed
+// </editor-fold>
+    
     private String ValidFileTypes(String list2[]) {
         var descriptor = new StringBuilder("Images (");
         for (int index = 0; index < list2.length; index++) {
@@ -515,7 +508,7 @@ public class MainFrame extends javax.swing.JFrame {
      * </pre>
      *
      * @param file the path to use on analysis.
-     * @return true if the tab was sucessfully created false otherwise.
+     * @return true if the tab was successfully created false otherwise.
      */
     private boolean newFileTab(final Path file) {
         InvestigationTab tab = new InvestigationTab(file);
@@ -544,6 +537,19 @@ public class MainFrame extends javax.swing.JFrame {
         }
         try {
             SwingUtilities.invokeAndWait(() -> this.ProcessDropedFiles(FileList));
+        } catch (InterruptedException ex) {
+            UIlogger.log(Level.SEVERE, "A call to UI was Interrupted", ex);
+        } catch (InvocationTargetException ex) {
+            UIlogger.log(Level.SEVERE, "Could not invoke the UI", ex);
+        }
+    }
+
+    private void ProcessDropedText(String data) {
+        if (SwingUtilities.isEventDispatchThread()) {
+                //TODO PROCESS CREATE A NEW TAB
+        }
+        try {
+            SwingUtilities.invokeAndWait(() -> this.ProcessDropedText(data));
         } catch (InterruptedException ex) {
             UIlogger.log(Level.SEVERE, "A call to UI was Interrupted", ex);
         } catch (InvocationTargetException ex) {
@@ -623,6 +629,15 @@ public class MainFrame extends javax.swing.JFrame {
         return -1;
     }
 
+    /**
+     * Handles The UI Close Request to close the application.
+     * if the application is idle (and has no tabs) 
+     * it proceed to close the window. 
+     * otherwise if there are tabs. we show a Close Dialog to ask for confirmation
+     * to close the application. 
+     * if confirmed we will close all tabs and try to release all their related resources
+     * 
+     */
     private void CloseRequested() {
         if (MainTabPane.getTabCount() == 0) {
             this.setVisible(false);
@@ -646,19 +661,19 @@ public class MainFrame extends javax.swing.JFrame {
                 //bye
                 System.exit(0);
             } catch (Throwable err) {
-                
                 UIlogger.log(Level.SEVERE, "error while closing", err);
                 System.exit(-2);
             }
         }
     }
 
+    // <editor-fold defaultstate="collapsed" desc="Drag And Drop">
     private void EnableDragAndDrop() {
         if (DragAndDrophelper == null) {
             DragAndDrophelper = new DragAndDropHelper(JAeonTabPane.J_AEON_TAB_FLAVOR);
             DragAndDrophelper.registerEventListener(getCallbackObject());
             var processor = new DragStegnoProcessor(getImageCallback());
-            DragAndDrophelper.addFlavorHandler(processor,DragStegnoProcessor.Myflavors);
+            DragAndDrophelper.addFlavorHandler(processor, DragStegnoProcessor.Myflavors);
         }
         GlassFileDnDPanel glasspane;
         if (getRootPane().getGlassPane() instanceof GlassFileDnDPanel glass) {
@@ -693,8 +708,13 @@ public class MainFrame extends javax.swing.JFrame {
                 try {
                     ProcessDropedLinks(FileLink.toURL());
                 } catch (MalformedURLException err) {
-
+                    UIlogger.log(Level.SEVERE, "Could not convert the URI TO URL", err);
                 }
+            }
+
+            @Override
+            public void HandleTextData(String data) {
+                ProcessDropedText(data);
             }
         };
     }
@@ -729,139 +749,25 @@ public class MainFrame extends javax.swing.JFrame {
             }
         };
     }
-
-    // <editor-fold defaultstate="collapsed" desc="LAF">
-    private void SetNimbusUI() {
-        for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-            if ("Nimbus".equals(info.getName())) {
-                //nimbus dark mode.
-                UIManager.put("control", new Color(128, 128, 128));
-                UIManager.put("info", new Color(128, 128, 128));
-                UIManager.put("nimbusBase", new Color(18, 30, 49));
-                UIManager.put("nimbusAlertYellow", new Color(248, 187, 0));
-                UIManager.put("nimbusDisabledText", new Color(128, 128, 128));
-                UIManager.put("nimbusFocus", new Color(115, 164, 209));
-                UIManager.put("nimbusGreen", new Color(176, 179, 50));
-                UIManager.put("nimbusInfoBlue", new Color(66, 139, 221));
-                UIManager.put("nimbusLightBackground", new Color(18, 30, 49));
-                UIManager.put("nimbusOrange", new Color(191, 98, 4));
-                UIManager.put("nimbusRed", new Color(169, 46, 34));
-                UIManager.put("nimbusSelectedText", new Color(255, 255, 255));
-                UIManager.put("nimbusSelectionBackground", new Color(104, 93, 156));
-                UIManager.put("text", new Color(230, 230, 230));
-                SetUIClass(info.getClassName());
-                break;
-            }
-        }
-    }
-
-    private void SetDefOSUI() {
-        this.setVisible(false);
-        SetUIClass(UIManager.getSystemLookAndFeelClassName());
-        //this.setVisible(true);
-    }
-
-    private void setRadianceUI() {
-        this.setVisible(false);
-        SetUIClass(RadianceNightShadeLookAndFeel.class.getName());
-        this.setVisible(true);
-    }
-
-    private void SetUIClass(String Name) {
-        dispose();
-        trySetLaFByName(Name);
-        javax.swing.SwingUtilities.updateComponentTreeUI(this);
-        var supdeco = UIManager.getLookAndFeel().getSupportsWindowDecorations();
-        try {
-            setUndecorated(supdeco);
-        } catch (IllegalComponentStateException err) {
-        }
-        try {
-            getRootPane().setWindowDecorationStyle(supdeco ? JRootPane.FRAME : JRootPane.NONE);
-        } catch (IllegalComponentStateException err) {
-        }
-        this.revalidate();
-    }
-    // </editor-fold >
-
-    // <editor-fold defaultstate="collapsed" desc="Start Up Functions">
-    /**
-     * Initialize the LAF for the application. this function needs to be called
-     * on the EDT
-     */
-    private static void InitLAF() {
-        String LaFName = RadianceNightShadeLookAndFeel.class.getName();
-        if (!trySetLaFByName(LaFName)) {
-            trySetLaFByName(UIManager.getSystemLookAndFeelClassName());
-        }
-    }
-
-    private static boolean trySetLaFByName(String Name) {
-        var result = false;
-        try {
-            UIManager.setLookAndFeel(Name);
-            result = true;
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
-            //unable to set the UI LAF we could try just allowing the defaults. 
-            UIlogger.log(Level.SEVERE, "Unable to setup the UI LaF", e);
-        }
-
-        if (UIManager.getLookAndFeel().getSupportsWindowDecorations()) {
-            JFrame.setDefaultLookAndFeelDecorated(true);
-            javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
-        } else {
-            JFrame.setDefaultLookAndFeelDecorated(false);
-            javax.swing.JDialog.setDefaultLookAndFeelDecorated(false);
-        }
-        return result;
-    }
-
-    private static void ParseParams(String[] params) {
-        //TODO: Implement
-    }
-
-    /**
-     * Launches the Application.
-     *
-     * @param args The Console parameters for this application. TODO use the
-     * arguments someway.
-     *
-     */
-    public static void main(String[] args) {
-        ParseParams(args);
-        SwingUtilities.invokeLater(() -> {
-            InitLAF();
-            try {
-                MainFrame frame = new MainFrame();
-                frame.setVisible(true);
-            } catch (Exception e) {
-                //log the error
-                UIlogger.log(Level.SEVERE, "Exception at Main, Something crashed", e);
-                throw e;
-            }
-        });
-    }
-    // </editor-fold>  
+    // </editor-fold>
 
     // <editor-fold defaultstate="collapsed" desc="UI components">    
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu FileMenu;
+    private javax.swing.JMenuItem MOabout;
     private javax.swing.JMenuItem MOpenClipboard;
     private javax.swing.JMenuItem MOpenFile;
     private javax.swing.JMenuItem MOpenLink;
+    private javax.swing.JMenuItem MOrunAnalysis;
     private javax.swing.JMenuBar MainMenu;
     private com.aeongames.stegsolveplus.ui.tabcomponents.JStegnoTabbedPane MainTabPane;
     private javax.swing.JMenuItem MbExit;
     private javax.swing.JMenu MenuHelp;
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu2;
-    private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JMenuItem jMenuItem3;
-    private javax.swing.JMenuItem jMenuItem4;
-    private javax.swing.JMenuItem jMenuItem5;
     private javax.swing.JPopupMenu.Separator jSeparator1;
     // End of variables declaration//GEN-END:variables
-
     // </editor-fold>  
 }

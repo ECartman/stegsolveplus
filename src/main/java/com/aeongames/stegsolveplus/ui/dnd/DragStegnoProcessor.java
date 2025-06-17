@@ -9,7 +9,7 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-package com.aeongames.stegsolveplus.StegnoTools;
+package com.aeongames.stegsolveplus.ui.dnd;
 
 import com.aeongames.edi.utils.datatransfer.DataTransferException;
 import com.aeongames.edi.utils.datatransfer.FlavorProcessor;
@@ -372,6 +372,8 @@ public class DragStegnoProcessor implements FlavorProcessor {
                     //TODO: Remove or handle it better this is REALLY bad and slow. 
                     //we might desire to handle the drag of text as a stream
                     String DropData = data;
+                    publishTextData(DropData);
+                    return true;
                 }
                 case LinkedList<?> List -> {
                     List<Path> fileList = new LinkedList<>();
@@ -457,6 +459,9 @@ public class DragStegnoProcessor implements FlavorProcessor {
 
     private void publishURI(final URI FileLink) {
         ImageListener.HandleURI(FileLink);
+    }
+    private void publishTextData(final String data) {
+        ImageListener.HandleTextData(data);
     }
 
 }

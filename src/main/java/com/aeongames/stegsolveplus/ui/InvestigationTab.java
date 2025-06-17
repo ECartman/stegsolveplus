@@ -1,6 +1,5 @@
 /*
- * 
- * Copyright © 2024 Eduardo Vindas. All rights reserved.
+ * Copyright © 2024-2025 Eduardo Vindas. All rights reserved.
  * 
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -12,34 +11,33 @@
  */
 package com.aeongames.stegsolveplus.ui;
 
+import java.net.URL;
+import java.util.List;
+import java.awt.Image;
+import java.util.Objects;
+import java.util.HashMap;
+import java.nio.file.Path;
+import java.nio.file.Files;
+import java.io.IOException;
+import java.util.function.Consumer;
+import java.awt.image.BufferedImage;
 import com.aeongames.edi.utils.data.Pair;
+import java.beans.PropertyChangeListener;
 import com.aeongames.edi.utils.error.ErrorData;
-import com.aeongames.edi.utils.visual.ImageScaleComponents;
-import com.aeongames.edi.utils.visual.panels.ErrorGlassPane;
 import com.aeongames.edi.utils.visual.panels.ImagePanel;
 import com.aeongames.stegsolveplus.ui.tabcomponents.Tab;
-import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalyzer;
+import com.aeongames.edi.utils.visual.ImageScaleComponents;
+import com.aeongames.edi.utils.visual.panels.ErrorGlassPane;
 import com.aeongames.stegsolveplus.ui.tabcomponents.TabClose;
-import java.awt.Image;
-import java.awt.image.BufferedImage;
-import java.beans.PropertyChangeListener;
-import java.io.IOException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Consumer;
+import com.aeongames.stegsolveplus.StegnoTools.StegnoAnalyzer;
 
 /**
- *
+ * 
  * @author Eduardo Vindas
  */
 public class InvestigationTab extends Tab {
 
     public final class ChangePropertys {
-
         public static final String BUSY = "BUSY";
         public static final String STATEINFO = "STATE_STRING";
     }
@@ -78,7 +76,7 @@ public class InvestigationTab extends Tab {
 
     private PropertyChangeListener generateThumbReader() {
         return (evt) -> {
-            if (evt.getPropertyName().equals(ImagePreviewPanel.ThumbClickEvent)) {
+            if (evt.getPropertyName().equals(ImagePreviewPanel.THUMB_CLICK_EVENT)) {
                 if (evt.getSource() instanceof ImagePreviewPanel) {
                     var closeComponent = new TabClose(AnalysisTabs);
                     var imagep = new ImagePanel((Image) evt.getNewValue());
@@ -126,7 +124,7 @@ public class InvestigationTab extends Tab {
                     //this is a thumb that does not require a specific order so
                     //can be added at the end of the UI list
                     mapvalue = new ImagePreviewPanel(pair.getLeft(), pair.getRight());
-                    mapvalue.addPropertyChangeListener(ImagePreviewPanel.ThumbClickEvent, ThumbClickListener);
+                    mapvalue.addPropertyChangeListener(ImagePreviewPanel.THUMB_CLICK_EVENT, ThumbClickListener);
                     ThumbsReferences.put(pair.getLeft(), mapvalue);
                     ThumbGridPanel.add(mapvalue);
                 }
@@ -215,7 +213,7 @@ public class InvestigationTab extends Tab {
         ThumbsReferences = new HashMap<>(names.size());
         for (String name : names) {
             var preview = new ImagePreviewPanel(name);
-            preview.addPropertyChangeListener(ImagePreviewPanel.ThumbClickEvent, ThumbClickListener);
+            preview.addPropertyChangeListener(ImagePreviewPanel.THUMB_CLICK_EVENT, ThumbClickListener);
             ThumbsReferences.put(name, preview);
             ThumbGridPanel.add(preview);
         }
@@ -239,15 +237,18 @@ public class InvestigationTab extends Tab {
         removePropertyChangeListener(ChangePropertys.BUSY, listener);
     }
 
+    /**
+     * set the title for this tab to match the Path. 
+     * if the filename is too long the function truncates to 20 characters. 
+     * @param FilePath the file to use to setup the title. 
+     */
     private void SetTitleInternal(Path FilePath) {
-        //assume the file is alredy non null. we are too deep if it is not a verification was missing before
         var Filename = FilePath.getFileName().toString().strip();
         pFooter.setFooterText(String.format("Ready File: %s", Filename));
         var extension = Filename;
-        if (Filename != null && Filename.length() > 20) {
-            var StartExtensionIndex = Filename.lastIndexOf('.');//get the file type
+        if (Objects.nonNull(Filename) && Filename.length() > 20) {
+            var StartExtensionIndex = Filename.lastIndexOf('.');
             if (StartExtensionIndex >= 0) {
-                //ditch the <.>
                 extension = Filename.substring(StartExtensionIndex + 1);
             }
             //ok. we want to do something like <filenameTruncated>...<.><extension>
@@ -423,5 +424,4 @@ public class InvestigationTab extends Tab {
     private javax.swing.JScrollPane jScrollPane1;
     private com.aeongames.stegsolveplus.ui.Footer pFooter;
     // End of variables declaration//GEN-END:variables
-
 }
