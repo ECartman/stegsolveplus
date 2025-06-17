@@ -101,7 +101,7 @@ public class CanvasContainer {
     CanvasContainer(Path Source) throws IOException {
         Objects.requireNonNull(Source, "the path is null");
         originalImage = ImageIO.read(Source.toFile());
-        check(originalImage);
+        check(originalImage,Source);
     }
 
     /**
@@ -113,7 +113,7 @@ public class CanvasContainer {
     CanvasContainer(URL Source) throws IOException {
         Objects.requireNonNull(Source, "the path is null");
         originalImage = ImageIO.read(Source);
-        check(originalImage);
+        check(originalImage,Source);
     }
 
     /**
@@ -158,6 +158,51 @@ public class CanvasContainer {
             throw new IOException(new NullPointerException("We cannot Read the Image, This error can be caused by either there is no supported Image reader for the file or the file is Not a image."));
         }
     }
+    
+    /**
+     * checks for a Image null reference. if is throws a Wrapped
+     * {@link NullPointerException} in a {@link IOException} this is done this
+     * way as this is a error while READING the file and thus we can safely
+     * consider a I/O error while the underline error is the ref is null. (this
+     * is almost because the Param to BufferedImage constructor is null or (and
+     * what we look for) there was no Reader to parse the file.
+     *
+     * @param originalImage the reference to check if is null
+     * @throws IOException if the reference is null.
+     */
+    private void check(BufferedImage originalImage, Path path) throws IOException {
+        if (null == originalImage) {
+            StringBuilder b = new StringBuilder("We cannot Read the Image,");
+            b.append("From source: <");
+            b.append(path.toString());
+            b.append("> ");
+            b.append("This error can be caused by either there is no supported Image reader for the file or the file is Not a image.");
+            throw new IOException(new NullPointerException(b.toString()));
+        }
+    }
+    
+    /**
+     * checks for a Image null reference. if is throws a Wrapped
+     * {@link NullPointerException} in a {@link IOException} this is done this
+     * way as this is a error while READING the file and thus we can safely
+     * consider a I/O error while the underline error is the ref is null. (this
+     * is almost because the Param to BufferedImage constructor is null or (and
+     * what we look for) there was no Reader to parse the file.
+     *
+     * @param originalImage the reference to check if is null
+     * @throws IOException if the reference is null.
+     */
+    private void check(BufferedImage originalImage, URL link) throws IOException {
+        if (null == originalImage) {
+            StringBuilder b = new StringBuilder("We cannot Read the Image,");
+            b.append("From source: <");
+            b.append(link.toString());
+            b.append("> ");
+            b.append("This error can be caused by either there is no supported Image reader for the file or the file is Not a image.");
+            throw new IOException(new NullPointerException(b.toString()));
+        }
+    }
+    
     // </editor-fold>
 
     // <editor-fold defaultstate="collapsed" desc="create empty image"> 
@@ -881,10 +926,10 @@ public class CanvasContainer {
 
     /**
      * this function execute the provided "math" functionality into the pixel
-     * data for the image. and returns a image with the resulting data from the
-     * function. for each pixel.
+     * data for the image.and returns a image with the resulting data from the
+ function.for each pixel.
      *
-     * @param TypeRequred the type of image is desired as results. thus function
+     * @param requiredtype the type of image is desired as results. thus function
      * supports: <pre>
      * {@link BufferedImage#TYPE_INT_RGB}
      * {@link BufferedImage#TYPE_INT_ARGB}
@@ -909,14 +954,14 @@ public class CanvasContainer {
      * @return a image that contain the changes to the pixels done via the
      * provided function.
      */
-    public BufferedImage MathOnPixelInt(int TypeRequred, Function<Integer, Integer> MathFunction) {
+    public BufferedImage MathOnPixelInt(int requiredtype, Function<Integer, Integer> MathFunction) {
         //note if provided a unsupported type we could use whatever we want... or throw a error.
         BufferedImage ResultImage = null;
-        switch (TypeRequred) {
+        switch (requiredtype) {
             default ->
-                throw new UnsupportedOperationException(String.format("%s: %d", "the specific Type of image is not Supported", TypeRequred));
+                throw new UnsupportedOperationException(String.format("%s: %d", "the specific Type of image is not Supported", requiredtype));
             case BufferedImage.TYPE_INT_RGB, BufferedImage.TYPE_INT_ARGB, BufferedImage.TYPE_INT_ARGB_PRE, BufferedImage.TYPE_INT_BGR ->
-                ResultImage = new BufferedImage(originalImage.getWidth(), originalImage.getHeight(), TypeRequred);
+                ResultImage = new BufferedImage(originalImage.getWidth(), originalImage.getHeight(), requiredtype);
         }
         var Destinationdatabuffer = (DataBufferInt) ResultImage.getRaster().getDataBuffer();
         for (int i = 0; i < getTotalPixels(); i++) {
@@ -924,7 +969,7 @@ public class CanvasContainer {
             int rgbint = rgb[ALPHA] << 24 | rgb[RED] << 16 | rgb[GREEN] << 8
                     | rgb[BLUE];
             var CalculatedPixel = MathFunction.apply(rgbint);
-            if (TypeRequred == BufferedImage.TYPE_INT_BGR) {
+            if (requiredtype == BufferedImage.TYPE_INT_BGR) {
                 var reversed = CalculatedPixel & 0xFF00FF00;//ALPHA AND GREEN ARE ON THE SAME PLACE
                 reversed |= (CalculatedPixel >>> 16) & 0xFF;
                 reversed |= (CalculatedPixel & 0xFF) << 16;

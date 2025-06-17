@@ -37,19 +37,20 @@ import java.util.regex.Pattern;
 
 /**
  * a FlavorProcessor that is designed to process Events that might relate to a
- * Image. and handle. them as required. for this class currently it handles
+ * Image, this Processor Handles several flavors. we might want to change that one
+ * per processor 
+ * and handle. them as required. for this class currently it handles
  * Files, URL and Text other events might require further code to be added.
- * 
- * important. unlike the Clipboard Listener. DnD events are Event based. 
- * and most be handled on the EDT. if we try to handle the data on another 
- * Thread and allow the EDT to disengage it will notify the source of the Drag. 
- * within the same app that might be acceptable but in a IPC scenario it causes
- * the data to be loss or any stream to become invalid. thus we MUST handle 
- * the event on the EDT. 
- * to that end we will handle the events by reading them as references to a file
- * or URL. (and TODO: handle as Image Binary Stream that we can load into memory)
- * we then notify a listener. and the listener should spawn a Thread to handle 
- * the File, url, or reference as it deems required.
+ *
+ * important. unlike the Clipboard Listener. DnD events are Event based. and
+ * most be handled on the EDT. if we try to handle the data on another Thread
+ * and allow the EDT to disengage it will notify the source of the Drag. within
+ * the same app that might be acceptable but in a IPC scenario it causes the
+ * data to be loss or any stream to become invalid. thus we MUST handle the
+ * event on the EDT. to that end we will handle the events by reading them as
+ * references to a file or URL. (and TODO: handle as Image Binary Stream that we
+ * can load into memory) we then notify a listener. and the listener should
+ * spawn a Thread to handle the File, url, or reference as it deems required.
  *
  * @author Eduardo Vindas
  * @version 1.5
@@ -226,7 +227,7 @@ public class DragStegnoProcessor implements FlavorProcessor {
         }
         return null;
     }
-      
+
     /**
      * prepares a file to be used. if the file exist and can be read. we will
      * check if this file is a Temporal file. if so we made a copy because the
@@ -273,7 +274,6 @@ public class DragStegnoProcessor implements FlavorProcessor {
     }
 
     //</editor-fold>
-
     //<editor-fold defaultstate="collapsed" desc="Process URL/URI">
     private URL preProcessURL(DataFlavor flavor, Transferable DropTransfeable) {
         var ob = getTransferibleData(flavor, DropTransfeable);
@@ -326,6 +326,7 @@ public class DragStegnoProcessor implements FlavorProcessor {
         //it is posible for the path list to be a file that was in reality a URL 
         //Or fail to read. in such cases lets review if we can read URL or URI data.
         if (transferData.isDataFlavorSupported(Myflavors[1])) {
+            flavor = Myflavors[1];
             URL FileLink;
             if ((FileLink = preProcessURL(flavor, transferData)) != null) {
                 //check if the URL is a File on the system.
@@ -339,6 +340,7 @@ public class DragStegnoProcessor implements FlavorProcessor {
             }
         }
         if (transferData.isDataFlavorSupported(Myflavors[2])) {
+            flavor = Myflavors[2];
             URI FileLink;
             if ((FileLink = preProcessURI(flavor, transferData)) != null) {
                 //check if the URL is a File on the system.
@@ -352,6 +354,7 @@ public class DragStegnoProcessor implements FlavorProcessor {
             }
         }
         if (transferData.isDataFlavorSupported(Myflavors[3])) {
+            flavor = Myflavors[3];
             switch (preProcessText(flavor, transferData)) {
                 case Path path -> {
                     publishFiles(List.of(path));
@@ -365,7 +368,7 @@ public class DragStegnoProcessor implements FlavorProcessor {
                     publishURL(url);
                     return true;
                 }
-                case String data ->{
+                case String data -> {
                     //TODO: Remove or handle it better this is REALLY bad and slow. 
                     //we might desire to handle the drag of text as a stream
                     String DropData = data;

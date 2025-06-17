@@ -13,7 +13,7 @@
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
                 <includes>
-                      <include>**/*.*</include>
+                    <include>**/*.*</include>
                     <include>com/aeongames/stegsolveplus/text/app.properties</include>
                 </includes>
             </resource>
@@ -71,6 +71,11 @@
             <groupId>org.netbeans.external</groupId>
             <artifactId>AbsoluteLayout</artifactId>
             <version>RELEASE220</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>1.13.1</version>
         </dependency>
     </dependencies>
     

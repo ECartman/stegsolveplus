@@ -20,6 +20,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.util.Objects;
 import java.util.function.Consumer;
+import org.apache.commons.text.StringEscapeUtils;
 import org.pushingpixels.radiance.theming.internal.RadianceSynapse;
 
 /**
@@ -56,7 +57,7 @@ public class ErrorGlassPane extends javax.swing.JPanel {
         //errdata cannot... should not be null at this point. 
         LbErrorTittle.setText(errdata.getErrorTittle());
         LbErrorTittle.setToolTipText(errdata.getErrorTittle());
-        txtmessage.setText(errdata.getErrorMessage());
+        txtmessage.setText(StringEscapeUtils.escapeHtml4(errdata.getErrorMessage()));
         txtstack.setText(errdata.getErrorStack());
     }
 
@@ -69,9 +70,9 @@ public class ErrorGlassPane extends javax.swing.JPanel {
     private void initComponents() {
 
         translucentpanel1 = new com.aeongames.edi.utils.visual.panels.TranslucentPanel();
-        filler1 = new javax.swing.Box.Filler(new java.awt.Dimension(30, 0), new java.awt.Dimension(30, 0), new java.awt.Dimension(32767, 0));
+        filler1 = new javax.swing.Box.Filler(new java.awt.Dimension(30, 0), new java.awt.Dimension(30, 0), new java.awt.Dimension(3000, 0));
         jPanel1 = new javax.swing.JPanel();
-        filler3 = new javax.swing.Box.Filler(new java.awt.Dimension(0, 10), new java.awt.Dimension(0, 10), new java.awt.Dimension(0, 50));
+        filler3 = new javax.swing.Box.Filler(new java.awt.Dimension(0, 10), new java.awt.Dimension(0, 10), new java.awt.Dimension(0, 500));
         translucentpanel2 = new com.aeongames.edi.utils.visual.panels.TranslucentPanel();
         jPanel2 = new javax.swing.JPanel();
         LbErrorTittle = new javax.swing.JLabel();
@@ -84,8 +85,8 @@ public class ErrorGlassPane extends javax.swing.JPanel {
         txtstack = new javax.swing.JTextArea();
         jScrollPane3 = new javax.swing.JScrollPane();
         txtmessage = new com.aeongames.edi.utils.visual.TranslucentTextPane();
-        filler4 = new javax.swing.Box.Filler(new java.awt.Dimension(0, 60), new java.awt.Dimension(0, 60), new java.awt.Dimension(0, 32767));
-        filler2 = new javax.swing.Box.Filler(new java.awt.Dimension(30, 0), new java.awt.Dimension(30, 0), new java.awt.Dimension(32767, 0));
+        filler4 = new javax.swing.Box.Filler(new java.awt.Dimension(0, 20), new java.awt.Dimension(0, 20), new java.awt.Dimension(0, 900));
+        filler2 = new javax.swing.Box.Filler(new java.awt.Dimension(30, 0), new java.awt.Dimension(30, 0), new java.awt.Dimension(3000, 0));
 
         setFocusCycleRoot(true);
         setOpaque(false);
@@ -184,12 +185,12 @@ public class ErrorGlassPane extends javax.swing.JPanel {
         );
         pstackLayout.setVerticalGroup(
             pstackLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 131, Short.MAX_VALUE)
+            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 170, Short.MAX_VALUE)
         );
 
         txtmessage.setEditable(false);
         txtmessage.setContentType("text/html"); // NOI18N
-        txtmessage.setText(errdata!=null? errdata.getErrorMessage(): "Error");
+        txtmessage.setText(errdata!=null? StringEscapeUtils.escapeHtml4(errdata.getErrorMessage()): "Error");
         jScrollPane3.setViewportView(txtmessage);
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);

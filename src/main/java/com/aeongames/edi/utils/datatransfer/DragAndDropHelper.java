@@ -73,7 +73,7 @@ public class DragAndDropHelper implements DropTargetListener {
      * a list of unique values. that contains all the dndEventListener that want
      * to listen for Events related to DnD to update the UI.
      */
-    private final LinkedHashSet<dndEventListener> dndListeners;
+    private final LinkedHashSet<DndEventListener> dndListeners;
     /**
      * a mapping for the {@code FlavorHandler} that wrap a
      * {@code FlavorProcessor} this is required for ease of adding or removing
@@ -326,6 +326,7 @@ public class DragAndDropHelper implements DropTargetListener {
      */
     private FlavorHandler isDroppable(DropTargetDropEvent dtde) {
         var flavors = dtde.getCurrentDataFlavors();
+        DebugLogFlavors(flavors);
         FlavorHandler detected = null;
         for (var flavorHandler : FlavorsListPriority) {
             if (flavorHandler.canConsume(flavors)) {
@@ -334,6 +335,37 @@ public class DragAndDropHelper implements DropTargetListener {
             }
         }
         return detected;
+    }
+    
+    
+    private void DebugLogFlavors(DataFlavor flavors[]) {
+        if (!LoggingHelper.RunningInDebugMode()) {
+            return;
+        }
+        if(flavors.length==0){
+             LoggingHelper.getLogger(LOGGERNAME+".debug").log(Level.INFO,"Edge case: there are no Data Flavors provided.");
+        }
+        HashMap<String,LinkedHashSet<String>> flavorsNames = new HashMap<>();
+        for (DataFlavor flavor : flavors) {
+            if (flavor == null) {
+                continue;
+            }
+            var list= flavorsNames.get(flavor.getHumanPresentableName());
+            if(list==null){
+                list = new LinkedHashSet<>();
+            }
+            var added = list.add(flavor.getDefaultRepresentationClassAsString());
+            flavorsNames.put(flavor.getHumanPresentableName(), list);
+                    
+            if (added) {
+                LoggingHelper.getLogger(LOGGERNAME+".debug").log(Level.INFO, "Flavor: {0} :: Flavor Class: {1}\nMIME:{2}",
+                        new Object[]{flavor.getHumanPresentableName(),
+                            flavor.getDefaultRepresentationClassAsString(),
+                        flavor.getMimeType()
+                        });
+            }
+        }
+        flavorsNames.clear();
     }
 
     /**
@@ -492,7 +524,7 @@ public class DragAndDropHelper implements DropTargetListener {
 
     //<editor-fold defaultstate="collapsed" desc="UI events">
     private void triggerDragEvent(final Component component) {
-        for (dndEventListener dndListener : dndListeners) {
+        for (DndEventListener dndListener : dndListeners) {
             if (SwingUtilities.isEventDispatchThread()) {
                 dndListener.dragEvent(component);
             } else {
@@ -504,7 +536,7 @@ public class DragAndDropHelper implements DropTargetListener {
     }
 
     private void triggerDragExitEvent(final Component component) {
-        for (dndEventListener dndListener : dndListeners) {
+        for (DndEventListener dndListener : dndListeners) {
             if (SwingUtilities.isEventDispatchThread()) {
                 dndListener.dragExitEvent(component);
             } else {
@@ -516,7 +548,7 @@ public class DragAndDropHelper implements DropTargetListener {
     }
 
     private void triggerDropComplete(Component component) {
-        for (dndEventListener dndListener : dndListeners) {
+        for (DndEventListener dndListener : dndListeners) {
             if (SwingUtilities.isEventDispatchThread()) {
                 dndListener.dropCompleteEvent(component);
             } else {
@@ -527,12 +559,12 @@ public class DragAndDropHelper implements DropTargetListener {
         }
     }
 
-    public synchronized boolean registerEventListener(dndEventListener eventListener) {
+    public synchronized boolean registerEventListener(DndEventListener eventListener) {
         Objects.requireNonNull(eventListener, "the eventListener cannot be null");
         return dndListeners.add(eventListener);
     }
 
-    public synchronized boolean removeEventListener(dndEventListener eventListener) {
+    public synchronized boolean removeEventListener(DndEventListener eventListener) {
         Objects.requireNonNull(eventListener, "the eventListener cannot be null");
         return dndListeners.remove(eventListener);
     }

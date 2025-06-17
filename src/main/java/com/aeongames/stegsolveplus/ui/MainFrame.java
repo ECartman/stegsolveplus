@@ -49,9 +49,9 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import org.pushingpixels.radiance.theming.api.skin.RadianceNightShadeLookAndFeel;
-import com.aeongames.edi.utils.datatransfer.dndEventListener;
 import com.aeongames.stegsolveplus.StegnoTools.ImageInputListener;
 import java.util.logging.Logger;
+import com.aeongames.edi.utils.datatransfer.DndEventListener;
 
 /**
  * the Main Windows(frame) for the application. this application is intended to
@@ -699,8 +699,8 @@ public class MainFrame extends javax.swing.JFrame {
         };
     }
 
-    private dndEventListener getCallbackObject() {
-        return new dndEventListener() {
+    private DndEventListener getCallbackObject() {
+        return new DndEventListener() {
             @Override
             public void dragEvent(Component AffecteDnDComponent) {
                 if (AffecteDnDComponent == null) {
