@@ -51,7 +51,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import org.pushingpixels.radiance.theming.api.skin.RadianceNightShadeLookAndFeel;
 import com.aeongames.stegsolveplus.StegnoTools.ImageInputListener;
 import java.util.logging.Logger;
-import com.aeongames.edi.utils.datatransfer.DndEventListener;
+import com.aeongames.edi.utils.datatransfer.DragDropEventListener;
 
 /**
  * the Main Windows(frame) for the application. this application is intended to
@@ -699,8 +699,8 @@ public class MainFrame extends javax.swing.JFrame {
         };
     }
 
-    private DndEventListener getCallbackObject() {
-        return new DndEventListener() {
+    private DragDropEventListener getCallbackObject() {
+        return new DragDropEventListener() {
             @Override
             public void dragEvent(Component AffecteDnDComponent) {
                 if (AffecteDnDComponent == null) {

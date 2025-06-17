@@ -73,7 +73,7 @@ public class DragAndDropHelper implements DropTargetListener {
      * a list of unique values. that contains all the dndEventListener that want
      * to listen for Events related to DnD to update the UI.
      */
-    private final LinkedHashSet<DndEventListener> dndListeners;
+    private final LinkedHashSet<DragDropEventListener> dndListeners;
     /**
      * a mapping for the {@code FlavorHandler} that wrap a
      * {@code FlavorProcessor} this is required for ease of adding or removing
@@ -524,7 +524,7 @@ public class DragAndDropHelper implements DropTargetListener {
 
     //<editor-fold defaultstate="collapsed" desc="UI events">
     private void triggerDragEvent(final Component component) {
-        for (DndEventListener dndListener : dndListeners) {
+        for (DragDropEventListener dndListener : dndListeners) {
             if (SwingUtilities.isEventDispatchThread()) {
                 dndListener.dragEvent(component);
             } else {
@@ -536,7 +536,7 @@ public class DragAndDropHelper implements DropTargetListener {
     }
 
     private void triggerDragExitEvent(final Component component) {
-        for (DndEventListener dndListener : dndListeners) {
+        for (DragDropEventListener dndListener : dndListeners) {
             if (SwingUtilities.isEventDispatchThread()) {
                 dndListener.dragExitEvent(component);
             } else {
@@ -548,7 +548,7 @@ public class DragAndDropHelper implements DropTargetListener {
     }
 
     private void triggerDropComplete(Component component) {
-        for (DndEventListener dndListener : dndListeners) {
+        for (DragDropEventListener dndListener : dndListeners) {
             if (SwingUtilities.isEventDispatchThread()) {
                 dndListener.dropCompleteEvent(component);
             } else {
@@ -559,12 +559,12 @@ public class DragAndDropHelper implements DropTargetListener {
         }
     }
 
-    public synchronized boolean registerEventListener(DndEventListener eventListener) {
+    public synchronized boolean registerEventListener(DragDropEventListener eventListener) {
         Objects.requireNonNull(eventListener, "the eventListener cannot be null");
         return dndListeners.add(eventListener);
     }
 
-    public synchronized boolean removeEventListener(DndEventListener eventListener) {
+    public synchronized boolean removeEventListener(DragDropEventListener eventListener) {
         Objects.requireNonNull(eventListener, "the eventListener cannot be null");
         return dndListeners.remove(eventListener);
     }

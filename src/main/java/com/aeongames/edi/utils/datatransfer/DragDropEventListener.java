@@ -19,7 +19,7 @@ import java.awt.Component;
  *
  * @author Eduardo Vindas
  */
-public interface DndEventListener {
+public interface DragDropEventListener {
     /**
      * triggered by the Event Dispatch thread when a
      * {@link DropTargetListener#dragEnter(java.awt.dnd.DropTargetDragEvent)}
@@ -29,7 +29,7 @@ public interface DndEventListener {
      * the OS Drag And Drop functionality. thus make sure this method returns as
      * fast as possible. also note. the even is unfiltered. Accepting or
      * rejecting the Event is not required to be performed as this parent class
-     * accepts the event.
+     * accept the event.
      *
      * @param AffecteDnDComponent the Component where the DnD event is affecting
      */
