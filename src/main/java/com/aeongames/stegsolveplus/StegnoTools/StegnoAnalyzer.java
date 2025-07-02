@@ -85,16 +85,14 @@ public class StegnoAnalyzer {
     /**
      * the source file to read and or check data from.
      */
-    private final Path File;
-    private final URL ImageAddress;
+    private final WrappedImage Imageholder;
     private CanvasContainer ImageCache;
-    private static final Logger loger = LoggingHelper.getLogger(StegnoAnalyzer.class.getName());
+    private static final Logger loger = LoggingHelper.getLogger("StegnoAnalyzer");
     private FileLoaderWorker LoaderWorker;
     private TransformationWorker TransformationWorker;
 
     public StegnoAnalyzer(Path File) {
-        this.File = File;
-        ImageAddress = null;
+        Imageholder = new WrappedImage(File);
         LoaderWorker = new FileLoaderWorker();
         TransformationWorker = new TransformationWorker();
     }
@@ -104,8 +102,7 @@ public class StegnoAnalyzer {
     }
 
     public StegnoAnalyzer(URL Address) {
-        this.ImageAddress = Address;
-        File = null;
+        Imageholder = new WrappedImage(Address);
         LoaderWorker = new FileLoaderWorker();
         TransformationWorker = new TransformationWorker();
     }
@@ -125,22 +122,22 @@ public class StegnoAnalyzer {
     }
 
     public Path getFilePath() {
-        return File;
+        return Imageholder.getFileSource();
     }
 
     public String getAnalysisSource() {
-        if (File != null) {
-            return File.toString();
+        if (Imageholder.getFileSource() != null) {
+            return Imageholder.getFileSource().toString();
         } else {
-            return ImageAddress.toString();
+            return Imageholder.getURLSource().toString();
         }
     }
 
     public String getSourceName() {
-        if (File != null) {
-            return File.getFileName().toString().strip();
+        if (Imageholder.getFileSource() != null) {
+            return Imageholder.getFileSource().getFileName().toString().strip();
         } else {
-            return ImageAddress.getPath();
+            return Imageholder.getURLSource().getPath();
         }
     }
 
@@ -381,21 +378,21 @@ public class StegnoAnalyzer {
         protected BufferedImage doInBackground() throws Exception {
             String Stage;
             try {
-                if (File != null) {
-                    publish(String.format("Loading the File %s", File.getFileName().toString()));
-                    ImageCache = new CanvasContainer(File);
+                if (Imageholder.getFileSource() != null) {
+                    Stage = (String.format("Loading the File %s", Imageholder.getFileSource().getFileName().toString()));
                 } else {
-                    Stage = String.format("Loading the URL %s", ImageAddress.getPath());
-                    publish(Stage);
-                    ImageCache = new CanvasContainer(ImageAddress);
+                    Stage = String.format("Loading the URL %s", Imageholder.getURLSource().getPath());
                 }
+                publish(Stage);
+                Imageholder.LoadImage((t) -> publish(t));
+                ImageCache = new CanvasContainer(Imageholder);
             } catch (IOException ex) {
                 Stage = String.format("Unable to Load the Image for Analysis due a error: %s", ex.getMessage());
                 publish(Stage);
                 loger.log(Level.SEVERE, "Error Loading the underline Image from the provided Source", ex);
                 throw ex;//rethow so the Future class traps the error at the setException
             }
-            return ImageCache.getCloneImage();
+            return Imageholder.getImageCopy();
         }
 
         @Override

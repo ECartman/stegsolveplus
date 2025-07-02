@@ -20,6 +20,7 @@ package com.aeongames.edi.utils.text;
 import java.awt.Component;
 import java.awt.EventQueue;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Objects;
 import javax.swing.JLabel;
 
 /**
@@ -187,7 +188,7 @@ public class LabelText {
      */
     public static String getTrimmedtoComponentsize(final String data, final Component UIComponent, int DefaultSize) {
         if (data != null && UIComponent != null) {
-            java.awt.FontMetrics fm = UIComponent.getFontMetrics(UIComponent.getFont());
+            java.awt.FontMetrics fm = UIComponent.getFontMetrics(Objects.requireNonNullElse(UIComponent.getFont(),new JLabel().getFont()));
             int containerWidth = UIComponent.getWidth();
             containerWidth= containerWidth==0?DefaultSize:containerWidth;
             StringBuilder trial = new StringBuilder();

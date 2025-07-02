@@ -11,6 +11,7 @@
  * 
  */
 package com.aeongames.edi.utils.data;
+import java.util.Objects;
 
 /**
  * a class that hold a Pair of values. with no intention of being used as
@@ -45,8 +46,8 @@ public class Pair<L,R> {
     public boolean equals(Object o) {
         if(o == null) return false;
         if(o instanceof Pair p){
-            return this.left.equals(p.getLeft())
-                && this.right.equals(p.getRight());
+            return Objects.equals(left, p.getLeft())
+                && Objects.equals(right, p.getRight());
         }
         return false;
     }

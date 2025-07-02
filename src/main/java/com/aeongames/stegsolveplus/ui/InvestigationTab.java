@@ -309,7 +309,7 @@ public class InvestigationTab extends Tab {
             LoggingHelper.getLogger(InvestigationTab.class.getName())
                     .log(Level.INFO, "Exception on Results, This might be expected", ex);
         }*/
-        System.gc();
+        //TODO: gc only if the GC was not alredy called (*to account for issues when closing all tabs or a barrage) 
         setAvailable();
         return true;
     }
@@ -347,6 +347,7 @@ public class InvestigationTab extends Tab {
         jPanel2 = new javax.swing.JPanel();
         AnalysisTabs = new com.aeongames.edi.utils.visual.panels.JImageTabPane();
         Originalimg = new com.aeongames.stegsolveplus.ui.ImagePreviewPanel();
+        ImgInfoPanel = new javax.swing.JPanel();
         jPanel1 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
         ThumbGridPanel = new javax.swing.JPanel();
@@ -359,6 +360,19 @@ public class InvestigationTab extends Tab {
         });
 
         AnalysisTabs.addTab("Original Image", new javax.swing.ImageIcon(getClass().getResource("/com/aeongames/stegsolveplus/ui/image.png")), Originalimg); // NOI18N
+
+        javax.swing.GroupLayout ImgInfoPanelLayout = new javax.swing.GroupLayout(ImgInfoPanel);
+        ImgInfoPanel.setLayout(ImgInfoPanelLayout);
+        ImgInfoPanelLayout.setHorizontalGroup(
+            ImgInfoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 781, Short.MAX_VALUE)
+        );
+        ImgInfoPanelLayout.setVerticalGroup(
+            ImgInfoPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 443, Short.MAX_VALUE)
+        );
+
+        AnalysisTabs.addTab("Metadata", ImgInfoPanel);
 
         jPanel1.setOpaque(false);
 
@@ -417,6 +431,7 @@ public class InvestigationTab extends Tab {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private com.aeongames.edi.utils.visual.panels.JImageTabPane AnalysisTabs;
+    private javax.swing.JPanel ImgInfoPanel;
     private com.aeongames.stegsolveplus.ui.ImagePreviewPanel Originalimg;
     private javax.swing.JPanel ThumbGridPanel;
     private javax.swing.JPanel jPanel1;

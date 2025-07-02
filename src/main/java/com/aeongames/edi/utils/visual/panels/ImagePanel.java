@@ -16,6 +16,7 @@ import com.aeongames.edi.utils.visual.ImageUtils;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.util.Objects;
 import javax.imageio.ImageIO;
 
@@ -41,7 +42,7 @@ public class ImagePanel extends javax.swing.JPanel {
      */
     static final String DEF_LOGO = "/com/aeongames/stegsolveplus/ui/pexels-photo-7319068.jpeg";
 
-    private static Image DefaultImageLoaded;
+    private static WeakReference<Image> DefaultImageLoaded;
     /**
      * the image to be show or process.
      */
@@ -151,28 +152,28 @@ public class ImagePanel extends javax.swing.JPanel {
 
     static Image LoadDefault() {
         if (DefaultImageLoaded == null) {
-            synchronized(ImagePanel.class){
+            synchronized (ImagePanel.class) {
                 var res = ImagePanel.class.getResource(DEF_LOGO);
                 try {
-                    DefaultImageLoaded = ImageIO.read(res);
+                    DefaultImageLoaded = new WeakReference<>(ImageIO.read(res));
                 } catch (IOException ex) {
                     try {
-                        DefaultImageLoaded = java.awt.Toolkit.getDefaultToolkit().getImage(res);
+                        DefaultImageLoaded = new WeakReference<>(java.awt.Toolkit.getDefaultToolkit().getImage(res));
                     } catch (Exception sub) {
                         //we should print error if debug build. here. 
                     }
                 }
             }
         }
-        return DefaultImageLoaded;
+        return DefaultImageLoaded.get();
     }
 
     /**
      * read and sets the default image for the panel.
      */
     private void readDefault() {
-        if (DefaultImageLoaded != null) {
-            this.RenderImage = DefaultImageLoaded;
+        if (DefaultImageLoaded != null && Objects.nonNull(DefaultImageLoaded.get())) {
+            this.RenderImage = DefaultImageLoaded.get();
             return;
         }
         RenderImage = LoadDefault();
@@ -205,12 +206,21 @@ public class ImagePanel extends javax.swing.JPanel {
     public final boolean changeImage(Image todisplay) {
         boolean result = false;
         if (todisplay == null) {
+            if (Objects.nonNull(OriginalImage) && DefaultImageLoaded.get() != OriginalImage) {
+                OriginalImage.flush();
+            }
             OriginalImage = null;
             readDefault();
         } else {
-            if ((OriginalImage != null && OriginalImage != todisplay)
+            if ((Objects.nonNull(OriginalImage) && OriginalImage != todisplay)
                     || RenderImage != todisplay) {
+                if (Objects.nonNull(RenderImage) && DefaultImageLoaded.get() != RenderImage) {
+                    RenderImage.flush();
+                }
                 RenderImage = todisplay;
+                if (Objects.nonNull(OriginalImage) && DefaultImageLoaded.get() != OriginalImage) {
+                    OriginalImage.flush();
+                }
                 OriginalImage = null;
                 config();
             }
@@ -242,6 +252,9 @@ public class ImagePanel extends javax.swing.JPanel {
      */
     protected final void returntodefault() {
         readDefault();
+        if (Objects.nonNull(OriginalImage) && OriginalImage != DefaultImageLoaded.get()) {
+            OriginalImage.flush();
+        }
         OriginalImage = null;
         translucent = 1.0f;
         repaint();
@@ -273,10 +286,9 @@ public class ImagePanel extends javax.swing.JPanel {
         super.paintComponent(g);
         if (g instanceof Graphics2D g2d) {
             if (SmothPaint) {
-                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                        RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
-                        RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+                g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 //          g2d.setRenderingHint(RenderingHints.KEY_RENDERING,
 //                RenderingHints.VALUE_RENDER_QUALITY);
             } else {

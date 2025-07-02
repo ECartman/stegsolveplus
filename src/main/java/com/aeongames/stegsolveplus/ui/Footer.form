@@ -36,12 +36,12 @@
     <Component class="javax.swing.JLabel" name="txtFooter">
       <Properties>
         <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-          <Connection code="FullLabelText" type="code"/>
+          <Connection code="myBidings.StatusBarText.getValue()" type="code"/>
         </Property>
       </Properties>
-      <Events>
-        <EventHandler event="componentResized" listener="java.awt.event.ComponentListener" parameters="java.awt.event.ComponentEvent" handler="txtFooterComponentResized"/>
-      </Events>
+      <AuxValues>
+        <AuxValue name="JavaCodeGenerator_CreateCodeCustom" type="java.lang.String" value="new RestrictedLabel()"/>
+      </AuxValues>
     </Component>
   </SubComponents>
 </Form>

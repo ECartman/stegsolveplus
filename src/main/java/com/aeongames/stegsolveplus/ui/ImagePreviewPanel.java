@@ -1,5 +1,5 @@
 /* 
- *  Copyright © 2024 Eduardo Vindas. All rights reserved.
+ *  Copyright © 2024-2025 Eduardo Vindas. All rights reserved.
  *  
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -28,6 +28,7 @@ import org.pushingpixels.radiance.theming.internal.RadianceSynapse;
 /**
  * a Panel that Displays a loading screen until a image is setup to be display.
  * @author Eduardo Vindas
+ * @version 2
  */
 public class ImagePreviewPanel extends javax.swing.JPanel {
 
@@ -258,7 +259,6 @@ public class ImagePreviewPanel extends javax.swing.JPanel {
 
         ImagePreviewPanel.setOpaque(false);
         ImagePreviewPanel.SetBackgroundPolicy(ImageScaleComponents.SCALE_ALWAYS);
-        ImagePreviewPanel.SmoothWhenScale(false);
         ImagePreviewPanel.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 ImagePreviewPanelMouseClicked(evt);

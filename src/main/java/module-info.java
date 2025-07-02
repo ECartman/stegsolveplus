@@ -10,7 +10,9 @@
  *  THE SOFTWARE.
  * 
  */
-
+/*
+due the usage of Metadata Extractor we need to abstain from using the Module functionality 
+as this package is not modular. */
 module StegnoSolverPlus {
     requires java.base;
     requires transitive java.desktop;
@@ -24,4 +26,7 @@ module StegnoSolverPlus {
     requires org.apache.commons.lang3;
     exports com.aeongames.stegsolveplus.app;
     requires com.aeongames.edi.utils;
+    requires com.aeongames.edi.utils.pojo;
+    requires metadata.extractor; //--> this module does not use Java Modules. thus this will show a warning. 
+                                 //either we patch it ourselves or live with the warning or remove modularity from this project. 
 }

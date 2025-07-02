@@ -11,13 +11,95 @@
  */
 package com.aeongames.stegsolveplus.ui;
 
+import com.aeongames.edi.utils.pojo.BooleanPropertyPojo;
+import com.aeongames.edi.utils.pojo.PropertyPojo;
 import com.aeongames.edi.utils.text.LabelText;
+import com.aeongames.edi.utils.visual.link.BaseBinder;
+import com.aeongames.edi.utils.visual.link.JLabelComponentBind;
+import com.aeongames.edi.utils.visual.link.JprogressComponentBind;
+import com.aeongames.edi.utils.visual.link.MCBoolProbarIndeterminate;
+import java.util.ArrayList;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JProgressBar;
 
 /**
  *
- * @author cartman
+ * @author Eduardo Vindas
  */
 public class Footer extends javax.swing.JPanel {
+
+    private final class StatusPojo {
+
+        public final ArrayList<BaseBinder<?, ? extends JComponent>> Bindings;
+        private final BooleanPropertyPojo Indeterminated = new BooleanPropertyPojo();
+        private final PropertyPojo<Integer> Progressamt = new PropertyPojo<>(0);
+        private final PropertyPojo<String> StatusBarText = PropertyPojo.newStringPojo();
+
+        public StatusPojo() {
+            Bindings = new ArrayList<>(3);
+            StatusBarText.setValue("Welcome To StegnoSolve+");
+        }
+
+        //<editor-fold defaultstate="collapsed" desc="Binds">
+        /**
+         * bind Frame Components to be disabled or enabled if the Frame is busy
+         * or not.
+         *
+         * @param tobind the progress bar to bind.
+         * @return the binding if desired to be used or tracked by caller.
+         */
+        MCBoolProbarIndeterminate bindIndeterminateProgressBar(JProgressBar tobind) {
+            var statusBind = new MCBoolProbarIndeterminate(tobind, Indeterminated);
+            Bindings.add(statusBind);
+            return statusBind;
+        }
+
+        JLabelComponentBind BindStatusBar(JLabel label) {
+            var lbind = new JLabelComponentBind(label, StatusBarText);
+            Bindings.add(lbind);
+            return lbind;
+        }
+
+        JprogressComponentBind BindProgressBar(JProgressBar bar) {
+            var lbind = new JprogressComponentBind(bar, Progressamt);
+            Bindings.add(lbind);
+            return lbind;
+        }
+        //</editor-fold>
+    }
+
+    private class RestrictedLabel extends JLabel {
+
+        public RestrictedLabel() {
+            addComponentListener(new java.awt.event.ComponentAdapter() {
+                @Override
+                public void componentResized(java.awt.event.ComponentEvent evt) {
+                    resetText();
+                }
+            });
+        }
+
+        String longText;
+
+        public void resetText() {
+            super.setText(LabelText.getTrimmedtoComponentsize(longText, this, 654));
+        }
+
+        @Override
+        public void setText(String text) {
+            longText = text;
+            super.setText(LabelText.getTrimmedtoComponentsize(text, this, 654));
+        }
+
+        @Override
+        public String getText() {
+            return longText;
+        }
+
+    }
+
+    private final StatusPojo myBidings = new StatusPojo();
 
     public enum ProgressState {
         Idle,
@@ -26,66 +108,46 @@ public class Footer extends javax.swing.JPanel {
         Complete,
         INVALID
     }
-    
-    private String FullLabelText="Welcome To StegnoSolve+";
 
     /**
      * Creates new form Footer
      */
     public Footer() {
         initComponents();
+        myBidings.BindStatusBar(txtFooter);
+        myBidings.bindIndeterminateProgressBar(AppProgressBar);
+        myBidings.BindProgressBar(AppProgressBar);
     }
 
     public ProgressState SetProgressIndeterminate() {
-        AppProgressBar.setIndeterminate(true);
+        myBidings.Indeterminated.setValue(true);
         return ProgressState.Indetermine;
     }
 
     public ProgressState SetProgress(int CurrentProgress) {
         if (CurrentProgress >= 0 && CurrentProgress <= 100) {
-            AppProgressBar.setIndeterminate(false);
-            AppProgressBar.setValue(CurrentProgress);
+            myBidings.Indeterminated.setValue(false);
+            myBidings.Progressamt.setValue(CurrentProgress);
             ProgressState currentState;
-            currentState = switch (CurrentProgress) {
-                case 0 -> ProgressState.Idle;
-                case 100 -> ProgressState.Complete;
-                default /*whatever in between 0-100*/ -> ProgressState.Progressing;
+            currentState = switch (myBidings.Progressamt.getValue()) {
+                case 0 ->
+                    ProgressState.Idle;
+                case 100 ->
+                    ProgressState.Complete;
+                default /*whatever in between 0-100*/ ->
+                    ProgressState.Progressing;
             };
             return currentState;
         }
         if (CurrentProgress == -1) {
             return SetProgressIndeterminate();
         }
-        //otherwise invalid... 
-        //throw new UnsupportedOperationException("invalid progress");
         return ProgressState.INVALID;
     }
 
     public void setFooterText(String newText) {
-        FullLabelText=newText;
-        txtFooter.setToolTipText(FullLabelText);
-        txtFooter.setText(LabelText.getTrimmedtoComponentsize(FullLabelText, txtFooter,654));
-    }
-
-    /**
-     * gets the the current Percent of progress done from the ProgressBar if the
-     * ProgressBar is "indeterminate" it returns "-1" otherwise returns the % of
-     * completion
-     *
-     * @return a Integer with -1 if the progress bar is Indeterminate or a value
-     * between 0 and 100
-     */
-    public int getCurrentProgresspercentile() {
-        if (AppProgressBar.isIndeterminate()) {
-            return -1;
-        }
-        //for performance we can read directly from the model. but the model should represent a Percent (from 0 to 100) 
-        //otherwise we need to calculate the persentile value. 
-        if (AppProgressBar.getModel().getMaximum() == 100 && AppProgressBar.getModel().getMinimum() == 0) {
-            return AppProgressBar.getModel().getValue();
-        } else {
-            return (int) (AppProgressBar.getPercentComplete() * 100);
-        }
+        txtFooter.setToolTipText(newText);
+        myBidings.StatusBarText.setValue(newText);
     }
 
     /**
@@ -97,14 +159,9 @@ public class Footer extends javax.swing.JPanel {
     private void initComponents() {
 
         AppProgressBar = new javax.swing.JProgressBar();
-        txtFooter = new javax.swing.JLabel();
+        txtFooter = new RestrictedLabel();
 
-        txtFooter.setText(FullLabelText);
-        txtFooter.addComponentListener(new java.awt.event.ComponentAdapter() {
-            public void componentResized(java.awt.event.ComponentEvent evt) {
-                txtFooterComponentResized(evt);
-            }
-        });
+        txtFooter.setText(myBidings.StatusBarText.getValue());
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
@@ -121,10 +178,6 @@ public class Footer extends javax.swing.JPanel {
             .addComponent(txtFooter, javax.swing.GroupLayout.DEFAULT_SIZE, 25, Short.MAX_VALUE)
         );
     }// </editor-fold>//GEN-END:initComponents
-
-    private void txtFooterComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_txtFooterComponentResized
-      txtFooter.setText(LabelText.getTrimmedtoComponentsize(FullLabelText, txtFooter,654));
-    }//GEN-LAST:event_txtFooterComponentResized
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

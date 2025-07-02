@@ -14,7 +14,7 @@ package com.aeongames.edi.utils.visual;
 
 /**
  *
- * @author cartman
+ * @author Eduardo Vindas
  */
 public enum ImageScaleComponents {
         /**

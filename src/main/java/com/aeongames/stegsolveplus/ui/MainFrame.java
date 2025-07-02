@@ -17,6 +17,7 @@ import java.io.File;
 import java.awt.Image;
 import java.util.List;
 import java.awt.Desktop;
+import java.util.Objects;
 import java.awt.Component;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -63,7 +64,6 @@ public class MainFrame extends javax.swing.JFrame {
      * UI logger for the whole app.
      */
     public static final Logger UIlogger = LoggingHelper.getLogger("StegnoUI");
-
     /**
      * loads the Icon for this application.
      *
@@ -73,7 +73,6 @@ public class MainFrame extends javax.swing.JFrame {
         var resource = MainFrame.class.getResource("/com/aeongames/stegsolveplus/ui/OIG3.jpg");
         return resource == null ? null : new javax.swing.ImageIcon(resource);
     }
-
     /**
      * TODO: better approach using javaFX or Low level?
      */
@@ -83,7 +82,7 @@ public class MainFrame extends javax.swing.JFrame {
      * the Environment.(OS)
      */
     private DragAndDropHelper DragAndDrophelper;
-
+    private final FrameStateBind UIPojos;
     private final PropertyChangeListener BusyStateCallback;
 
     /**
@@ -95,17 +94,31 @@ public class MainFrame extends javax.swing.JFrame {
         if (APP_ICON != null) {
             this.setIconImage(APP_ICON.getImage());
         }
+        UIPojos = new FrameStateBind(MainTabPane);
+        UIPojos.bindEnabledComp(MOpenFile, MOpenLink/*,MOpenClipboard*/);
         EnableDragAndDrop();
     }
 
     private PropertyChangeListener getBusyStateCallback() {
         return (evt) -> {
             if (evt.getPropertyName().equals(InvestigationTab.ChangePropertys.BUSY) && evt.getSource() instanceof InvestigationTab) {
-                //we unfortunately cannot just re enable if a single tab is idle we need to check that ALL of them are idle.
-                //and retriger if any of them becomes busy.
-                checkBusyAndEnableMenu();
+                UIPojos.updateFrameEnabled();
             }
         };
+    }
+
+    /**
+     * shows a Panel asking for the link to be input
+     *
+     * @return the String of the Input value
+     */
+    private String getLinkFromPrompt() {
+        var UIresponse = JOptionPane.showInputDialog(this,
+                "Please Provide a Image Url to Load",
+                "URL Request", JOptionPane.QUESTION_MESSAGE,
+                new ImageIcon(this.getIconImage().getScaledInstance(50, 50, Image.SCALE_FAST),
+                        "AppIcon"), null, null);
+        return UIresponse == null ? null : UIresponse.toString().strip();
     }
 
     /**
@@ -273,7 +286,7 @@ public class MainFrame extends javax.swing.JFrame {
      * @param evt not used
      */
     private void MOpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MOpenFileActionPerformed
-        SetMenuStatus(false);
+        UIPojos.setFrameEnabled(false);
         if (HackishOpenFile) {
             LafFunctions.SetDefOSUI(this);
         }
@@ -288,45 +301,43 @@ public class MainFrame extends javax.swing.JFrame {
         System.setProperty("user.dir", fileChooser.getCurrentDirectory().getAbsolutePath());
         if (rVal == JFileChooser.APPROVE_OPTION) {
             var selecteddata = fileChooser.getSelectedFiles();
-            if (!loadImages(selecteddata)) {
-                checkBusyAndEnableMenu();
+            if (loadImages(selecteddata)) {
+                return;
             }
-        } else {
-            checkBusyAndEnableMenu();
         }
+        UIPojos.updateFrameEnabled();
     }//GEN-LAST:event_MOpenFileActionPerformed
 
     private void MOpenLinkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MOpenLinkActionPerformed
-        SetMenuStatus(false);
-        var UIresponse = JOptionPane.showInputDialog(this,
-                "Please Provide a Image Url to Load",
-                "URL Request", JOptionPane.QUESTION_MESSAGE,
-                new ImageIcon(this.getIconImage().getScaledInstance(50, 50, Image.SCALE_FAST),
-                        "AppIcon"), null, null);
-        var responce = UIresponse == null ? null : UIresponse.toString().strip();
-        if (responce != null) {
-            var matcher = DragStegnoProcessor.URL_PATTERN.matcher(responce);
-            if (matcher.matches()) {
-                URI uri = URI.create(responce);
-                var scheme = uri.getScheme();
-                if (scheme != null ? scheme.equalsIgnoreCase("file") : false) {
-                    var list = new ArrayList<Path>();
-                    list.add(Path.of(uri));
-                    if (loadImages(list)) {
-                        return;
-                    }
-                } else {
-                    try {
-                        if (newURLTab(uri.toURL())) {
-                            return;
-                        }
-                    } catch (MalformedURLException ex) {
-                        UIlogger.log(Level.SEVERE, "unable to transform the URI to URL", ex);
-                    }
+        UIPojos.setFrameEnabled(false);
+        var responce = getLinkFromPrompt();
+        if (Objects.isNull(responce)) {
+            UIPojos.updateFrameEnabled();
+            return;
+        }
+        var matcher = DragStegnoProcessor.URL_PATTERN.matcher(responce);
+        if (!matcher.matches()) {
+            UIPojos.updateFrameEnabled();
+            return;
+        }
+        URI uri = URI.create(responce);
+        var scheme = uri.getScheme();
+        if (scheme != null ? scheme.equalsIgnoreCase("file") : false) {
+            var list = new ArrayList<Path>();
+            list.add(Path.of(uri));
+            if (loadImages(list)) {
+                return;
+            }
+        } else {
+            try {
+                if (newURLTab(uri.toURL())) {
+                    return;
                 }
+            } catch (MalformedURLException ex) {
+                UIlogger.log(Level.SEVERE, "unable to transform the URI to URL", ex);
             }
         }
-        checkBusyAndEnableMenu();
+        UIPojos.updateFrameEnabled();
     }//GEN-LAST:event_MOpenLinkActionPerformed
 
     private void MainTabPanePropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_MainTabPanePropertyChange
@@ -404,7 +415,7 @@ public class MainFrame extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_MOrunAnalysisActionPerformed
 // </editor-fold>
-    
+
     private String ValidFileTypes(String list2[]) {
         var descriptor = new StringBuilder("Images (");
         for (int index = 0; index < list2.length; index++) {
@@ -423,23 +434,23 @@ public class MainFrame extends javax.swing.JFrame {
      * particular file
      */
     private boolean loadImages(File[] selecteddata) {
-        var pathList = new ArrayList<Path>(selecteddata.length);
+        var pathList = new ArrayList<Path>(selecteddata.length);        
         for (var file : selecteddata) {
             pathList.add(file.toPath());
         }
         return loadImages(pathList);
     }
 
-    private boolean loadImages(final List<Path> FileList) {
-        //do the fast check if already has a tab avail 
+    private boolean loadImages(final List<Path> FileList) {        
+        if (FileList.isEmpty()) {
+            return false;
+        }
+        //do the fast check if already has a tab avail
         for (var iterator = FileList.iterator(); iterator.hasNext();) {
             Path next = iterator.next();
             if (CheckIfTabForPathExist(next)) {
                 iterator.remove();
             }
-        }
-        if (FileList.isEmpty()) {
-            return false;
         }
         new SwingWorker<Void, Path>() {
             @Override
@@ -476,7 +487,7 @@ public class MainFrame extends javax.swing.JFrame {
 
             @Override
             protected void done() {
-                checkBusyAndEnableMenu();
+                UIPojos.updateFrameEnabled();
             }
         }.execute();
         return true;
@@ -529,9 +540,9 @@ public class MainFrame extends javax.swing.JFrame {
 
     private void ProcessDropedFiles(final List<Path> FileList) {
         if (SwingUtilities.isEventDispatchThread()) {
-            SetMenuStatus(false);
+            UIPojos.setFrameEnabled(false);
             if (!loadImages(FileList)) {
-                checkBusyAndEnableMenu();
+                UIPojos.updateFrameEnabled();
             }
             return;
         }
@@ -546,7 +557,7 @@ public class MainFrame extends javax.swing.JFrame {
 
     private void ProcessDropedText(String data) {
         if (SwingUtilities.isEventDispatchThread()) {
-                //TODO PROCESS CREATE A NEW TAB
+            //TODO PROCESS CREATE A NEW TAB
         }
         try {
             SwingUtilities.invokeAndWait(() -> this.ProcessDropedText(data));
@@ -559,9 +570,9 @@ public class MainFrame extends javax.swing.JFrame {
 
     private void ProcessDropedLinks(final URL link) {
         if (SwingUtilities.isEventDispatchThread()) {
-            SetMenuStatus(false);
+            UIPojos.setFrameEnabled(false);
             if (!newURLTab(link)) {
-                checkBusyAndEnableMenu();
+                UIPojos.updateFrameEnabled();
             }
             return;
         }
@@ -588,25 +599,6 @@ public class MainFrame extends javax.swing.JFrame {
         return Tabcreated;
     }
 
-    private void SetMenuStatus(boolean status) {
-        MOpenFile.setEnabled(status);
-        MOpenLink.setEnabled(status);
-        //this is not ready to be changed.
-        //MOpenClipboard.setEnabled(status);
-    }
-
-    private void checkBusyAndEnableMenu() {
-        var isbusy = false;
-        for (var index = 0; index < MainTabPane.getTabCount(); index++) {
-            if (MainTabPane.getComponentAt(index) instanceof InvestigationTab tab) {
-                if (isbusy = tab.isBusy()) {
-                    break;
-                }
-            }
-        }
-        SetMenuStatus(!isbusy);
-    }
-
     private int hasTabforFile(Path pathFile) {
         for (var index = 0; index < MainTabPane.getTabCount(); index++) {
             if (MainTabPane.getComponentAt(index) instanceof InvestigationTab tab) {
@@ -630,13 +622,12 @@ public class MainFrame extends javax.swing.JFrame {
     }
 
     /**
-     * Handles The UI Close Request to close the application.
-     * if the application is idle (and has no tabs) 
-     * it proceed to close the window. 
-     * otherwise if there are tabs. we show a Close Dialog to ask for confirmation
-     * to close the application. 
-     * if confirmed we will close all tabs and try to release all their related resources
-     * 
+     * Handles The UI Close Request to close the application. if the application
+     * is idle (and has no tabs) it proceed to close the window. otherwise if
+     * there are tabs. we show a Close Dialog to ask for confirmation to close
+     * the application. if confirmed we will close all tabs and try to release
+     * all their related resources
+     *
      */
     private void CloseRequested() {
         if (MainTabPane.getTabCount() == 0) {
