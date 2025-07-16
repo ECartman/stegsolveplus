@@ -14,10 +14,12 @@ package com.aeongames.stegsolveplus.StegnoTools;
 
 import com.aeongames.edi.utils.data.Pair;
 import com.aeongames.edi.utils.error.LoggingHelper;
+import com.aeongames.stegsolveplus.ui.InvestigationModel;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -32,6 +34,7 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
 /**
@@ -90,6 +93,7 @@ public class StegnoAnalyzer {
     private static final Logger loger = LoggingHelper.getLogger("StegnoAnalyzer");
     private FileLoaderWorker LoaderWorker;
     private TransformationWorker TransformationWorker;
+    private InvestigationModel LinkPojo;
 
     public StegnoAnalyzer(Path File) {
         Imageholder = new WrappedImage(File);
@@ -112,12 +116,42 @@ public class StegnoAnalyzer {
         LoaderWorker.execute();
     }
 
+    public void setLinkingPojo(InvestigationModel LinkingPojo) {
+        LinkPojo = Objects.requireNonNull(LinkingPojo, "Objects cannot be null");
+    }
+
     public void RunTransformations(Consumer<List<Pair<String, BufferedImage>>> callback) {
         if (ImageCache != null) {
             TransformationWorker.setCallback(callback);
             TransformationWorker.execute();
         } else {
             throw new NullPointerException("Image is not yet loaded");
+        }
+    }
+    
+    public void RunTextAnalisys(final Consumer<Boolean> callback) {
+        if (Imageholder.isImageLoaded()) {
+            final var reportWrapper = new WrappedImage.ImageReporter();
+            reportWrapper.setImageBinaryTextSingleByte(LinkPojo.getSingleByteTextPojo());
+            reportWrapper.setImageBinaryTextWide(LinkPojo.getWideTextPojo());
+            reportWrapper.setStatusText(LinkPojo.getstatusPojo());
+            new Thread(){
+                @Override
+                public void run() {
+                    try {
+                        Imageholder.LoadImageText(reportWrapper);
+                        try {
+                            SwingUtilities.invokeAndWait(()->{
+                                callback.accept(true);
+                            });
+                        } catch (InterruptedException | InvocationTargetException ex) {
+                            Logger.getLogger(StegnoAnalyzer.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    } catch (IOException ex) {
+                        Logger.getLogger(StegnoAnalyzer.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            }.start();
         }
     }
 
@@ -385,6 +419,7 @@ public class StegnoAnalyzer {
                 }
                 publish(Stage);
                 Imageholder.LoadImage((t) -> publish(t));
+                LinkPojo.ReportMetadata(Imageholder.getMetadataCopy());
                 ImageCache = new CanvasContainer(Imageholder);
             } catch (IOException ex) {
                 Stage = String.format("Unable to Load the Image for Analysis due a error: %s", ex.getMessage());

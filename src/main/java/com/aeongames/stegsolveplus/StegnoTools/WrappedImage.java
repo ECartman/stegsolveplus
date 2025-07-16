@@ -13,6 +13,7 @@
 package com.aeongames.stegsolveplus.StegnoTools;
 
 import java.net.URL;
+import java.awt.Color;
 import java.util.Objects;
 import java.awt.Dimension;
 import java.nio.file.Path;
@@ -21,20 +22,23 @@ import java.nio.file.Files;
 import javax.imageio.ImageIO;
 import java.net.URLConnection;
 import java.util.logging.Level;
+import java.nio.charset.Charset;
+import java.awt.image.DataBuffer;
 import com.drew.metadata.Metadata;
 import java.net.HttpURLConnection;
+import java.util.function.Consumer;
 import java.io.BufferedInputStream;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.awt.image.DataBufferByte;
 import java.nio.file.StandardOpenOption;
 import com.drew.imaging.ImageMetadataReader;
+import com.aeongames.edi.utils.pojo.PropertyPojo;
 import com.drew.imaging.ImageProcessingException;
 import com.aeongames.edi.utils.visual.ImageUtils;
 import com.aeongames.edi.utils.error.LoggingHelper;
-import java.awt.Color;
-import java.awt.image.DataBuffer;
-import java.util.function.Consumer;
+import com.aeongames.edi.utils.text.StringExtractor;
+import java.nio.charset.StandardCharsets;
 
 /**
  * this is a ImageWrapper for Buffer Image. Due its nature {@link BufferedImage}
@@ -86,6 +90,42 @@ public final class WrappedImage {
      * the URL of the image to source.
      */
     private final URL UrlSource;
+
+    public static class ImageReporter {
+
+        private PropertyPojo<String> StatusText;
+        private PropertyPojo<String> ImageBinaryTextSingleByte;
+        private PropertyPojo<String> ImageBinaryTextWide;
+        private PropertyPojo<BufferedImage> ImageProperty;
+
+        /**
+         * @param StatusText the StatusText to set
+         */
+        public void setStatusText(PropertyPojo<String> StatusText) {
+            this.StatusText = StatusText;
+        }
+
+        /**
+         * @param ImageBinaryTextSingleByte the ImageBinaryTextSingleByte to set
+         */
+        public void setImageBinaryTextSingleByte(PropertyPojo<String> ImageBinaryTextSingleByte) {
+            this.ImageBinaryTextSingleByte = ImageBinaryTextSingleByte;
+        }
+
+        /**
+         * @param ImageBinaryTextWide the ImageBinaryTextWide to set
+         */
+        public void setImageBinaryTextWide(PropertyPojo<String> ImageBinaryTextWide) {
+            this.ImageBinaryTextWide = ImageBinaryTextWide;
+        }
+
+        /**
+         * @param ImageProperty the ImageProperty to set
+         */
+        public void setImageProperty(PropertyPojo<BufferedImage> ImageProperty) {
+            this.ImageProperty = ImageProperty;
+        }
+    }
 
     // <editor-fold defaultstate="collapsed" desc="Constructors">
     /**
@@ -207,6 +247,15 @@ public final class WrappedImage {
         ReporterFuntion.accept("Finishing Processing the Image.");
     }
 
+    public void LoadImageText(ImageReporter ReporterObject) throws IOException {
+        Objects.requireNonNull(ReporterObject);
+        if (Objects.nonNull(PathSource)) {
+            handleFiletextSource(ReporterObject);
+        } else if (Objects.nonNull(UrlSource)) {
+            handleURLtextSource(ReporterObject);
+        }
+    }
+
     /**
      * handles the BufferStream of the image and read the Image Metadata as well
      * as create the BufferImage with the color data.
@@ -228,6 +277,40 @@ public final class WrappedImage {
         bis.reset(); // Reset to the beginning for ImageIO
         ReporterFuntion.accept("Reading the Image Raster and Image pixel data");
         originalImage = ImageIO.read(bis);
+    }
+
+    private final int MIN_STRING = 3;
+
+    /**
+     * handles the BufferStream of the image and read the text data
+     *
+     * @param bis the Buffer stream of the image to be read
+     * @param filesize the size of the data to read from the stream
+     * @throws IOException if there is a Error reading the image.
+     */
+    private void ReadImageText(BufferedInputStream bis, int filesize, ImageReporter ReporterObject) throws IOException {
+        //set the buffer mark to go back in the buffer. 
+        bis.mark((int) filesize + 1);
+        ReporterObject.StatusText.setValue("attempting to read Text From the File bytes.");
+        ReadStringfrom(ReporterObject.ImageBinaryTextSingleByte, MIN_STRING, StandardCharsets.UTF_8, bis, true);
+        /*
+        try {
+            ReporterObject.StatusText.setValue("Reading Image metadata");
+            Imagemetadata = ImageMetadataReader.readMetadata(bis, filesize);
+        } catch (ImageProcessingException MetaErr) {
+            LoggingHelper.getLogger("ReadOnlyBuffImage").log(Level.SEVERE, "Unable to read Image Metadata", MetaErr);
+        }*/
+        ReporterObject.StatusText.setValue("Resetting The Stream");
+        bis.reset();
+        ReadStringfrom(ReporterObject.ImageBinaryTextWide, MIN_STRING, StandardCharsets.UTF_16, bis, true);
+        bis.reset(); // Reset to the beginning for ImageIO
+    }
+
+    private void ReadStringfrom(PropertyPojo<String> reporter, int MinStringLenght, Charset Encoding, BufferedInputStream bis, boolean onlyLatin) throws IOException {
+        StringExtractor ext = new StringExtractor(Encoding, MinStringLenght, onlyLatin);
+        ext.readFromBuffer(bis, (t) -> {
+            reporter.setValue(t);
+        });
     }
 
     /**
@@ -256,6 +339,15 @@ public final class WrappedImage {
             }
         }
         return false;
+    }
+
+    /**
+     * returns the image Metadata. TODO: do a copy of the data instead.
+     *
+     * @return the metadata of the underline image.
+     */
+    public Metadata getMetadataCopy() {
+        return Imagemetadata;
     }
 
     // <editor-fold defaultstate="collapsed" desc="Source Handlers"> 
@@ -318,8 +410,68 @@ public final class WrappedImage {
             throw ex;
         }
     }
-    // </editor-fold>
 
+    private void handleFiletextSource(ImageReporter ReporterObject) throws IOException {
+        //we asume the file exist and is valid. 
+        int filesize = 8192;
+        try {
+            filesize = (int) Files.size(PathSource);
+            ReporterObject.StatusText.setValue(String.format("The File to be loaded is of size: %d", filesize));
+        } catch (IOException ex) {
+            ReporterObject.StatusText.setValue("Failed to Read the Filesize Attribute from the file.");
+            LoggingHelper.getLogger("ReadOnlyBuffImage").log(Level.SEVERE, "Unable to determine File Size", ex);
+        }
+        /*
+            we cant process both the metadata and the image in a single phase (i.e., a single 
+            sequential pass through the stream) using standard Java APIs or the `metadata-extractor`
+            library. Both `ImageIO.read()` and `ImageMetadataReader.readMetadata()` need to parse the image
+            file independently, and both expect to start reading from the beginning of the stream.
+            
+            to work arround this limitation. what we opted to do is to buffer then whole file. this way we only read the file
+            from the Storage once but we process its data several times. 
+         */
+        try (var bis = new BufferedInputStream(Files.newInputStream(PathSource, StandardOpenOption.READ), filesize)) {
+            ReadImageText(bis, filesize, ReporterObject);
+        } catch (IOException ex) {
+            ReporterObject.StatusText.setValue("Fail to Read The file.");
+            LoggingHelper.getLogger("ReadOnlyBuffImage").log(Level.SEVERE, "IO Exception loading the Image", ex);
+            throw ex;
+        }
+    }
+
+    private void handleURLtextSource(ImageReporter ReporterObject) throws IOException {
+        URLConnection connection;
+        try {
+            ReporterObject.StatusText.setValue("Setting The Connection");
+            connection = UrlSource.openConnection();
+            connection.setConnectTimeout(URLTIMEOUT);
+            connection.setReadTimeout(URLTIMEOUT);
+            ReporterObject.StatusText.setValue("Stablishing The Connection");
+            connection.connect();
+            // Make sure response code is in the 200 range.
+            if (connection instanceof HttpURLConnection httpconn) {
+                if (httpconn.getResponseCode() / 100 != 2) {
+                    ReporterObject.StatusText.setValue(String.format("unable to Connect error: %d", httpconn.getResponseCode()));
+                    LoggingHelper.getLogger("ReadOnlyBuffImage").log(Level.SEVERE, "Connection did not open with code 200");
+                    return;
+                }
+            }
+            //if we unable to determine the type of connection we open... oh well
+            //proceed with assumption it will work...
+            ReporterObject.StatusText.setValue("Lookingup Data Lenght.");
+            int datasize = connection.getContentLength();
+            ReporterObject.StatusText.setValue(String.format("data Size Reported as: %d", datasize));
+            try (var bis = new BufferedInputStream(connection.getInputStream(), datasize)) {
+                ReadImageText(bis, datasize, ReporterObject);
+            }
+        } catch (IOException ex) {
+            ReporterObject.StatusText.setValue("Connection Failed.");
+            LoggingHelper.getLogger("ReadOnlyBuffImage").log(Level.SEVERE, "Unable to open a Connection or read the data", ex);
+            throw ex;
+        }
+    }
+
+    // </editor-fold>
     // <editor-fold defaultstate="collapsed" desc="image properties"> 
     /**
      * returns the Dimension of the Original Image. or Dimension as 0 if the
@@ -646,7 +798,7 @@ public final class WrappedImage {
         }
     }
 
-    void feedBufferWithColorForIndex(DataBuffer Destinationdatabuffer,int Channel,int Index, int type, Color Fill){
+    void feedBufferWithColorForIndex(DataBuffer Destinationdatabuffer, int Channel, int Index, int type, Color Fill) {
         for (int i = 0; i < getTotalPixels(); i++) {//Should we do the loop once we know the type of buffer and avoid 1 computation?
             int readvalue = 0b0;
             switch (ImageDataReference) {
@@ -689,7 +841,7 @@ public final class WrappedImage {
             Destinationdatabuffer.setElem(i, CalculatedPixel);
         }
     }
-    
+
     // <editor-fold defaultstate="collapsed" desc="Clone Channels"> 
     /**
      * <strong>This Function Should not be called from a loop, if there are
@@ -791,5 +943,4 @@ public final class WrappedImage {
     }
 
     //</editor-fold>
-
 }
