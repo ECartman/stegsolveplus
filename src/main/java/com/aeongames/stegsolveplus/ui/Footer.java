@@ -68,7 +68,7 @@ public class Footer extends javax.swing.JPanel {
         }
         //</editor-fold>
     }
-
+    
     private class RestrictedLabel extends JLabel {
 
         public RestrictedLabel() {
@@ -107,6 +107,10 @@ public class Footer extends javax.swing.JPanel {
         Progressing,
         Complete,
         INVALID
+    }
+    
+        public PropertyPojo<String> getStatusBarPojo(){
+        return myBidings.StatusBarText;
     }
 
     /**

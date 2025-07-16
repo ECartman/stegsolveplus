@@ -139,9 +139,11 @@ public class MainFrame extends javax.swing.JFrame {
         MbExit = new javax.swing.JMenuItem();
         jMenu1 = new javax.swing.JMenu();
         MOrunAnalysis = new javax.swing.JMenuItem();
+        jMenuItem1 = new javax.swing.JMenuItem();
         jMenu2 = new javax.swing.JMenu();
         jMenuItem2 = new javax.swing.JMenuItem();
         jMenuItem3 = new javax.swing.JMenuItem();
+        executeGC = new javax.swing.JMenuItem();
         MenuHelp = new javax.swing.JMenu();
         MOabout = new javax.swing.JMenuItem();
 
@@ -222,6 +224,15 @@ public class MainFrame extends javax.swing.JFrame {
         });
         jMenu1.add(MOrunAnalysis);
 
+        jMenuItem1.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F8, 0));
+        jMenuItem1.setText("ReadImageText");
+        jMenuItem1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem1ActionPerformed(evt);
+            }
+        });
+        jMenu1.add(jMenuItem1);
+
         MainMenu.add(jMenu1);
 
         jMenu2.setText("External Actions");
@@ -243,6 +254,15 @@ public class MainFrame extends javax.swing.JFrame {
             }
         });
         jMenu2.add(jMenuItem3);
+
+        executeGC.setText("Execute GC");
+        executeGC.setToolTipText("Attemp to Clean Any Dangling Bits of Data from Memory.");
+        executeGC.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                executeGCActionPerformed(evt);
+            }
+        });
+        jMenu2.add(executeGC);
 
         MainMenu.add(jMenu2);
 
@@ -414,6 +434,16 @@ public class MainFrame extends javax.swing.JFrame {
             tab.startAnalysis();
         }
     }//GEN-LAST:event_MOrunAnalysisActionPerformed
+
+    private void executeGCActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_executeGCActionPerformed
+     System.gc();
+    }//GEN-LAST:event_executeGCActionPerformed
+
+    private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
+       if (MainTabPane.getSelectedComponent() instanceof InvestigationTab tab) {
+            tab.TextAnalize();
+        }
+    }//GEN-LAST:event_jMenuItem1ActionPerformed
 // </editor-fold>
 
     private String ValidFileTypes(String list2[]) {
@@ -754,8 +784,10 @@ public class MainFrame extends javax.swing.JFrame {
     private com.aeongames.stegsolveplus.ui.tabcomponents.JStegnoTabbedPane MainTabPane;
     private javax.swing.JMenuItem MbExit;
     private javax.swing.JMenu MenuHelp;
+    private javax.swing.JMenuItem executeGC;
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu2;
+    private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JMenuItem jMenuItem3;
     private javax.swing.JPopupMenu.Separator jSeparator1;
