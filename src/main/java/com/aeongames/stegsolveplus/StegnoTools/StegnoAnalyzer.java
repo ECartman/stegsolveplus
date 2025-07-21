@@ -14,6 +14,7 @@ package com.aeongames.stegsolveplus.StegnoTools;
 
 import com.aeongames.edi.utils.data.Pair;
 import com.aeongames.edi.utils.error.LoggingHelper;
+import com.aeongames.edi.utils.visual.ImageUtils;
 import com.aeongames.stegsolveplus.ui.InvestigationModel;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
@@ -40,9 +41,11 @@ import javax.swing.SwingWorker;
 /**
  * this class is a background worker that conducts and waits for the underline
  * Color transformations are done. some of the underline transformations needs
- * to be enhanced as some of them are a bit slow. also there are a few that work
- * similar (for example. getting the blue pixels are pulled and showed. but at
- * this same point the process could also pull the independent bits & so on.
+ * to be enhanced as some of them are a bit slow(due they transform 100% of the
+ * image. we should implement a way to transform "thumbnails" also there are a
+ * few that work similar (for example. getting the blue pixels are pulled and
+ * showed. but at this same point the process could also pull the independent
+ * bits & so on.
  *
  * generally speaking this is fine for images that are less than 2k resolution
  * but for big images takes several seconds to minutes..
@@ -111,37 +114,28 @@ public class StegnoAnalyzer {
         TransformationWorker = new TransformationWorker();
     }
 
+    public void setLinkingPojo(InvestigationModel LinkingPojo) {
+        LinkPojo = Objects.requireNonNull(LinkingPojo, "Objects cannot be null");
+    }
+
     public void LoadImageData(Consumer<BufferedImage> Callback) {
         LoaderWorker.SetCallback(Callback);
         LoaderWorker.execute();
     }
 
-    public void setLinkingPojo(InvestigationModel LinkingPojo) {
-        LinkPojo = Objects.requireNonNull(LinkingPojo, "Objects cannot be null");
-    }
-
-    public void RunTransformations(Consumer<List<Pair<String, BufferedImage>>> callback) {
-        if (ImageCache != null) {
-            TransformationWorker.setCallback(callback);
-            TransformationWorker.execute();
-        } else {
-            throw new NullPointerException("Image is not yet loaded");
-        }
-    }
-    
     public void RunTextAnalisys(final Consumer<Boolean> callback) {
         if (Imageholder.isImageLoaded()) {
             final var reportWrapper = new WrappedImage.ImageReporter();
             reportWrapper.setImageBinaryTextSingleByte(LinkPojo.getSingleByteTextPojo());
             reportWrapper.setImageBinaryTextWide(LinkPojo.getWideTextPojo());
             reportWrapper.setStatusText(LinkPojo.getstatusPojo());
-            new Thread(){
+            new Thread() {
                 @Override
                 public void run() {
                     try {
                         Imageholder.LoadImageText(reportWrapper);
                         try {
-                            SwingUtilities.invokeAndWait(()->{
+                            SwingUtilities.invokeAndWait(() -> {
                                 callback.accept(true);
                             });
                         } catch (InterruptedException | InvocationTargetException ex) {
@@ -152,6 +146,15 @@ public class StegnoAnalyzer {
                     }
                 }
             }.start();
+        }
+    }
+
+    public void RunTransformations(Consumer<List<Pair<String, BufferedImage>>> callback) {
+        if (ImageCache != null) {
+            TransformationWorker.setCallback(callback);
+            TransformationWorker.execute();
+        } else {
+            throw new NullPointerException("Image is not yet loaded");
         }
     }
 
@@ -191,12 +194,15 @@ public class StegnoAnalyzer {
     }
 
     private BufferedImage getGrayScaleCopy() {
-        return ImageCache.getGrayScale();
+        if (Imageholder.isImageLoaded()) {
+            return Imageholder.getGrayScaleCopy();
+        }
+        return null;
     }
 
     protected BufferedImage getUnEditedCopy() {
-        if (ImageCache != null) {
-            return ImageCache.getCloneImage();
+        if (Imageholder.isImageLoaded()) {
+            return Imageholder.getImageCopy();
         }
         return null;
     }
@@ -214,15 +220,15 @@ public class StegnoAnalyzer {
         return ImageCache.MathOnPixels(BufferedImage.TYPE_BYTE_GRAY, RGB -> {
             if (NoGamaCorrection) {
                 // Calculate luminance:
-                var lum = 0.2126f * RGB[CanvasContainer.RED]
-                        + 0.7152f * RGB[CanvasContainer.GREEN]
-                        + 0.0722f * RGB[CanvasContainer.BLUE];
+                var lum = 0.2126f * RGB[ImageColorUtilities.RED]
+                        + 0.7152f * RGB[ImageColorUtilities.GREEN]
+                        + 0.0722f * RGB[ImageColorUtilities.BLUE];
                 return new Short[]{(short) (lum + 0.5F)};
             }
             // Normalize and gamma correct:Rec709 (HDTV)
-            var rr = Math.pow(RGB[CanvasContainer.RED] / 255.0f, 2.2f);
-            var gg = Math.pow(RGB[CanvasContainer.GREEN] / 255.0f, 2.2f);
-            var bb = Math.pow(RGB[CanvasContainer.BLUE] / 255.0f, 2.2f);
+            var rr = Math.pow(RGB[ImageColorUtilities.RED] / 255.0f, 2.2f);
+            var gg = Math.pow(RGB[ImageColorUtilities.GREEN] / 255.0f, 2.2f);
+            var bb = Math.pow(RGB[ImageColorUtilities.BLUE] / 255.0f, 2.2f);
             // Calculate luminance:
             var lum = 0.2126f * rr + 0.7152f * gg + 0.0722f * bb;
 
@@ -240,10 +246,10 @@ public class StegnoAnalyzer {
         //on changes to code that is itended to run once not on a loop
         return ImageCache.MathOnPixels(BufferedImage.TYPE_4BYTE_ABGR, ARGB -> {
             var results = new Short[4];
-            results[CanvasContainer.ALPHA] = CanvasContainer.MAXUBYTE;
-            results[CanvasContainer.RED] = (short) ((ARGB[CanvasContainer.RED] & base) << move);
-            results[CanvasContainer.GREEN] = (short) ((ARGB[CanvasContainer.GREEN] & base) << move);
-            results[CanvasContainer.BLUE] = (short) ((ARGB[CanvasContainer.BLUE] & base) << move);
+            results[ImageColorUtilities.ALPHA] = ImageColorUtilities.MAXUBYTE;
+            results[ImageColorUtilities.RED] = (short) ((ARGB[ImageColorUtilities.RED] & base) << move);
+            results[ImageColorUtilities.GREEN] = (short) ((ARGB[ImageColorUtilities.GREEN] & base) << move);
+            results[ImageColorUtilities.BLUE] = (short) ((ARGB[ImageColorUtilities.BLUE] & base) << move);
             return results;
         });
     }
@@ -259,20 +265,20 @@ public class StegnoAnalyzer {
      */
     private void getHSVInversions(List<Pair<String, BufferedImage>> storage) {
         //inverted hue 
-        var transform = ImageCache.createBIemptyCopy();
+        var transform = ImageUtils.createBIemptyCopy(Imageholder.getDimensions());
         //iverted hue and Brightness 
-        var transform2 = ImageCache.createBIemptyCopy();
+        var transform2 = ImageUtils.createBIemptyCopy(Imageholder.getDimensions());
         //inverted saturation
-        var transform3 = ImageCache.createBIemptyCopy();
+        var transform3 = ImageUtils.createBIemptyCopy(Imageholder.getDimensions());
         //inverted brightness only.
-        var transform4 = ImageCache.createBIemptyCopy();
+        var transform4 = ImageUtils.createBIemptyCopy(Imageholder.getDimensions());
 
         ImageCache.MathOnPixelsbyIndex((RGB, Index) -> {
             float[] HSV = new float[3];
             Color.RGBtoHSB(
-                    RGB[CanvasContainer.RED],
-                    RGB[CanvasContainer.GREEN],
-                    RGB[CanvasContainer.BLUE],
+                    RGB[ImageColorUtilities.RED],
+                    RGB[ImageColorUtilities.GREEN],
+                    RGB[ImageColorUtilities.BLUE],
                     HSV);
             var invertedHue = (HSV[0] + 0.5f) % 1f;
             var invertedbright = 1f - HSV[2];
@@ -309,16 +315,16 @@ public class StegnoAnalyzer {
         return ImageCache.MathOnPixels(BufferedImage.TYPE_INT_ARGB, RGB -> {
             float[] HSV = new float[3];
             Color.RGBtoHSB(
-                    RGB[CanvasContainer.RED],
-                    RGB[CanvasContainer.GREEN],
-                    RGB[CanvasContainer.BLUE],
+                    RGB[ImageColorUtilities.RED],
+                    RGB[ImageColorUtilities.GREEN],
+                    RGB[ImageColorUtilities.BLUE],
                     HSV);
             var InvertedColor = Color.HSBtoRGB((HSV[0] + 0.5f) % 1f, HSV[1], HSV[2]);
             var results = new Short[4];
-            results[CanvasContainer.ALPHA] = (short) ((InvertedColor >> 24) & CanvasContainer.MAXUBYTE);
-            results[CanvasContainer.RED] = (short) ((InvertedColor >> 16) & CanvasContainer.MAXUBYTE);
-            results[CanvasContainer.GREEN] = (short) ((InvertedColor >> 8) & CanvasContainer.MAXUBYTE);
-            results[CanvasContainer.BLUE] = (short) (InvertedColor & CanvasContainer.MAXUBYTE);
+            results[ImageColorUtilities.ALPHA] = (short) ((InvertedColor >> 24) & ImageColorUtilities.MAXUBYTE);
+            results[ImageColorUtilities.RED] = (short) ((InvertedColor >> 16) & ImageColorUtilities.MAXUBYTE);
+            results[ImageColorUtilities.GREEN] = (short) ((InvertedColor >> 8) & ImageColorUtilities.MAXUBYTE);
+            results[ImageColorUtilities.BLUE] = (short) (InvertedColor & ImageColorUtilities.MAXUBYTE);
             return results;
         });
     }
@@ -331,10 +337,10 @@ public class StegnoAnalyzer {
     private BufferedImage inversionRGB() {
         return ImageCache.MathOnPixels(BufferedImage.TYPE_4BYTE_ABGR, ARGB -> {
             var results = new Short[4];
-            results[CanvasContainer.ALPHA] = CanvasContainer.MAXUBYTE;
-            results[CanvasContainer.RED] = (short) (ARGB[CanvasContainer.RED] ^ CanvasContainer.RGBMASK);
-            results[CanvasContainer.GREEN] = (short) (ARGB[CanvasContainer.GREEN] ^ CanvasContainer.RGBMASK);
-            results[CanvasContainer.BLUE] = (short) (ARGB[CanvasContainer.BLUE] ^ CanvasContainer.RGBMASK);
+            results[ImageColorUtilities.ALPHA] = ImageColorUtilities.MAXUBYTE;
+            results[ImageColorUtilities.RED] = (short) (ARGB[ImageColorUtilities.RED] ^ ImageColorUtilities.RGBMASK);
+            results[ImageColorUtilities.GREEN] = (short) (ARGB[ImageColorUtilities.GREEN] ^ ImageColorUtilities.RGBMASK);
+            results[ImageColorUtilities.BLUE] = (short) (ARGB[ImageColorUtilities.BLUE] ^ ImageColorUtilities.RGBMASK);
             return results;
         });
     }
@@ -396,7 +402,7 @@ public class StegnoAnalyzer {
 
     private List<Pair<String, BufferedImage>> getImagePerBitOnAlphaChannel(List<Pair<String, BufferedImage>> storage) {
         storage = storage == null ? new ArrayList<>(8) : storage;
-        if (ImageCache.HasAlphaChannel()) {
+        if (Imageholder.hasAlpha()) {
             for (int index = 0; index < 8; index++) {
                 storage.add(new Pair<>(String.format("Alpha Bit at the %d bit", index), ImageCache.getAlphaForIndex(index, Color.BLACK)));
             }
@@ -418,7 +424,7 @@ public class StegnoAnalyzer {
                     Stage = String.format("Loading the URL %s", Imageholder.getURLSource().getPath());
                 }
                 publish(Stage);
-                Imageholder.LoadImage((t) -> publish(t));
+                Imageholder.LoadImage((t) -> publish(t));               
                 LinkPojo.ReportMetadata(Imageholder.getMetadataCopy());
                 ImageCache = new CanvasContainer(Imageholder);
             } catch (IOException ex) {
@@ -428,6 +434,13 @@ public class StegnoAnalyzer {
                 throw ex;//rethow so the Future class traps the error at the setException
             }
             return Imageholder.getImageCopy();
+        }
+
+        @Override
+        protected void process(List<String> chunks) {
+            if (Objects.nonNull(LinkPojo)) {
+                LinkPojo.ReportStatus(chunks);
+            }
         }
 
         @Override

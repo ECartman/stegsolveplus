@@ -23,8 +23,6 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -141,47 +139,6 @@ public class StringExtractor {
         return !(Character.isISOControl(ch) && ch != '\n' && ch != '\r' && ch != '\t');
     }
 
-    private List<String> tryDecode(byte[] bytes, Charset charset) {
-        LinkedList<String> list = new LinkedList<>();
-        StringBuilder builder = new StringBuilder();
-        ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
-        CharBuffer charBuffer = CharBuffer.allocate(bytes.length * MaxBytesPerchar(charset));
-        CharsetDecoder decoder = charset.newDecoder()
-                .onMalformedInput(CodingErrorAction.IGNORE)
-                .onUnmappableCharacter(CodingErrorAction.IGNORE);
-
-        var result = decoder.decode(byteBuffer, charBuffer, false);
-        if (result.isError()) {
-            //there is a error reading the data. 
-        }
-        if (result.isUnderflow() && byteBuffer.hasRemaining()) {
-            // Not enough bytes for a character yet, compact and continue
-            byteBuffer.compact();
-        }
-        decoder.reset();
-        charBuffer.flip();
-        while (charBuffer.hasRemaining()) {
-            char c = charBuffer.get();
-            if (isPrintable(c, onlyLatinChars)) {
-                builder.append(c);
-            } else if (builder.length() >= MinLen) {
-                var resultstr = builder.toString();
-                if (!resultstr.isBlank()) {
-                    list.add(resultstr);
-                }
-                builder.delete(0, builder.length());
-            }
-        }
-        byteBuffer.compact();
-        if (!builder.isEmpty() && builder.length() >= MinLen) {
-            var stringresult = builder.toString();
-            if (!stringresult.isBlank()) {
-                list.add(stringresult);
-            }
-        }
-        return list;
-    }
-
     private void DecoderReport(byte[] bytes, Charset charset, Consumer<String> ReporterFuntion) {
         StringBuilder builder = new StringBuilder();
         ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
@@ -204,12 +161,13 @@ public class StringExtractor {
             char c = charBuffer.get();
             if (isPrintable(c, onlyLatinChars)) {
                 builder.append(c);
-            } else if (builder.length() >= MinLen) {
-                var resultstr = builder.toString();
-                if (!resultstr.isBlank() && resultstr.trim().length() >= MinLen) {
-                    ReporterFuntion.accept(resultstr);
+                if (c == '\n') {
+                    var resultstr = builder.toString();
+                    if (!resultstr.isBlank() && resultstr.trim().length() >= MinLen) {
+                        ReporterFuntion.accept(resultstr);
+                    }
+                    builder.delete(0, builder.length());
                 }
-                builder.delete(0, builder.length());
             }
         }
         byteBuffer.compact();
